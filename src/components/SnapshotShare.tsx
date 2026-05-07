@@ -16,6 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const PUBLIC_SHARE_TEXT = "I checked my mortgage path with approvU.";
 const SECURE_LINK = "https://approvu.app/snapshot/secure-preview";
@@ -276,25 +282,88 @@ function EditInputsCard({ onEdit }: { onEdit?: () => void }) {
 }
 
 export function SnapshotShareSection({ onEdit }: { onEdit?: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(SECURE_LINK);
+    } catch {
+      // ignore
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
   return (
-    <section className="mt-8">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
-          Save or Share Your Snapshot
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Keep a copy, share it with people who help you buy, or talk to a broker.
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <EmailMySnapshotCard />
-        <SendToRealtorCard />
-        <ShareSnapshotCard />
-        <div className="grid gap-4">
-          <TalkToBrokerCard />
-          <EditInputsCard onEdit={onEdit} />
+    <section className="mt-8 rounded-2xl border border-border bg-card/60 p-5 shadow-sm sm:p-6">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-foreground sm:text-lg">
+            Save or Share Your Snapshot
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Email it, send to your realtor, copy a secure link, or talk to a broker.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={copyLink}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+        >
+          <LinkIcon className="h-3.5 w-3.5" />
+          {copied ? "Secure link copied" : "Copy secure link"}
+        </button>
       </div>
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="email" className="border-border">
+          <AccordionTrigger className="text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Mail className="h-4 w-4 text-secondary" /> Email My Snapshot
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EmailMySnapshotCard />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="realtor" className="border-border">
+          <AccordionTrigger className="text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Send className="h-4 w-4 text-secondary" /> Send to My Realtor
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <SendToRealtorCard />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="share" className="border-border">
+          <AccordionTrigger className="text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Share2 className="h-4 w-4 text-secondary" /> Share Snapshot
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <ShareSnapshotCard />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="broker" className="border-border">
+          <AccordionTrigger className="text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Phone className="h-4 w-4 text-secondary" /> Talk to a Broker
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <TalkToBrokerCard />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="edit" className="border-border">
+          <AccordionTrigger className="text-sm">
+            <span className="inline-flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-secondary" /> Edit My Inputs
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditInputsCard onEdit={onEdit} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </section>
   );
 }
