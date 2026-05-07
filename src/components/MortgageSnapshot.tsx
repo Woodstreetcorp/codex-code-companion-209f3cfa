@@ -1057,6 +1057,8 @@ function ReviewAnswers({
     "cashAmount",
     "savedDown",
     "priceRange",
+    "specificPrice",
+    "locations",
   ]);
   const rows = visible
     .filter((q) => !skip.has(q.id))
@@ -1105,12 +1107,15 @@ function shortLabel(q: Question): string {
     offer: "Accepted offer",
     address: "Property location",
     location: "Property location",
+    locations: "Target locations",
     propertyType: "Property type",
     ownsResidence: "Own primary residence",
     intent: "Refinance goal",
     numMortgages: "Mortgages on title",
     wantsEquity: "Wants to access equity",
     cashPurpose: "Funds will be used for",
+    units: "Number of units",
+    lowerPaymentIntent: "Lower payment goal",
   };
   return map[q.id] ?? q.title;
 }
@@ -1125,6 +1130,10 @@ function prettifyAnswer(q: Question, val: AnswerValue | undefined): string {
     const arr = Array.isArray(val) ? (val.filter((v) => typeof v === "string") as string[]) : [];
     if (!arr.length) return "—";
     return arr.map((v) => q.options.find((o) => o.value === v)?.label ?? v).join(", ");
+  }
+  if (q.type === "locations") {
+    const arr = Array.isArray(val) ? (val.filter((v) => typeof v === "string") as string[]) : [];
+    return arr.length ? arr.join(", ") : "—";
   }
   if (q.type === "currency") return val ? `$${val as string}` : "—";
   return typeof val === "string" ? val : "—";
@@ -1155,8 +1164,12 @@ function prettifyPriceRange(v?: string): string {
       return "$600,000 – $900,000";
     case "900-1.2":
       return "$900,000 – $1.2M";
-    case "1.2+":
-      return "Above $1.2M";
+    case "1.2-1.5":
+      return "$1.2M – $1.5M";
+    case "1.5+":
+      return "Above $1.5M";
+    case "specific":
+      return "Specific amount";
     default:
       return "—";
   }
