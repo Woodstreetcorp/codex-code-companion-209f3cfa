@@ -303,12 +303,177 @@ function RefinanceSnapshot({
   const maxAllowed = value * 0.8;
   const lvr = value > 0 ? +((requested / value) * 100).toFixed(1) : 0;
   const withinLimit = requested <= maxAllowed && value > 0;
-  const additionalAvailable = Math.max(maxAllowed - balance, 0);
+  const availableEquity = Math.max(maxAllowed - balance, 0);
 
-  const path = getLendingPath(answers);
-  const interpretation = withinLimit
-    ? "Based on your property value and current mortgage balances, your refinance request appears to fit within the estimated allowed loan-to-value limit. You may be able to proceed with this refinance structure, subject to lender review, income qualification, and supporting documents."
-    : "Your requested refinance amount appears to be above the estimated maximum allowed loan amount for this property. You may still have options, but your current cash-out request may need to be reduced or reviewed more closely.";
+  const creditPath = getLendingPath(answers);
+  // For above-limit requests, the snapshot path is always Tailored Review,
+  // regardless of credit. For within-limit, fall back to credit-derived path.
+  const refinancePath: LendingPath = withinLimit ? creditPath : "Needs Tailored Review";
+
+  // Reusable building blocks ----------------------------------------------
+  const outcomeCard = (
+    <OutcomeCard
+      withinLimit={withinLimit}
+      hasNumbers={value > 0 || requested > 0}
+    />
+  );
+  const pathCard = (
+    <RefinancePathCard withinLimit={withinLimit} path={refinancePath} />
+  );
+  const ctaCard = <RefinanceCTACard withinLimit={withinLimit} />;
+
+  const requestCard = (
+    <Card title="Your Refinance Request" icon={<FileText className="h-4 w-4" />}>
+      <Row label="Property Value" value={value ? formatCAD(value) : "—"} />
+      <Row
+        label="Existing Mortgage Balance(s)"
+        value={balance ? formatCAD(balance) : "—"}
+      />
+      <Row label="Cash-Out Requested" value={cashOut ? formatCAD(cashOut) : "—"} />
+      <Row
+        label="Total New Loan Requested"
+        value={requested ? formatCAD(requested) : "—"}
+        emphasis
+      />
+      <Row label="Property Use" value={prettifyUse(answers.use as string)} />
+      <Row
+        label="Property Type"
+        value={prettifyType(answers.propertyType as string)}
+      />
+      <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
+        The total new loan requested includes your existing mortgage balance(s) plus any
+        additional cash-out requested.
+      </p>
+    </Card>
+  );
+
+  const equityCard = (
+    <Card title="Your Equity Position" icon={<TrendingUp className="h-4 w-4" />}>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Metric label="Property Value" value={value ? formatCAD(value) : "—"} />
+        <Metric
+          label="Max @ 80% LTV"
+          value={value ? formatCAD(maxAllowed) : "—"}
+        />
+        <Metric
+          label="Requested Loan"
+          value={requested ? formatCAD(requested) : "—"}
+        />
+        <Metric label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
+      </div>
+      <div className="mt-5">
+        <LtvBar
+          value={value}
+          maxAllowed={maxAllowed}
+          requested={requested}
+          withinLimit={withinLimit}
+        />
+      </div>
+      <div className="mt-4">
+        <Pill tone={withinLimit ? "secondary" : "yellow"}>
+          {withinLimit ? "Within refinance range" : "Above estimated refinance range"}
+        </Pill>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+        In many refinance scenarios, lenders review the total mortgage balance against the
+        property value. If the requested loan amount is above the typical maximum, the
+        request may need to be adjusted or reviewed more closely.
+      </p>
+    </Card>
+  );
+
+  const meaningCard = (
+    <Card title="What This Means" icon={<Info className="h-4 w-4" />}>
+      {withinLimit ? (
+        <>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Based on your property value and current mortgage balances, your refinance
+            request appears to fit within the estimated loan-to-value range. Final options
+            are still subject to lender review, income qualification, and supporting
+            documents.
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            {[
+              "Your requested loan amount fits within the estimated refinance range",
+              "The next review will focus on income, credit, lender fit, and documents",
+              "You can continue to review possible refinance options",
+            ].map((b) => (
+              <li key={b} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Your requested refinance amount appears to be above the estimated maximum loan
+            amount for this property. This does not mean there are no options. It means the
+            cash-out request, property value, mortgage balance, or refinance structure may
+            need a closer review.
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            {[
+              "Your current mortgage balance appears higher than the estimated 80% refinance range",
+              "Additional cash-out may not be available under a standard refinance structure",
+              "A broker may review whether another structure, updated property value, renewal strategy, or tailored lender option is possible",
+            ].map((b) => (
+              <li key={b} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow" />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Card>
+  );
+
+  const guidanceCard = (
+    <Card
+      title={withinLimit ? "Your request looks workable" : "Ways to improve this request"}
+      icon={<BadgeCheck className="h-4 w-4" />}
+    >
+      <ul className="space-y-2 text-sm text-muted-foreground">
+        {(withinLimit
+          ? [
+              "Your loan request fits within the estimated refinance range",
+              "The next review will focus on income, debt ratios, and lender fit",
+              "You can continue to see possible refinance options",
+            ]
+          : [
+              "Reduce or remove the cash-out request",
+              "Review the estimated property value if a stronger appraisal may apply",
+              "Confirm the exact mortgage balances on title",
+              "Consider a renewal or switch strategy if equity access is not available",
+              "Continue for a tailored review if your situation is more complex",
+            ]
+        ).map((b) => (
+          <li key={b} className="flex gap-2">
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <MiniStat label="Available equity" value={value ? formatCAD(availableEquity) : "—"} />
+        <MiniStat
+          label="Max standard refinance"
+          value={value ? formatCAD(maxAllowed) : "—"}
+        />
+        <MiniStat
+          label="Requested loan"
+          value={requested ? formatCAD(requested) : "—"}
+          tone={withinLimit ? "secondary" : "yellow"}
+        />
+      </div>
+    </Card>
+  );
+
+  const reviewCard = (
+    <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
+  );
 
   return (
     <SnapshotShell
@@ -317,113 +482,140 @@ function RefinanceSnapshot({
       onEdit={onEdit}
       trustLine="No obligation • No credit impact at this stage"
     >
-      {/* Snapshot outcome banner */}
-      <section
-        className={`rounded-2xl border p-6 shadow-sm sm:p-8 ${
-          withinLimit
-            ? "border-secondary/30 bg-secondary/5"
-            : "border-yellow/40 bg-yellow/10"
-        }`}
-      >
-        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
-          <Sparkles className="h-3.5 w-3.5" />
-          Snapshot ready
+      {/* Mobile order: outcome → path → CTA → request → equity → meaning → guidance → review */}
+      <div className="space-y-4 lg:hidden">
+        {outcomeCard}
+        {pathCard}
+        {ctaCard}
+        {requestCard}
+        {equityCard}
+        {meaningCard}
+        {guidanceCard}
+        {reviewCard}
+      </div>
+
+      {/* Desktop two-column */}
+      <div className="hidden gap-6 lg:grid lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          {requestCard}
+          {equityCard}
+          {meaningCard}
+          {guidanceCard}
+          {reviewCard}
         </div>
-        <h2 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-          {withinLimit
+        <aside className="space-y-4">
+          <div className="lg:sticky lg:top-6 space-y-4">
+            {outcomeCard}
+            {pathCard}
+            {ctaCard}
+          </div>
+        </aside>
+      </div>
+
+      <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="ghost" onClick={onEdit}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
+        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {!withinLimit && (
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+              Adjust My Numbers
+            </Button>
+          )}
+          <Button variant="outline">
+            {withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review"}
+          </Button>
+          <Button variant="ghost">Talk to a Broker</Button>
+        </div>
+      </div>
+    </SnapshotShell>
+  );
+}
+
+function OutcomeCard({
+  withinLimit,
+  hasNumbers,
+}: {
+  withinLimit: boolean;
+  hasNumbers: boolean;
+}) {
+  return (
+    <section
+      className={`rounded-2xl border p-6 shadow-sm ${
+        withinLimit
+          ? "border-secondary/30 bg-secondary/5"
+          : "border-yellow/50 bg-yellow/10"
+      }`}
+    >
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
+        <Sparkles className="h-3.5 w-3.5" />
+        Snapshot Outcome
+      </div>
+      <h2 className="mt-2 text-xl font-semibold text-foreground sm:text-2xl">
+        {!hasNumbers
+          ? "Your snapshot is ready"
+          : withinLimit
             ? "You're within the estimated refinance range"
             : "Your request may need adjustment"}
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This is not a final approval. It is an early snapshot to help you understand your
-          position before moving forward.
-        </p>
-      </section>
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        {withinLimit
+          ? "Based on the property value and mortgage balances provided, your refinance request appears to fit within the estimated loan-to-value range. Final options are still subject to lender review, income qualification, and supporting documents."
+          : "Based on the property value and mortgage balances provided, your requested refinance amount appears to be above the estimated refinance range. You may still have options, but the structure may need to be reviewed or adjusted."}
+      </p>
+      <div className="mt-3">
+        <Pill tone={withinLimit ? "secondary" : "yellow"}>
+          {withinLimit ? "Within estimated refinance range" : "Above estimated refinance range"}
+        </Pill>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        This is not a final approval or decline. A licensed broker can review the details
+        and help identify possible paths.
+      </p>
+    </section>
+  );
+}
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
-        {/* Left: request + equity */}
-        <div className="space-y-4">
-          <Card title="Your Refinance Request" icon={<FileText className="h-4 w-4" />}>
-            <Row label="Property Value" value={value ? formatCAD(value) : "—"} />
-            <Row label="Existing Mortgage Balance(s)" value={balance ? formatCAD(balance) : "—"} />
-            <Row label="Cash-Out Requested" value={cashOut ? formatCAD(cashOut) : "—"} />
-            <Row
-              label="Total New Loan Requested"
-              value={requested ? formatCAD(requested) : "—"}
-              emphasis
-            />
-            <Row label="Property Use" value={prettifyUse(answers.use as string)} />
-            <Row label="Property Type" value={prettifyType(answers.propertyType as string)} />
-          </Card>
+function RefinancePathCard({
+  withinLimit,
+  path,
+}: {
+  withinLimit: boolean;
+  path: LendingPath;
+}) {
+  return (
+    <Card title="Your Refinance Path" icon={<Compass className="h-4 w-4" />}>
+      <Pill tone={pathTone(path)}>{path}</Pill>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        {withinLimit
+          ? "Your refinance request appears to fit within typical lender ranges. The next step focuses on income, credit, and lender fit."
+          : "Your refinance request appears to need a more detailed review because the current mortgage balance and requested cash-out appear to exceed the estimated equity available."}
+      </p>
+      {!withinLimit && (
+        <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+          <li>• Current LTV appears above the typical refinance range</li>
+          <li>• Available equity appears limited</li>
+          <li>• Broker review may help identify restructuring options</li>
+        </ul>
+      )}
+    </Card>
+  );
+}
 
-          <Card title="What this means" icon={<Info className="h-4 w-4" />}>
-            <p className="text-sm leading-relaxed text-muted-foreground">{interpretation}</p>
-          </Card>
-        </div>
-
-        {/* Right: equity position + path + CTA */}
-        <div className="space-y-4">
-          <Card title="Your Equity Position" icon={<TrendingUp className="h-4 w-4" />}>
-            <div className="grid grid-cols-3 gap-3">
-              <Metric label="Maximum allowed" value={value ? formatCAD(maxAllowed) : "—"} />
-              <Metric label="Requested" value={requested ? formatCAD(requested) : "—"} />
-              <Metric label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
-            </div>
-            <div className="mt-4">
-              <LtvBar value={value} maxAllowed={maxAllowed} requested={requested} />
-            </div>
-            <div className="mt-4">
-              <Pill tone={withinLimit ? "secondary" : "yellow"}>
-                {withinLimit ? "Within refinance limit" : "Above refinance limit"}
-              </Pill>
-            </div>
-          </Card>
-
-          <Card title="Your Refinance Path" icon={<Compass className="h-4 w-4" />}>
-            <Pill tone={pathTone(path)}>{path}</Pill>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Your current structure suggests a {path.toLowerCase()} based on the property
-              profile and refinance request.
-            </p>
-          </Card>
-
-          <Card
-            title={withinLimit ? "Your request looks workable" : "Here's how to improve this request"}
-            icon={<BadgeCheck className="h-4 w-4" />}
-          >
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {(withinLimit
-                ? [
-                    "Your loan request fits within the estimated refinance limit",
-                    "The next review will focus on income, debt ratios, and lender fit",
-                    "You can continue to see refinance options",
-                  ]
-                : [
-                    "Reduce your cash-out amount",
-                    "Review the property value if a stronger appraisal may apply",
-                    "Continue for a more tailored review if your situation is more complex",
-                  ]
-              ).map((b) => (
-                <li key={b} className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-            {!withinLimit && additionalAvailable >= 0 && (
-              <p className="mt-4 rounded-lg bg-yellow/15 px-3 py-2 text-sm text-foreground">
-                Maximum additional cash-out available:{" "}
-                <strong>{formatCAD(additionalAvailable)}</strong>
-              </p>
-            )}
-          </Card>
-
-          <RefinanceCTACard withinLimit={withinLimit} />
-        </div>
-      </section>
-
-      <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
-    </SnapshotShell>
+function MiniStat({
+  label,
+  value,
+  tone = "primary",
+}: {
+  label: string;
+  value: string;
+  tone?: Tone;
+}) {
+  return (
+    <div className={`rounded-lg border p-3 ${toneClass[tone]}`}>
+      <p className="text-[11px] uppercase tracking-wide opacity-80">{label}</p>
+      <p className="mt-1 text-base font-semibold">{value}</p>
+    </div>
   );
 }
 
