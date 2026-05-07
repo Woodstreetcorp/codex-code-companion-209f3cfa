@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MortgageSnapshot } from "@/components/MortgageSnapshot";
 import {
+  calculateMinimumDownPayment,
   formatCAD,
+  ltv,
+  monthlyPayment,
   parseCurrency,
+  analyzeRenewalIntent,
   validateDownPayment,
   downPaymentPercentage,
   type PropertyUsage,
