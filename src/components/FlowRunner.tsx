@@ -1,0 +1,272 @@
+import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { flows, type FlowKey, type Question } from "@/lib/flows";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+function formatCurrency(v: string) {
+  const digits = v.replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("en-CA");
+}
+
+export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
+  const flow = flows[flowKey];
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [index, setIndex] = useState(0);
+  const [done, setDone] = useState(false);
+
+  const visible = useMemo(
+    () => flow.questions.filter((q) => !q.showIf || q.showIf(answers)),
+    [flow.questions, answers],
+  );
+  const total = visible.length + 1; // + review
+  const current: Question | undefined = visible[index];
+  const progress = Math.round(((done ? total : index) / total) * 100);
+
+  const value = current ? answers[current.id] ?? "" : "";
+  const canContinue = current
+    ? current.type === "choice"
+      ? !!value
+      : value.replace(/[^0-9]/g, "").length > 0
+    : true;
+
+  const setValue = (v: string) => {
+    if (!current) return;
+    setAnswers((a) => ({ ...a, [current.id]: v }));
+  };
+
+  const next = () => {
+    if (index + 1 >= visible.length) setDone(true);
+    else setIndex((i) => i + 1);
+  };
+  const back = () => {
+    if (done) setDone(false);
+    else if (index > 0) setIndex((i) => i - 1);
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
+          <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-primary">
+            <ShieldCheck className="h-5 w-5" />
+            Mortgage Snapshot
+          </Link>
+          <span className="text-xs text-muted-foreground">
+            Step {done ? total : Math.min(index + 1, total)} of {total}
+          </span>
+        </div>
+        <div className="h-1.5 w-full bg-muted">
+          <div
+            className="h-full bg-secondary transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl px-4 py-10 sm:py-16">
+        {!done && current && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-xs font-medium uppercase tracking-widest text-secondary">
+              {flow.title}
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
+              {current.title}
+            </h1>
+            {current.subtitle && (
+              <p className="mt-2 text-sm text-muted-foreground">{current.subtitle}</p>
+            )}
+
+            <div className="mt-8">
+              {current.type === "choice" ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {current.options.map((opt) => {
+                    const selected = value === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setValue(opt.value);
+                          setTimeout(next, 180);
+                        }}
+                        className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                          selected
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-card hover:border-secondary/60 hover:shadow-sm"
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                            selected ? "border-primary bg-primary" : "border-border"
+                          }`}
+                        >
+                          {selected && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
+                        </span>
+                        <span>
+                          <span className="block font-medium text-foreground">{opt.label}</span>
+                          {opt.hint && (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {opt.hint}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="relative max-w-md">
+                  {current.prefix && (
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
+                      {current.prefix}
+                    </span>
+                  )}
+                  <Input
+                    autoFocus
+                    inputMode="numeric"
+                    value={value}
+                    onChange={(e) =>
+                      setValue(
+                        current.type === "currency"
+                          ? formatCurrency(e.target.value)
+                          : e.target.value,
+                      )
+                    }
+                    placeholder={current.placeholder}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && canContinue) next();
+                    }}
+                    className={`h-14 text-lg ${current.prefix ? "pl-9" : ""}`}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-10 flex items-center justify-between">
+              <Button variant="ghost" onClick={back} disabled={index === 0}>
+                <ArrowLeft className="mr-1 h-4 w-4" /> Back
+              </Button>
+              <Button onClick={next} disabled={!canContinue} size="lg">
+                Continue <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {done && (
+          <Review
+            flowKey={flowKey}
+            answers={answers}
+            visible={visible}
+            onBack={back}
+          />
+        )}
+      </main>
+
+      <footer className="mx-auto max-w-3xl px-4 pb-10 text-center text-xs text-muted-foreground">
+        This is a prototype. Information shown helps us understand your situation —
+        it is not a mortgage approval.
+      </footer>
+    </div>
+  );
+}
+
+function Review({
+  flowKey,
+  answers,
+  visible,
+  onBack,
+}: {
+  flowKey: FlowKey;
+  answers: Record<string, string>;
+  visible: Question[];
+  onBack: () => void;
+}) {
+  const flow = flows[flowKey];
+  const labelFor = (q: Question, val: string) => {
+    if (q.type === "choice") {
+      return q.options.find((o) => o.value === val)?.label ?? val;
+    }
+    if (q.type === "currency") return val ? `$${val}` : "—";
+    return val || "—";
+  };
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow text-yellow-foreground">
+            <CheckCircle2 className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-secondary">
+              Snapshot ready
+            </p>
+            <h1 className="text-2xl font-semibold text-foreground">{flow.resultTitle}</h1>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-muted-foreground">
+          Based on what you shared, you <strong className="text-foreground">may qualify</strong> for
+          possible mortgage options. A licensed broker will review your details and walk you
+          through next steps.
+        </p>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <SnapshotStat label="Estimated readiness" value="Strong" tone="primary" />
+          <SnapshotStat label="Possible programs" value="3–5" tone="secondary" />
+          <SnapshotStat label="Next step" value="Broker call" tone="accent" />
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-foreground">Your responses</h2>
+          <dl className="mt-3 divide-y divide-border rounded-xl border border-border bg-background">
+            {visible.map((q) => (
+              <div key={q.id} className="flex items-start justify-between gap-4 px-4 py-3">
+                <dt className="text-sm text-muted-foreground">{q.title}</dt>
+                <dd className="text-right text-sm font-medium text-foreground">
+                  {labelFor(q, answers[q.id] ?? "")}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <Button variant="ghost" onClick={onBack}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
+          </Button>
+          <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            Talk to a broker
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SnapshotStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "primary" | "secondary" | "accent";
+}) {
+  const toneCls = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/15 text-secondary",
+    accent: "bg-accent/15 text-accent",
+  }[tone];
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${toneCls}`}>
+        {label}
+      </span>
+      <p className="mt-2 text-xl font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}

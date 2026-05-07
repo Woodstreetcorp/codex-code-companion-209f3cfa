@@ -9,8 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PurchaseRouteImport } from './routes/purchase'
+import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PurchaseRoute = PurchaseRouteImport.update({
+  id: '/purchase',
+  path: '/purchase',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrePurchaseRoute = PrePurchaseRouteImport.update({
+  id: '/pre-purchase',
+  path: '/pre-purchase',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +31,50 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/pre-purchase': typeof PrePurchaseRoute
+  '/purchase': typeof PurchaseRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/pre-purchase': typeof PrePurchaseRoute
+  '/purchase': typeof PurchaseRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/pre-purchase': typeof PrePurchaseRoute
+  '/purchase': typeof PurchaseRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/pre-purchase' | '/purchase'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/pre-purchase' | '/purchase'
+  id: '__root__' | '/' | '/pre-purchase' | '/purchase'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PrePurchaseRoute: typeof PrePurchaseRoute
+  PurchaseRoute: typeof PurchaseRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/purchase': {
+      id: '/purchase'
+      path: '/purchase'
+      fullPath: '/purchase'
+      preLoaderRoute: typeof PurchaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pre-purchase': {
+      id: '/pre-purchase'
+      path: '/pre-purchase'
+      fullPath: '/pre-purchase'
+      preLoaderRoute: typeof PrePurchaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +87,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PrePurchaseRoute: PrePurchaseRoute,
+  PurchaseRoute: PurchaseRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
