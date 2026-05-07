@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Plus, Trash2 } from "lucide-react";
 import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ function formatCurrency(v: string) {
 
 export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const flow = flows[flowKey];
+  const navigate = useNavigate();
   const [answers, setAnswers] = useState<Answers>({});
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
@@ -168,6 +169,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const back = () => {
     if (done) setDone(false);
     else if (index > 0) setIndex((i) => i - 1);
+    else navigate({ to: "/" });
   };
 
   return (
@@ -333,7 +335,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
             )}
 
             <div className="mt-10 flex items-center justify-between">
-              <Button variant="ghost" onClick={back} disabled={index === 0}>
+              <Button variant="ghost" onClick={back}>
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
               </Button>
               <Button
