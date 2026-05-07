@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RefinanceRouteImport } from './routes/refinance'
 import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RefinanceRoute = RefinanceRouteImport.update({
@@ -29,6 +30,11 @@ const PrePurchaseRoute = PrePurchaseRouteImport.update({
   path: '/pre-purchase',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/portal': typeof PortalRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/portal': typeof PortalRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
@@ -50,20 +58,28 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/portal': typeof PortalRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pre-purchase' | '/purchase' | '/refinance'
+  fullPaths: '/' | '/portal' | '/pre-purchase' | '/purchase' | '/refinance'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pre-purchase' | '/purchase' | '/refinance'
-  id: '__root__' | '/' | '/pre-purchase' | '/purchase' | '/refinance'
+  to: '/' | '/portal' | '/pre-purchase' | '/purchase' | '/refinance'
+  id:
+    | '__root__'
+    | '/'
+    | '/portal'
+    | '/pre-purchase'
+    | '/purchase'
+    | '/refinance'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PortalRoute: typeof PortalRoute
   PrePurchaseRoute: typeof PrePurchaseRoute
   PurchaseRoute: typeof PurchaseRoute
   RefinanceRoute: typeof RefinanceRoute
@@ -92,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrePurchaseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +127,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PortalRoute: PortalRoute,
   PrePurchaseRoute: PrePurchaseRoute,
   PurchaseRoute: PurchaseRoute,
   RefinanceRoute: RefinanceRoute,
@@ -111,3 +135,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -33,8 +33,8 @@ const flows = [
   {
     to: "/refinance" as const,
     icon: RefreshCw,
-    title: "Refinance Snapshot",
-    desc: "Already own? Explore refinance options or possible cash-out scenarios.",
+    title: "Renew, Refinance, or Access Equity",
+    desc: "I want to renew my mortgage, switch lenders, lower payments, consolidate debt, or access home equity.",
     tone: "accent" as const,
   },
 ];
