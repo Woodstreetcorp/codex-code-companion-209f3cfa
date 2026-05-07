@@ -591,7 +591,7 @@ function CreditScoreEducation() {
           <ArrowRight className="h-4 w-4 rotate-90 transition-transform group-open:-rotate-90" />
         </summary>
         <div className="mt-3 space-y-4 text-sm">
-          <div className="border-l-4 border-aqua pl-3">
+          <div className="border-l-4 border-mint pl-3">
             <p className="mb-2 font-semibold text-foreground">Prime Mortgage Range (620–900)</p>
             <CreditRow label="780+" hint="Typically qualifies for best rates" />
             <CreditRow label="700–779" hint="Good qualification options" />
