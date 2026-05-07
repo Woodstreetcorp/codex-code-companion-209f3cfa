@@ -797,9 +797,40 @@ function CreditRow({ label, hint }: { label: string; hint: string }) {
 
 // ---------- Down Payment Guidance Card ----------
 
-function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
-  const price = parseCurrency(answers.price as string);
-  const down = parseCurrency(answers.down as string);
+function priceRangeMidpoint(v?: string): number {
+  switch (v) {
+    case "u400":
+      return 350_000;
+    case "400-600":
+      return 500_000;
+    case "600-900":
+      return 750_000;
+    case "900-1.2":
+      return 1_050_000;
+    case "1.2-1.5":
+      return 1_350_000;
+    case "1.5+":
+      return 1_700_000;
+    default:
+      return 0;
+  }
+}
+
+function DownPaymentGuidanceCard({
+  answers,
+  flowKey,
+}: {
+  answers: Answers;
+  flowKey?: FlowKey;
+}) {
+  const isPre = flowKey === "pre";
+  const price = isPre
+    ? parseCurrency(answers.specificPrice as string) ||
+      priceRangeMidpoint(answers.priceRange as string)
+    : parseCurrency(answers.price as string);
+  const down = isPre
+    ? parseCurrency(answers.savedDown as string)
+    : parseCurrency(answers.down as string);
   if (!price) return null;
   const usage = mapUsage(answers.use as string | undefined);
   const units = Number(answers.units) || 1;
@@ -811,6 +842,13 @@ function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
   });
   const meets = down >= policy.minimum_down_payment_amount;
   const gap = Math.max(policy.minimum_down_payment_amount - down, 0);
+  const credit = parseInt((answers.credit as string)?.replace(/\D/g, "") || "0", 10);
+  const creditNote =
+    credit > 0 && credit < 620
+      ? "Note: With a credit score below 620, alternative lender programs may require additional down payment beyond this minimum."
+      : credit > 0 && credit < 500
+        ? "Note: With a credit score below 500, a more specialized review may apply and additional down payment is often expected."
+        : null;
 
   return (
     <div className="mt-6 max-w-xl space-y-3">
@@ -825,7 +863,10 @@ function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
           </span>
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Based on a purchase price of {formatCAD(price)}
+          Based on {isPre ? "an estimated" : "a"} purchase price of {formatCAD(price)}
+          {isPre && answers.priceRange && answers.priceRange !== "specific"
+            ? " (midpoint of selected range)"
+            : ""}
         </p>
         <div className="mt-3 rounded-lg bg-background/60 p-3">
           <p className="text-xs font-medium text-foreground">Rule applied</p>
@@ -840,6 +881,9 @@ function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
               {policy.rule_reference_text}
             </p>
           </details>
+          {creditNote && (
+            <p className="mt-2 text-xs text-muted-foreground">{creditNote}</p>
+          )}
         </div>
       </div>
       {down > 0 && !meets && (
@@ -858,6 +902,84 @@ function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- Locations Editor (up to N Ontario locations) ----------
+
+function LocationsEditor({
+  values,
+  onChange,
+  maxItems,
+  placeholder,
+}: {
+  values: string[];
+  onChange: (next: string[]) => void;
+  maxItems: number;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v) return;
+    if (values.includes(v)) {
+      setDraft("");
+      return;
+    }
+    if (values.length >= maxItems) return;
+    onChange([...values, v]);
+    setDraft("");
+  };
+  const remove = (i: number) => {
+    onChange(values.filter((_, idx) => idx !== i));
+  };
+  const atMax = values.length >= maxItems;
+
+  return (
+    <div className="max-w-xl space-y-3">
+      <div className="flex gap-2">
+        <Input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.slice(0, 80))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder ?? "e.g. Toronto, ON"}
+          disabled={atMax}
+          className="h-12 text-base"
+        />
+        <Button type="button" onClick={add} disabled={!draft.trim() || atMax}>
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      {values.length > 0 && (
+        <ul className="flex flex-wrap gap-2">
+          {values.map((v, i) => (
+            <li
+              key={`${v}-${i}`}
+              className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 py-1.5 pl-3 pr-1.5 text-sm text-foreground"
+            >
+              <span>{v}</span>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                aria-label={`Remove ${v}`}
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-accent"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-xs text-muted-foreground">
+        {values.length} of {maxItems} locations added. Ontario, Canada only for now.
+      </p>
     </div>
   );
 }
