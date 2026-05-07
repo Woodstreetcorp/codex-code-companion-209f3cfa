@@ -23,6 +23,13 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/flows";
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
+import {
+  classifyLane,
+  getMinimumDownPaymentPolicy,
+  laneLabel,
+  mapUsage,
+  programLaneLabel,
+} from "@/lib/policy";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -76,31 +83,39 @@ function getIncomeProfile(a: Answers): string {
 
 function getLendingPath(a: Answers): LendingPath {
   const score = getCreditScore(a);
-  if (score && score < 500) return "Needs Tailored Review";
-  const verify = a.selfVerify as string | undefined;
-  const income = a.income as string | undefined;
-  if (score >= 620 && (income === "employed" || verify === "tax")) return "Prime Fit";
-  if (score >= 500) return "Alternative Fit";
-  return "Needs Tailored Review";
+  const price = parseCurrency(a.price as string);
+  const down = parseCurrency(a.down as string);
+  let meetsMin = true;
+  if (price > 0) {
+    const policy = getMinimumDownPaymentPolicy({
+      property_usage: mapUsage(a.use as string | undefined),
+      property_value: price,
+      unit_count: Number(a.units) || 1,
+      down_payment_amount: down || undefined,
+    });
+    meetsMin = down === 0 || down >= policy.minimum_down_payment_amount;
+  }
+  const lane = classifyLane({
+    credit_score: score,
+    income_type: a.income as string | undefined,
+    income_verification: a.selfVerify as string | undefined,
+    meets_minimum_dp: meetsMin,
+  });
+  return laneLabel(lane) as LendingPath;
 }
 
 function getMortgageCategory(flowKey: FlowKey, a: Answers): MortgageCategory {
   if (flowKey === "refinance") return "Refinance";
-  const price = parseCurrency(a.price as string) || parseCurrency(a.savedDown as string) * 0;
-  const usage = (a.use as string) ?? "primary";
-  if (usage !== "primary") return "Uninsurable";
-  if (price && price >= 1_500_000) return "Uninsurable";
-
-  if (flowKey === "purchase") {
-    const down = parseCurrency(a.down as string);
-    if (price > 0 && down > 0) {
-      const loan = Math.max(price - down, 0);
-      const lvr = (loan / price) * 100;
-      if (lvr > 80) return "Insured";
-      return "Insurable";
-    }
-  }
-  return "Insurable";
+  const price = parseCurrency(a.price as string);
+  const down = parseCurrency(a.down as string);
+  if (!price) return "Insurable";
+  const policy = getMinimumDownPaymentPolicy({
+    property_usage: mapUsage(a.use as string | undefined),
+    property_value: price,
+    unit_count: Number(a.units) || 1,
+    down_payment_amount: down || undefined,
+  });
+  return programLaneLabel(policy.program_lane ?? "INSURABLE") as MortgageCategory;
 }
 
 function getNextStep(path: LendingPath): string {
