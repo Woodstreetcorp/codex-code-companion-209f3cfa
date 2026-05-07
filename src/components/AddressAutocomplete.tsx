@@ -12,9 +12,14 @@ function loadGoogleMaps(): Promise<void> {
   if (window.google?.maps?.places) return Promise.resolve();
   if (loaderPromise) return loaderPromise;
   if (!GOOGLE_MAPS_API_KEY) {
-    return Promise.reject(new Error("Missing VITE_GOOGLE_MAPS_API_KEY"));
+    // Do NOT cache this rejection — allow retry after env is configured.
+    return Promise.reject(
+      new Error(
+        "Google Maps API key is not configured. Add VITE_GOOGLE_MAPS_API_KEY to the project .env file at the repo root, then restart the dev server.",
+      ),
+    );
   }
-  loaderPromise = new Promise((resolve, reject) => {
+  const promise = new Promise<void>((resolve, reject) => {
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
       existing.addEventListener("load", () => resolve());
@@ -30,6 +35,13 @@ function loadGoogleMaps(): Promise<void> {
     script.onerror = () => reject(new Error("Failed to load Google Maps"));
     document.head.appendChild(script);
   });
+  // Clear cache on failure so a retry can succeed.
+  promise.catch(() => {
+    loaderPromise = null;
+    const existing = document.getElementById(SCRIPT_ID);
+    if (existing) existing.remove();
+  });
+  loaderPromise = promise;
   return loaderPromise;
 }
 
