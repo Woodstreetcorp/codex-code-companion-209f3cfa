@@ -1199,7 +1199,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
           to="/portal"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
         >
-          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
+          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
           <ArrowRight className="ml-1.5 h-4 w-4" />
         </Link>
         <button className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10">
