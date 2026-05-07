@@ -1218,6 +1218,46 @@ function BottomCTA({ path }: { path: LendingPath }) {
   );
 }
 
+function UnlockOffersButton({ tailored, className }: { tailored: boolean; className?: string }) {
+  return (
+    <Link
+      to="/portal"
+      className={
+        className ??
+        "inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
+      }
+    >
+      {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
+      <ArrowRight className="ml-1.5 h-4 w-4" />
+    </Link>
+  );
+}
+
+function TopUnlockCTA({ path }: { path: LendingPath }) {
+  const tailored = path === "Needs Tailored Review";
+  return (
+    <div className="mt-6 flex flex-col gap-2 rounded-xl border border-accent/30 bg-accent/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-medium text-foreground">
+        Ready to see your matches? Create your account to unlock your offers.
+      </p>
+      <UnlockOffersButton tailored={tailored} />
+    </div>
+  );
+}
+
+function MidUnlockCTA({ path }: { path: LendingPath }) {
+  const tailored = path === "Needs Tailored Review";
+  return (
+    <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 className="text-base font-semibold text-foreground">See your qualified mortgage offers</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Takes under 30 seconds. No obligation.</p>
+      </div>
+      <UnlockOffersButton tailored={tailored} />
+    </div>
+  );
+}
+
 function RefinanceCTACard({ withinLimit }: { withinLimit: boolean }) {
   const primary = withinLimit ? "See My Refinance Options" : "Adjust My Numbers";
   const secondary = withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review";
