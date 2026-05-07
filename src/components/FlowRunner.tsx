@@ -10,7 +10,10 @@ import {
   ltv,
   monthlyPayment,
   parseCurrency,
-  refinanceSavings,
+  analyzeRefinance,
+  analyzeRenewalIntent,
+  validateDownPayment,
+  downPaymentPercentage,
   type PropertyUsage,
 } from "@/lib/calculations";
 
@@ -50,6 +53,29 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
           ? stringValue.trim().length > 0
           : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
+
+  // Live validation hint (e.g. down-payment minimum vs purchase price).
+  const validationHint = useMemo(() => {
+    if (!current) return null;
+    if (flowKey === "purchase" && current.id === "down") {
+      const price = parseCurrency(answers.price as string);
+      const down = parseCurrency(stringValue);
+      if (price > 0 && down > 0) {
+        const usage =
+          (answers.use as PropertyUsage) ??
+          (answers.primary === "no" ? "secondary" : "primary");
+        const v = validateDownPayment(down, price, usage);
+        const pct = downPaymentPercentage(down, price);
+        return {
+          ok: v.isValid,
+          message: v.isValid
+            ? `That's ${pct}% down — meets the ${formatCAD(v.minimumRequired)} minimum.`
+            : `${v.message} You're short ${formatCAD(v.shortfall)}.`,
+        };
+      }
+    }
+    return null;
+  }, [current, flowKey, answers, stringValue]);
 
   const setValue = (v: AnswerValue) => {
     if (!current) return;
@@ -211,12 +237,25 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                 </div>
               )}
             </div>
+            {validationHint && (
+              <p
+                className={`mt-3 text-sm ${
+                  validationHint.ok ? "text-secondary" : "text-accent"
+                }`}
+              >
+                {validationHint.message}
+              </p>
+            )}
 
             <div className="mt-10 flex items-center justify-between">
               <Button variant="ghost" onClick={back} disabled={index === 0}>
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
               </Button>
-              <Button onClick={next} disabled={!canContinue} size="lg">
+              <Button
+                onClick={next}
+                disabled={!canContinue || (validationHint ? !validationHint.ok : false)}
+                size="lg"
+              >
                 Continue <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -400,16 +439,31 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
     const currentPay = parseCurrency(answers.currentPayment as string);
     const yearsRem = Number(String(answers.yearsRemaining || "").replace(/[^0-9.]/g, "")) || 25;
     const out: Insight[] = [];
+    const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
+    const renewal = analyzeRenewalIntent(intents, {
+      homeValue: value || undefined,
+      currentBalance: balance || undefined,
+    });
+    out.push({
+      label: "Recommended path",
+      value:
+        renewal.recommendedFlow === "refinance"
+          ? "Refinance"
+          : renewal.recommendedFlow === "hybrid"
+            ? "Renewal + Refinance"
+            : "Renewal",
+      tone: "primary",
+    });
     if (balance > 0 && value > 0) {
-      out.push({ label: "Current LTV", value: `${ltv(balance, value)}%`, tone: "primary" });
+      out.push({ label: "Current LTV", value: `${ltv(balance, value)}%`, tone: "secondary" });
       out.push({
         label: "Available equity",
         value: formatCAD(Math.max(value * 0.8 - balance, 0)),
-        tone: "secondary",
+        tone: "accent",
       });
     }
     if (currentPay > 0 && balance > 0 && currentRate > 0) {
-      const r = refinanceSavings({
+      const r = analyzeRefinance({
         currentBalance: balance,
         currentPayment: currentPay,
         currentRatePct: currentRate,
@@ -422,7 +476,7 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
       out.push({
         label: "Possible monthly savings",
         value: r.monthlySavings > 0 ? formatCAD(r.monthlySavings) : "—",
-        tone: "accent",
+        tone: "primary",
       });
     }
     return out.length ? out : defaultInsights();
