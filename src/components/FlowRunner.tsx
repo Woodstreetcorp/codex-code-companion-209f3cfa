@@ -62,7 +62,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
           : current.type === "mortgages"
             ? mortgageValue.length > 0 &&
               mortgageValue.every((m) => m.lender.trim() && m.balance.trim())
-            : stringValue.replace(/[^0-9]/g, "").length > 0
+            : current.type === "locations"
+              ? arrayValue.length > 0
+              : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
 
   // Live validation hint (e.g. down-payment minimum vs purchase price).
