@@ -95,6 +95,13 @@ const offerStatus: Option[] = [
   { value: "exploring", label: "Just exploring" },
 ];
 
+const legalUnits: Option[] = [
+  { value: "1", label: "1 unit" },
+  { value: "2", label: "2 units" },
+  { value: "3", label: "3 units" },
+  { value: "4", label: "4 units" },
+];
+
 const incomeBlock: Question[] = [
   {
     id: "income",
@@ -149,6 +156,13 @@ export const purchaseFlow: Question[] = [
     type: "choice",
     title: "What type of property is it?",
     options: propertyTypes,
+  },
+  {
+    id: "legalUnits",
+    type: "choice",
+    title: "How many legal units are on the property?",
+    subtitle: "A legal unit is a separate livable area registered with the municipality.",
+    options: legalUnits,
   },
   {
     id: "firstTime",
@@ -300,6 +314,33 @@ export const refinanceFlow: Question[] = [
     title: "What is your current mortgage balance?",
     prefix: "$",
     placeholder: "420,000",
+  },
+  {
+    id: "currentRate",
+    type: "number",
+    title: "What is your current interest rate?",
+    subtitle: "Approximate is fine.",
+    suffix: "%",
+    placeholder: "5.49",
+  },
+  {
+    id: "currentPayment",
+    type: "currency",
+    title: "What is your current monthly mortgage payment?",
+    prefix: "$",
+    placeholder: "2,400",
+  },
+  {
+    id: "yearsRemaining",
+    type: "number",
+    title: "How many years are left on your amortization?",
+    placeholder: "22",
+  },
+  {
+    id: "prepayment",
+    type: "choice",
+    title: "Does your current mortgage have a prepayment penalty?",
+    options: yesNo,
   },
   {
     id: "value",
