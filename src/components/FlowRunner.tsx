@@ -354,3 +354,115 @@ function SnapshotStat({
     </div>
   );
 }
+
+type Insight = { label: string; value: string; tone: "primary" | "secondary" | "accent" };
+
+function usageOf(answers: Answers): PropertyUsage {
+  const u = (answers.use as string) || (answers.primary === "yes" ? "primary" : "");
+  if (u === "rental" || u === "secondary" || u === "primary") return u;
+  return "primary";
+}
+
+function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
+  if (flowKey === "purchase") {
+    const price = parseCurrency(answers.price as string);
+    const down = parseCurrency(answers.down as string);
+    const usage = usageOf(answers);
+    const out: Insight[] = [];
+    if (price > 0) {
+      const req = calculateMinimumDownPayment(price, usage);
+      out.push({
+        label: "Minimum down payment",
+        value: formatCAD(req.minimumAmount),
+        tone: "primary",
+      });
+      if (down > 0) {
+        const loan = Math.max(price - down, 0);
+        out.push({ label: "Loan-to-value", value: `${ltv(loan, price)}%`, tone: "secondary" });
+        const est = monthlyPayment(loan, 5.49, 25);
+        out.push({
+          label: "Est. monthly (5.49% / 25y)",
+          value: formatCAD(est),
+          tone: "accent",
+        });
+      } else {
+        out.push({ label: "Min %", value: `${req.minimumPercentage}%`, tone: "secondary" });
+        out.push({ label: "Next step", value: "Broker call", tone: "accent" });
+      }
+    }
+    return out.length ? out : defaultInsights();
+  }
+
+  if (flowKey === "refinance") {
+    const balance = parseCurrency(answers.balance as string);
+    const value = parseCurrency(answers.value as string);
+    const currentRate = Number(String(answers.currentRate || "").replace(/[^0-9.]/g, ""));
+    const currentPay = parseCurrency(answers.currentPayment as string);
+    const yearsRem = Number(String(answers.yearsRemaining || "").replace(/[^0-9.]/g, "")) || 25;
+    const out: Insight[] = [];
+    if (balance > 0 && value > 0) {
+      out.push({ label: "Current LTV", value: `${ltv(balance, value)}%`, tone: "primary" });
+      out.push({
+        label: "Available equity",
+        value: formatCAD(Math.max(value * 0.8 - balance, 0)),
+        tone: "secondary",
+      });
+    }
+    if (currentPay > 0 && balance > 0 && currentRate > 0) {
+      const r = refinanceSavings({
+        currentBalance: balance,
+        currentPayment: currentPay,
+        currentRatePct: currentRate,
+        yearsRemaining: yearsRem,
+        newRatePct: 4.79,
+        newTermYears: yearsRem,
+        closingCosts: 1500,
+        prepaymentPenalty: answers.prepayment === "yes" ? balance * 0.03 : 0,
+      });
+      out.push({
+        label: "Possible monthly savings",
+        value: r.monthlySavings > 0 ? formatCAD(r.monthlySavings) : "—",
+        tone: "accent",
+      });
+    }
+    return out.length ? out : defaultInsights();
+  }
+
+  // pre-approval
+  const income = parseCurrency(answers.annualIncome as string);
+  const debt = parseCurrency(answers.monthlyDebt as string);
+  const out: Insight[] = [];
+  if (income > 0) {
+    // very rough GDS-style affordability heuristic for prototype only
+    const monthlyGross = income / 12;
+    const maxHousing = monthlyGross * 0.32 - debt * 0.5;
+    const principal = maxHousing > 0 ? estimatePrincipal(maxHousing, 5.49, 25) : 0;
+    out.push({
+      label: "Indicative max payment",
+      value: maxHousing > 0 ? formatCAD(maxHousing) : "—",
+      tone: "primary",
+    });
+    out.push({
+      label: "Indicative price ceiling",
+      value: principal > 0 ? formatCAD(principal * 1.1) : "—",
+      tone: "secondary",
+    });
+    out.push({ label: "Next step", value: "Broker call", tone: "accent" });
+  }
+  return out.length ? out : defaultInsights();
+}
+
+function defaultInsights(): Insight[] {
+  return [
+    { label: "Estimated readiness", value: "Strong", tone: "primary" },
+    { label: "Possible programs", value: "3–5", tone: "secondary" },
+    { label: "Next step", value: "Broker call", tone: "accent" },
+  ];
+}
+
+function estimatePrincipal(targetPayment: number, ratePct: number, years: number): number {
+  const r = ratePct / 100 / 12;
+  const n = years * 12;
+  if (r === 0) return targetPayment * n;
+  return (targetPayment * (Math.pow(1 + r, n) - 1)) / (r * Math.pow(1 + r, n));
+}
