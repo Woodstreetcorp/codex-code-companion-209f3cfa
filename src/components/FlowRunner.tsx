@@ -5,6 +5,9 @@ import { flows, type FlowKey, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+type AnswerValue = string | string[];
+type Answers = Record<string, AnswerValue>;
+
 function formatCurrency(v: string) {
   const digits = v.replace(/[^0-9]/g, "");
   if (!digits) return "";
@@ -13,7 +16,7 @@ function formatCurrency(v: string) {
 
 export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const flow = flows[flowKey];
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Answers>({});
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
 
@@ -25,16 +28,30 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const current: Question | undefined = visible[index];
   const progress = Math.round(((done ? total : index) / total) * 100);
 
-  const value = current ? answers[current.id] ?? "" : "";
+  const rawValue = current ? answers[current.id] : undefined;
+  const stringValue = typeof rawValue === "string" ? rawValue : "";
+  const arrayValue = Array.isArray(rawValue) ? rawValue : [];
+
   const canContinue = current
     ? current.type === "choice"
-      ? !!value
-      : value.replace(/[^0-9]/g, "").length > 0
+      ? !!stringValue
+      : current.type === "multi"
+        ? arrayValue.length > 0
+        : current.type === "text"
+          ? stringValue.trim().length > 0
+          : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
 
-  const setValue = (v: string) => {
+  const setValue = (v: AnswerValue) => {
     if (!current) return;
     setAnswers((a) => ({ ...a, [current.id]: v }));
+  };
+
+  const toggleMulti = (val: string) => {
+    const next = arrayValue.includes(val)
+      ? arrayValue.filter((v) => v !== val)
+      : [...arrayValue, val];
+    setValue(next);
   };
 
   const next = () => {
@@ -80,10 +97,10 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
             )}
 
             <div className="mt-8">
-              {current.type === "choice" ? (
+              {current.type === "choice" && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {current.options.map((opt) => {
-                    const selected = value === opt.value;
+                    const selected = stringValue === opt.value;
                     return (
                       <button
                         key={opt.value}
@@ -116,7 +133,44 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                     );
                   })}
                 </div>
-              ) : (
+              )}
+
+              {current.type === "multi" && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {current.options.map((opt) => {
+                    const selected = arrayValue.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => toggleMulti(opt.value)}
+                        className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                          selected
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border bg-card hover:border-secondary/60 hover:shadow-sm"
+                        }`}
+                      >
+                        <span
+                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${
+                            selected ? "border-primary bg-primary" : "border-border"
+                          }`}
+                        >
+                          {selected && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
+                        </span>
+                        <span>
+                          <span className="block font-medium text-foreground">{opt.label}</span>
+                          {opt.hint && (
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {opt.hint}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {(current.type === "text" || current.type === "currency" || current.type === "number") && (
                 <div className="relative max-w-md">
                   {current.prefix && (
                     <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
@@ -125,8 +179,8 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                   )}
                   <Input
                     autoFocus
-                    inputMode="numeric"
-                    value={value}
+                    inputMode={current.type === "text" ? "text" : "numeric"}
+                    value={stringValue}
                     onChange={(e) =>
                       setValue(
                         current.type === "currency"
@@ -172,6 +226,21 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   );
 }
 
+function labelFor(q: Question, val: AnswerValue | undefined) {
+  if (val == null) return "—";
+  if (q.type === "choice") {
+    const v = typeof val === "string" ? val : "";
+    return q.options.find((o) => o.value === v)?.label ?? v ?? "—";
+  }
+  if (q.type === "multi") {
+    const arr = Array.isArray(val) ? val : [];
+    if (arr.length === 0) return "—";
+    return arr.map((v) => q.options.find((o) => o.value === v)?.label ?? v).join(", ");
+  }
+  if (q.type === "currency") return val ? `$${val}` : "—";
+  return (typeof val === "string" ? val : "") || "—";
+}
+
 function Review({
   flowKey,
   answers,
@@ -179,18 +248,11 @@ function Review({
   onBack,
 }: {
   flowKey: FlowKey;
-  answers: Record<string, string>;
+  answers: Answers;
   visible: Question[];
   onBack: () => void;
 }) {
   const flow = flows[flowKey];
-  const labelFor = (q: Question, val: string) => {
-    if (q.type === "choice") {
-      return q.options.find((o) => o.value === val)?.label ?? val;
-    }
-    if (q.type === "currency") return val ? `$${val}` : "—";
-    return val || "—";
-  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -226,7 +288,7 @@ function Review({
               <div key={q.id} className="flex items-start justify-between gap-4 px-4 py-3">
                 <dt className="text-sm text-muted-foreground">{q.title}</dt>
                 <dd className="text-right text-sm font-medium text-foreground">
-                  {labelFor(q, answers[q.id] ?? "")}
+                  {labelFor(q, answers[q.id])}
                 </dd>
               </div>
             ))}
@@ -237,9 +299,17 @@ function Review({
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
           </Button>
-          <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-            Talk to a broker
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              to="/portal"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-6 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              View my portal
+            </Link>
+            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+              Talk to a broker
+            </Button>
+          </div>
         </div>
       </div>
     </div>

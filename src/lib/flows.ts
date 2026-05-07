@@ -7,7 +7,15 @@ export type Question =
       title: string;
       subtitle?: string;
       options: Option[];
-      showIf?: (a: Record<string, string>) => boolean;
+      showIf?: (a: Record<string, unknown>) => boolean;
+    }
+  | {
+      id: string;
+      type: "multi";
+      title: string;
+      subtitle?: string;
+      options: Option[];
+      showIf?: (a: Record<string, unknown>) => boolean;
     }
   | {
       id: string;
@@ -17,24 +25,8 @@ export type Question =
       placeholder?: string;
       prefix?: string;
       suffix?: string;
-      showIf?: (a: Record<string, string>) => boolean;
+      showIf?: (a: Record<string, unknown>) => boolean;
     };
-
-const provinces: Option[] = [
-  "Ontario",
-  "British Columbia",
-  "Alberta",
-  "Quebec",
-  "Manitoba",
-  "Saskatchewan",
-  "Nova Scotia",
-  "New Brunswick",
-  "Newfoundland and Labrador",
-  "Prince Edward Island",
-  "Yukon",
-  "Northwest Territories",
-  "Nunavut",
-].map((p) => ({ value: p, label: p }));
 
 const propertyUse: Option[] = [
   { value: "primary", label: "Primary residence", hint: "I will live here" },
@@ -73,7 +65,37 @@ const yesNo: Option[] = [
   { value: "no", label: "No" },
 ];
 
-const incomeBlock = (): Question[] => [
+const timeframe: Option[] = [
+  { value: "0-3", label: "Within 3 months" },
+  { value: "3-6", label: "3–6 months" },
+  { value: "6-12", label: "6–12 months" },
+  { value: "12+", label: "More than a year" },
+];
+
+const targetPriceRange: Option[] = [
+  { value: "u400", label: "Under $400,000" },
+  { value: "400-600", label: "$400,000 – $600,000" },
+  { value: "600-900", label: "$600,000 – $900,000" },
+  { value: "900-1.2", label: "$900,000 – $1.2M" },
+  { value: "1.2+", label: "Above $1.2M" },
+];
+
+const locationOptions: Option[] = [
+  { value: "downtown", label: "Downtown / urban core" },
+  { value: "suburb", label: "Suburban" },
+  { value: "rural", label: "Rural" },
+  { value: "near-transit", label: "Near transit" },
+  { value: "near-schools", label: "Near schools" },
+  { value: "waterfront", label: "Waterfront" },
+];
+
+const offerStatus: Option[] = [
+  { value: "accepted", label: "I have an accepted offer" },
+  { value: "shopping", label: "Actively shopping" },
+  { value: "exploring", label: "Just exploring" },
+];
+
+const incomeBlock: Question[] = [
   {
     id: "income",
     type: "choice",
@@ -91,35 +113,36 @@ const incomeBlock = (): Question[] => [
   },
 ];
 
+// ---------- PURCHASE ----------
 export const purchaseFlow: Question[] = [
   {
-    id: "use",
-    type: "choice",
-    title: "How will you use the property?",
-    options: propertyUse,
+    id: "annualIncome",
+    type: "currency",
+    title: "What is your annual household income?",
+    subtitle: "Before taxes, from all borrowers on the application.",
+    prefix: "$",
+    placeholder: "120,000",
   },
   {
-    id: "firstTime",
-    type: "choice",
-    title: "Are you a first-time home buyer in Canada?",
-    options: yesNo,
+    id: "monthlyDebt",
+    type: "currency",
+    title: "What are your total monthly debt payments?",
+    subtitle: "Car loans, credit cards, lines of credit, student loans, etc.",
+    prefix: "$",
+    placeholder: "750",
   },
   {
-    id: "offer",
+    id: "credit",
     type: "choice",
-    title: "Do you have an accepted offer?",
-    options: [
-      { value: "yes", label: "Yes, offer accepted" },
-      { value: "soon", label: "Actively shopping" },
-      { value: "no", label: "Just exploring" },
-    ],
+    title: "What is your approximate credit score?",
+    options: credit,
   },
   {
-    id: "province",
-    type: "choice",
-    title: "Where is the property located?",
-    subtitle: "Select the province.",
-    options: provinces,
+    id: "address",
+    type: "text",
+    title: "What is the property address?",
+    subtitle: "Street, city, and province — we'll keep this private.",
+    placeholder: "123 Main St, Toronto, ON",
   },
   {
     id: "propertyType",
@@ -128,59 +151,61 @@ export const purchaseFlow: Question[] = [
     options: propertyTypes,
   },
   {
+    id: "firstTime",
+    type: "choice",
+    title: "Are you a first-time home buyer in Canada?",
+    options: yesNo,
+  },
+  {
+    id: "primary",
+    type: "choice",
+    title: "Will this be your primary residence?",
+    options: yesNo,
+  },
+  {
+    id: "offer",
+    type: "choice",
+    title: "What is your offer status?",
+    options: offerStatus,
+  },
+  {
     id: "price",
     type: "currency",
     title: "What is the purchase price?",
-    placeholder: "650,000",
     prefix: "$",
+    placeholder: "650,000",
   },
   {
     id: "down",
     type: "currency",
     title: "How much is your down payment?",
-    placeholder: "65,000",
+    subtitle: "We'll show your loan-to-value in the snapshot.",
     prefix: "$",
-  },
-  {
-    id: "credit",
-    type: "choice",
-    title: "What is your approximate credit score?",
-    options: credit,
-  },
-  ...incomeBlock(),
-  {
-    id: "otherProps",
-    type: "choice",
-    title: "Do you currently own any other properties?",
-    options: yesNo,
+    placeholder: "65,000",
   },
 ];
 
+// ---------- PRE-APPROVAL ----------
 export const prePurchaseFlow: Question[] = [
   {
-    id: "province",
-    type: "choice",
-    title: "Where are you planning to buy?",
-    options: provinces,
+    id: "annualIncome",
+    type: "currency",
+    title: "What is your annual household income?",
+    prefix: "$",
+    placeholder: "120,000",
+  },
+  {
+    id: "monthlyDebt",
+    type: "currency",
+    title: "What are your total monthly debt payments?",
+    prefix: "$",
+    placeholder: "750",
   },
   {
     id: "priceRange",
     type: "choice",
-    title: "What price range are you considering?",
-    options: [
-      { value: "u400", label: "Under $400,000" },
-      { value: "400-600", label: "$400,000 – $600,000" },
-      { value: "600-900", label: "$600,000 – $900,000" },
-      { value: "900-1.2", label: "$900,000 – $1.2M" },
-      { value: "1.2+", label: "Above $1.2M" },
-    ],
-  },
-  {
-    id: "savings",
-    type: "currency",
-    title: "How much have you saved for down payment?",
-    prefix: "$",
-    placeholder: "50,000",
+    title: "What target price range are you considering?",
+    options: targetPriceRange,
   },
   {
     id: "use",
@@ -189,10 +214,30 @@ export const prePurchaseFlow: Question[] = [
     options: propertyUse,
   },
   {
-    id: "propertyType",
+    id: "location",
+    type: "multi",
+    title: "Where are you looking?",
+    subtitle: "Select all that apply.",
+    options: locationOptions,
+  },
+  {
+    id: "timeframe",
     type: "choice",
-    title: "What type of property are you considering?",
-    options: propertyTypes,
+    title: "When do you hope to buy?",
+    options: timeframe,
+  },
+  {
+    id: "firstTime",
+    type: "choice",
+    title: "Are you a first-time home buyer in Canada?",
+    options: yesNo,
+    showIf: (a) => a.use === "primary",
+  },
+  {
+    id: "primary",
+    type: "choice",
+    title: "Will this be your primary residence?",
+    options: yesNo,
   },
   {
     id: "credit",
@@ -200,40 +245,54 @@ export const prePurchaseFlow: Question[] = [
     title: "What is your approximate credit score?",
     options: credit,
   },
-  ...incomeBlock(),
-  {
-    id: "otherProps",
-    type: "choice",
-    title: "Do you currently own any other properties?",
-    options: yesNo,
-  },
+  ...incomeBlock,
 ];
+
+// ---------- REFINANCE / RENEW / EQUITY ----------
+const refinanceIntents: Option[] = [
+  { value: "renew", label: "Renew my mortgage" },
+  { value: "switch", label: "Switch lenders" },
+  { value: "lower-payment", label: "Lower my monthly payment" },
+  { value: "better-rate", label: "Get a better rate" },
+  { value: "cash-out", label: "Access home equity / cash out" },
+  { value: "consolidate", label: "Consolidate debt" },
+  { value: "heloc", label: "Add a HELOC" },
+  { value: "unsure", label: "I'm not sure yet" },
+];
+
+const cashOutPurposes: Option[] = [
+  { value: "renovations", label: "Home renovations" },
+  { value: "debt", label: "Pay off other debt" },
+  { value: "investment", label: "Investment" },
+  { value: "education", label: "Education" },
+  { value: "other", label: "Other" },
+];
+
+const wantsCashOut = (a: Record<string, unknown>) => {
+  const intent = a.intent as string[] | undefined;
+  return Array.isArray(intent) && (intent.includes("cash-out") || intent.includes("consolidate") || intent.includes("heloc"));
+};
+
+const wantsRenew = (a: Record<string, unknown>) => {
+  const intent = a.intent as string[] | undefined;
+  return Array.isArray(intent) && intent.includes("renew");
+};
 
 export const refinanceFlow: Question[] = [
   {
-    id: "propertyType",
-    type: "choice",
-    title: "What type of property are you refinancing?",
-    options: propertyTypes,
+    id: "intent",
+    type: "multi",
+    title: "What are you hoping to do with your mortgage?",
+    subtitle: "Select all that apply — we'll tailor the rest.",
+    options: refinanceIntents,
   },
   {
-    id: "province",
-    type: "choice",
-    title: "Where is the property located?",
-    options: provinces,
-  },
-  {
-    id: "use",
-    type: "choice",
-    title: "How do you use the property?",
-    options: propertyUse,
-  },
-  {
-    id: "value",
-    type: "currency",
-    title: "What is your estimated property value?",
-    prefix: "$",
-    placeholder: "750,000",
+    id: "renewalDate",
+    type: "text",
+    title: "When does your current mortgage come up for renewal?",
+    subtitle: "An approximate month and year is fine.",
+    placeholder: "e.g. June 2026",
+    showIf: wantsRenew,
   },
   {
     id: "balance",
@@ -243,18 +302,44 @@ export const refinanceFlow: Question[] = [
     placeholder: "420,000",
   },
   {
-    id: "cashOut",
-    type: "choice",
-    title: "Do you want to access equity or cash out?",
-    options: yesNo,
+    id: "value",
+    type: "currency",
+    title: "What is your estimated home value?",
+    prefix: "$",
+    placeholder: "750,000",
   },
   {
     id: "cashAmount",
     type: "currency",
-    title: "How much cash out do you need?",
+    title: "How much equity would you like to access?",
     prefix: "$",
     placeholder: "50,000",
-    showIf: (a) => a.cashOut === "yes",
+    showIf: wantsCashOut,
+  },
+  {
+    id: "cashPurpose",
+    type: "choice",
+    title: "What will the funds be used for?",
+    options: cashOutPurposes,
+    showIf: wantsCashOut,
+  },
+  {
+    id: "use",
+    type: "choice",
+    title: "How do you use the property?",
+    options: propertyUse,
+  },
+  {
+    id: "propertyType",
+    type: "choice",
+    title: "What type of property is it?",
+    options: propertyTypes,
+  },
+  {
+    id: "primary",
+    type: "choice",
+    title: "Is this your primary residence?",
+    options: yesNo,
   },
   {
     id: "credit",
@@ -262,17 +347,20 @@ export const refinanceFlow: Question[] = [
     title: "What is your approximate credit score?",
     options: credit,
   },
-  ...incomeBlock(),
+  ...incomeBlock,
 ];
 
 export type FlowKey = "purchase" | "pre" | "refinance";
 
-export const flows: Record<FlowKey, { title: string; subtitle: string; questions: Question[]; resultTitle: string }> = {
+export const flows: Record<
+  FlowKey,
+  { title: string; subtitle: string; questions: Question[]; resultTitle: string }
+> = {
   purchase: {
     title: "Purchase Mortgage Snapshot",
     subtitle: "A quick look at possible options for your home purchase.",
     questions: purchaseFlow,
-    resultTitle: "Your Mortgage Snapshot",
+    resultTitle: "Your Purchase Snapshot",
   },
   pre: {
     title: "Mortgage Readiness Check",
@@ -281,9 +369,9 @@ export const flows: Record<FlowKey, { title: string; subtitle: string; questions
     resultTitle: "Your Mortgage Readiness Snapshot",
   },
   refinance: {
-    title: "Refinance Snapshot",
-    subtitle: "Explore possible refinance options for your property.",
+    title: "Renew, Refinance, or Access Equity",
+    subtitle: "Explore possible options for renewing, refinancing, or unlocking equity.",
     questions: refinanceFlow,
-    resultTitle: "Your Refinance Snapshot",
+    resultTitle: "Your Mortgage Snapshot",
   },
 };
