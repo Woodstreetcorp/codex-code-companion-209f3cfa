@@ -1186,26 +1186,41 @@ function BottomCTA({ path }: { path: LendingPath }) {
 }
 
 function RefinanceCTACard({ withinLimit }: { withinLimit: boolean }) {
+  const primary = withinLimit ? "See My Refinance Options" : "Adjust My Numbers";
+  const secondary = withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review";
   return (
     <div className="rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm">
-      <h3 className="flex items-center gap-2 text-base font-semibold">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary-foreground/80">
+        <ArrowRight className="h-3.5 w-3.5" />
+        Next Best Step
+      </div>
+      <h3 className="mt-2 flex items-center gap-2 text-lg font-semibold">
         <CircleDollarSign className="h-4 w-4" />
-        {withinLimit ? "See My Refinance Options" : "Adjust My Numbers"}
+        {primary}
       </h3>
       <p className="mt-2 text-sm text-primary-foreground/85">
         {withinLimit
-          ? "Create your account to view your qualified refinance options."
-          : "Try adjusting your cash-out amount or continue for a tailored review."}
+          ? "Create your account to view your possible refinance options."
+          : "Try adjusting your cash-out amount, or continue for a tailored review with a licensed broker."}
       </p>
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-4 flex flex-col gap-2">
         <Link
           to="/portal"
           className="inline-flex h-10 items-center justify-center rounded-lg bg-accent px-5 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
         >
-          {withinLimit ? "See My Refinance Options" : "Adjust My Numbers"}
+          {primary}
         </Link>
-        <button className="inline-flex h-10 items-center justify-center rounded-lg border border-primary-foreground/30 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10">
-          {withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review"}
+        <button
+          type="button"
+          className="inline-flex h-10 items-center justify-center rounded-lg border border-primary-foreground/30 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10"
+        >
+          {secondary}
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline"
+        >
+          Talk to a Broker
         </button>
       </div>
       <p className="mt-3 text-xs text-primary-foreground/70">
