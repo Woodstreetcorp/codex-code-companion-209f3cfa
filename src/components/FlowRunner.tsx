@@ -313,6 +313,13 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                   )}
                 </div>
               )}
+
+              {current.type === "mortgages" && (
+                <MortgagesEditor
+                  entries={mortgageValue}
+                  onChange={setMortgages}
+                />
+              )}
             </div>
             {current.id === "credit" && <CreditScoreEducation />}
             {validationHint && (
