@@ -549,6 +549,68 @@ function defaultInsights(): Insight[] {
   ];
 }
 
+type Guidance = {
+  title: string;
+  summary?: string;
+  notes: string[];
+  nextSteps?: string[];
+};
+
+function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
+  if (flowKey === "purchase") {
+    const price = parseCurrency(answers.price as string);
+    const down = parseCurrency(answers.down as string);
+    if (!price) return null;
+    const usage = usageOf(answers);
+    const req = calculateMinimumDownPayment(price, usage);
+    const notes: string[] = [
+      `Minimum down payment: ${formatCAD(req.minimumAmount)} (${req.minimumPercentage}%).`,
+      req.explanation,
+    ];
+    if (down > 0) {
+      const v = validateDownPayment(down, price, usage);
+      notes.push(
+        v.isValid
+          ? `You're putting down ${downPaymentPercentage(down, price)}% — meets the minimum.`
+          : `Short by ${formatCAD(v.shortfall)}.`,
+      );
+    }
+    return {
+      title: "Down payment guidance",
+      summary: "Canadian minimums based on property value and usage.",
+      notes,
+      nextSteps: [
+        "A licensed broker will review your down payment source.",
+        "We'll explore lender programs that may fit your scenario.",
+      ],
+    };
+  }
+
+  if (flowKey === "refinance") {
+    const balance = parseCurrency(answers.balance as string);
+    const value = parseCurrency(answers.value as string);
+    const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
+    if (!intents.length) return null;
+    const r = analyzeRenewalIntent(intents, {
+      homeValue: value || undefined,
+      currentBalance: balance || undefined,
+    });
+    return {
+      title:
+        r.recommendedFlow === "refinance"
+          ? "Looks like a refinance"
+          : r.recommendedFlow === "hybrid"
+            ? "Renewal + refinance"
+            : "Looks like a renewal",
+      summary: `Estimated timeline: ${r.estimatedTimeline} · Estimated costs: ${r.estimatedCosts}`,
+      notes: r.warnings,
+      nextSteps: r.nextSteps,
+    };
+  }
+
+  return null;
+}
+
 function estimatePrincipal(targetPayment: number, ratePct: number, years: number): number {
   const r = ratePct / 100 / 12;
   const n = years * 12;
