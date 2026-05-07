@@ -76,7 +76,6 @@ const unitCountOptions: Option[] = [
   { value: "2", label: "2 units", hint: "A duplex or property with two separate legal units." },
   { value: "3", label: "3 units", hint: "A triplex or property with three separate legal units." },
   { value: "4", label: "4 units", hint: "A fourplex or property with four separate legal units." },
-  { value: "5+", label: "5 or more units", hint: "Larger multi-unit properties typically use commercial financing." },
 ];
 
 const incomeOptions: Option[] = [
