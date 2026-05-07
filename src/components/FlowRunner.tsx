@@ -17,6 +17,7 @@ import {
   downPaymentPercentage,
   type PropertyUsage,
 } from "@/lib/calculations";
+import { getMinimumDownPaymentPolicy, mapUsage } from "@/lib/policy";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -347,6 +348,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
               )}
             </div>
             {current.id === "credit" && <CreditScoreEducation />}
+            {current.id === "down" && flowKey === "purchase" && (
+              <DownPaymentGuidanceCard answers={answers} />
+            )}
             {validationHint && (
               <p
                 className={`mt-3 text-sm ${
