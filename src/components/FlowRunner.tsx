@@ -5,7 +5,6 @@ import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/fl
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MortgageSnapshot } from "@/components/MortgageSnapshot";
-import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import {
   calculateMinimumDownPayment,
   formatCAD,
@@ -59,9 +58,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       : current.type === "multi"
         ? arrayValue.length > 0
         : current.type === "text"
-          ? current.id === "address"
-            ? !!validatedAddresses[current.id] && stringValue.trim().length > 0
-            : stringValue.trim().length > 0
+          ? stringValue.trim().length > 0
           : current.type === "mortgages"
             ? mortgageValue.length > 0 &&
               mortgageValue.every((m) => m.lender.trim() && m.balance.trim())
@@ -286,24 +283,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                 </div>
               )}
 
-              {current.type === "text" && current.id === "address" && (
-                <AddressAutocomplete
-                  value={stringValue}
-                  onChange={(formatted, parsed) => {
-                    setValue(formatted);
-                    setValidatedAddresses((prev) => ({
-                      ...prev,
-                      [current.id]: !!parsed,
-                    }));
-                  }}
-                  onEnter={() => {
-                    if (canContinue) next();
-                  }}
-                  placeholder={current.placeholder}
-                />
-              )}
-
-              {((current.type === "text" && current.id !== "address") ||
+              {(current.type === "text" ||
                 current.type === "currency" ||
                 current.type === "number") && (
                 <div className="relative max-w-md">
