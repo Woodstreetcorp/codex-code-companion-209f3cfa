@@ -33,6 +33,15 @@ export type Question =
       title: string;
       subtitle?: string;
       showIf?: (a: Record<string, unknown>) => boolean;
+    }
+  | {
+      id: string;
+      type: "locations";
+      title: string;
+      subtitle?: string;
+      placeholder?: string;
+      maxItems?: number;
+      showIf?: (a: Record<string, unknown>) => boolean;
     };
 
 // ---------- Shared option sets ----------
@@ -160,7 +169,9 @@ const targetPriceRange: Option[] = [
   { value: "400-600", label: "$400,000 – $600,000", hint: "Common entry-level range in many markets." },
   { value: "600-900", label: "$600,000 – $900,000", hint: "Mid-range purchase budget." },
   { value: "900-1.2", label: "$900,000 – $1.2M", hint: "Upper mid-range budget." },
-  { value: "1.2+", label: "Above $1.2M", hint: "Higher-value property range." },
+  { value: "1.2-1.5", label: "$1.2M – $1.5M", hint: "Higher-value property range under the $1.5M insured threshold." },
+  { value: "1.5+", label: "Above $1.5M", hint: "Homes at or above $1.5M require a 20% minimum down payment." },
+  { value: "specific", label: "I have a specific amount in mind", hint: "Enter your target price on the next screen." },
 ];
 
 // Credit score is collected as a numeric input with educational ranges.
