@@ -57,6 +57,28 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   // Live validation hint (e.g. down-payment minimum vs purchase price).
   const validationHint = useMemo(() => {
     if (!current) return null;
+    if (current.id === "credit") {
+      const raw = stringValue.replace(/[^0-9]/g, "");
+      if (!raw) return null;
+      const score = parseInt(raw, 10);
+      if (score < 500) {
+        return {
+          ok: false,
+          message:
+            "We require a minimum credit score of 500 to proceed. Consider speaking with a credit counsellor — we'd love to help once you're in range.",
+        };
+      }
+      if (score < 620) {
+        return {
+          ok: true,
+          message: "Alternative lender programs may be available for this range.",
+        };
+      }
+      if (score > 900) {
+        return { ok: false, message: "Please enter a valid credit score between 500 and 900." };
+      }
+      return { ok: true, message: "Great — this falls in the prime lending range." };
+    }
     if (flowKey === "purchase" && current.id === "down") {
       const price = parseCurrency(answers.price as string);
       const down = parseCurrency(stringValue);
@@ -220,14 +242,17 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                       setValue(
                         current.type === "currency"
                           ? formatCurrency(e.target.value)
-                          : e.target.value,
+                          : current.id === "credit"
+                            ? e.target.value.replace(/[^0-9]/g, "").slice(0, 3)
+                            : e.target.value,
                       )
                     }
                     placeholder={current.placeholder}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && canContinue) next();
                     }}
-                    className={`h-14 text-lg ${current.prefix ? "pl-9" : ""}`}
+                    className={`h-14 text-lg ${current.prefix ? "pl-9" : ""} ${current.id === "credit" ? "text-center text-2xl font-semibold" : ""}`}
+                    maxLength={current.id === "credit" ? 3 : undefined}
                   />
                   {current.suffix && (
                     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
@@ -237,6 +262,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                 </div>
               )}
             </div>
+            {current.id === "credit" && <CreditScoreEducation />}
             {validationHint && (
               <p
                 className={`mt-3 text-sm ${
