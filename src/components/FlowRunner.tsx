@@ -820,7 +820,10 @@ function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
   }
 
   if (flowKey === "refinance") {
-    const balance = parseCurrency(answers.balance as string);
+    const mortgages = (Array.isArray(answers.mortgages)
+      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+      : []) as MortgageEntry[];
+    const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
     const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
     if (!intents.length) return null;
