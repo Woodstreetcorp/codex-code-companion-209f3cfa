@@ -803,6 +803,84 @@ function CreditRow({ label, hint }: { label: string; hint: string }) {
   );
 }
 
+// ---------- Down Payment Guidance Card ----------
+
+function DownPaymentGuidanceCard({ answers }: { answers: Answers }) {
+  const price = parseCurrency(answers.price as string);
+  const down = parseCurrency(answers.down as string);
+  if (!price) return null;
+  const usage = mapUsage(answers.use as string | undefined);
+  const units = Number(answers.units) || 1;
+  const policy = getMinimumDownPaymentPolicy({
+    property_usage: usage,
+    property_value: price,
+    unit_count: units,
+    down_payment_amount: down || undefined,
+  });
+  const meets = down >= policy.minimum_down_payment_amount;
+  const gap = Math.max(policy.minimum_down_payment_amount - down, 0);
+
+  return (
+    <div className="mt-6 max-w-xl space-y-3">
+      <div className="rounded-2xl border border-secondary/30 bg-secondary/5 p-5 shadow-sm">
+        <p className="text-xs font-medium uppercase tracking-widest text-secondary">
+          Minimum Down Payment Required
+        </p>
+        <p className="mt-2 text-2xl font-semibold text-primary">
+          {formatCAD(policy.minimum_down_payment_amount)}{" "}
+          <span className="text-base font-medium text-muted-foreground">
+            ({policy.minimum_down_payment_percent}%)
+          </span>
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Based on a purchase price of {formatCAD(price)}
+        </p>
+        <div className="mt-3 rounded-lg bg-background/60 p-3">
+          <p className="text-xs font-medium text-foreground">Rule applied</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {policy.rule_applied_label}
+          </p>
+          <details className="group mt-2">
+            <summary className="cursor-pointer text-xs font-medium text-secondary hover:text-primary">
+              Why this rule?
+            </summary>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {policy.rule_reference_text}
+            </p>
+          </details>
+        </div>
+      </div>
+      {down > 0 && !meets && (
+        <div className="rounded-2xl border border-yellow/40 bg-yellow/10 p-5">
+          <p className="text-sm font-semibold text-foreground">
+            More down payment may be needed
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Based on the information provided, your down payment appears to be below the
+            estimated minimum required for this scenario.
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <Mini label="Minimum required" value={formatCAD(policy.minimum_down_payment_amount)} />
+            <Mini label="You entered" value={formatCAD(down)} />
+            <Mini label="Estimated gap" value={formatCAD(gap)} accent />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Mini({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-lg border p-2 ${accent ? "border-accent/40 bg-accent/5" : "border-border bg-background"}`}>
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 text-sm font-semibold ${accent ? "text-accent" : "text-foreground"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function _legacyDefaultInsights(): Insight[] {
   return [
     { label: "Estimated readiness", value: "Strong", tone: "primary" },
