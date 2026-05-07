@@ -4,14 +4,10 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Plus, Trash2 } from "
 import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MortgageSnapshot } from "@/components/MortgageSnapshot";
 import {
-  calculateMinimumDownPayment,
   formatCAD,
-  ltv,
-  monthlyPayment,
   parseCurrency,
-  analyzeRefinance,
-  analyzeRenewalIntent,
   validateDownPayment,
   downPaymentPercentage,
   type PropertyUsage,
@@ -348,11 +344,11 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         )}
 
         {done && (
-          <Review
+          <MortgageSnapshot
             flowKey={flowKey}
             answers={answers}
             visible={visible}
-            onBack={back}
+            onEdit={back}
           />
         )}
       </main>
