@@ -763,35 +763,78 @@ function LtvBar({
   value,
   maxAllowed,
   requested,
+  withinLimit = true,
 }: {
   value: number;
   maxAllowed: number;
   requested: number;
+  withinLimit?: boolean;
 }) {
   if (!value) {
-    return (
-      <div className="h-3 w-full rounded-full bg-muted" aria-hidden />
-    );
+    return <div className="h-3 w-full rounded-full bg-muted" aria-hidden />;
   }
-  const maxPct = Math.min(100, (maxAllowed / value) * 100);
-  const reqPct = Math.min(100, (requested / value) * 100);
+  // Scale the bar so we can render values that exceed property value (>100% LTV).
+  const reqRatio = requested / value;
+  const overage = reqRatio > 1;
+  const scale = overage ? reqRatio : 1; // bar width represents `scale × value`
+  const valuePct = (1 / scale) * 100;
+  const maxPct = (maxAllowed / value / scale) * 100;
+  const reqPct = (requested / value / scale) * 100;
+
   return (
     <div className="space-y-2">
-      <div className="relative h-3 w-full rounded-full bg-muted">
+      <div className="relative h-4 w-full rounded-full bg-muted">
+        {/* Safe range: 0 → max allowed (80% LTV) */}
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-secondary/30"
+          className="absolute inset-y-0 left-0 rounded-l-full bg-secondary/35"
           style={{ width: `${maxPct}%` }}
         />
+        {/* Property value zone: max → property value */}
         <div
-          className="absolute -top-1 h-5 w-1 rounded-full bg-primary"
-          style={{ left: `calc(${reqPct}% - 2px)` }}
+          className="absolute inset-y-0 bg-yellow/30"
+          style={{ left: `${maxPct}%`, width: `${Math.max(valuePct - maxPct, 0)}%` }}
+        />
+        {/* Above-property-value zone */}
+        {overage && (
+          <div
+            className="absolute inset-y-0 right-0 rounded-r-full bg-accent/30"
+            style={{ left: `${valuePct}%`, right: 0 }}
+          />
+        )}
+        {/* Property value tick */}
+        <div
+          className="absolute -top-1 h-6 w-px bg-foreground/40"
+          style={{ left: `${valuePct}%` }}
+          aria-label="Property value"
+        />
+        {/* Requested loan marker */}
+        <div
+          className={`absolute -top-1.5 h-7 w-1.5 rounded-full ring-2 ring-background ${
+            withinLimit ? "bg-primary" : "bg-accent"
+          }`}
+          style={{ left: `calc(${reqPct}% - 3px)` }}
           aria-label="Requested loan position"
         />
       </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span>$0</span>
-        <span>Max allowed {Math.round(maxPct)}%</span>
-        <span>Property value</span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-secondary/60" />
+          Max @ 80% LTV
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-yellow/70" />
+          Property value
+        </span>
+        {overage && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-accent/60" />
+            Above range
+          </span>
+        )}
+        <span className={`inline-flex items-center gap-1.5 font-medium ${withinLimit ? "text-primary" : "text-accent"}`}>
+          <span className={`h-2 w-2 rounded-full ${withinLimit ? "bg-primary" : "bg-accent"}`} />
+          Requested
+        </span>
       </div>
     </div>
   );
