@@ -4,6 +4,15 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { flows, type FlowKey, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  calculateMinimumDownPayment,
+  formatCAD,
+  ltv,
+  monthlyPayment,
+  parseCurrency,
+  refinanceSavings,
+  type PropertyUsage,
+} from "@/lib/calculations";
 
 type AnswerValue = string | string[];
 type Answers = Record<string, AnswerValue>;
@@ -194,6 +203,11 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                     }}
                     className={`h-14 text-lg ${current.prefix ? "pl-9" : ""}`}
                   />
+                  {current.suffix && (
+                    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
+                      {current.suffix}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -253,6 +267,7 @@ function Review({
   onBack: () => void;
 }) {
   const flow = flows[flowKey];
+  const insights = computeInsights(flowKey, answers);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -276,9 +291,9 @@ function Review({
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <SnapshotStat label="Estimated readiness" value="Strong" tone="primary" />
-          <SnapshotStat label="Possible programs" value="3–5" tone="secondary" />
-          <SnapshotStat label="Next step" value="Broker call" tone="accent" />
+          {insights.map((it) => (
+            <SnapshotStat key={it.label} label={it.label} value={it.value} tone={it.tone} />
+          ))}
         </div>
 
         <div className="mt-8">
