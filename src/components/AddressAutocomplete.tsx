@@ -4,6 +4,12 @@ import { Input } from "@/components/ui/input";
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
 const SCRIPT_ID = "google-maps-places-script";
 
+declare global {
+  interface Window {
+    gm_authFailure?: () => void;
+  }
+}
+
 type FallbackSuggestion = {
   id: string;
   label: string;
@@ -165,6 +171,20 @@ export function AddressAutocomplete({ value, onChange, placeholder, onEnter }: P
   const [fallbackSuggestions, setFallbackSuggestions] = useState<FallbackSuggestion[]>([]);
 
   useEffect(() => {
+    window.gm_authFailure = () => {
+      setUseFallback(true);
+      setReady(true);
+      setError(null);
+    };
+
+    return () => {
+      if (window.gm_authFailure) {
+        delete window.gm_authFailure;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     loadGoogleMaps()
       .then(() => {
@@ -177,7 +197,13 @@ export function AddressAutocomplete({ value, onChange, placeholder, onEnter }: P
         });
         ac.addListener("place_changed", () => {
           const place = ac.getPlace() as PlaceResult;
-          if (!place || !place.address_components) return;
+          if (!place || !place.address_components) {
+            if (inputRef.current?.value.trim()) {
+              setUseFallback(true);
+              setReady(true);
+            }
+            return;
+          }
           const parsed = parsePlace(place);
           if (parsed.country !== "CA") {
             setError("Please select an address in Canada.");
