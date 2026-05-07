@@ -123,11 +123,39 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   };
 
   const toggleMulti = (val: string) => {
-    const next = arrayValue.includes(val)
+    const next: string[] = arrayValue.includes(val)
       ? arrayValue.filter((v) => v !== val)
       : [...arrayValue, val];
     setValue(next);
   };
+
+  const setMortgages = (entries: MortgageEntry[]) => {
+    if (!current) return;
+    setAnswers((a) => ({ ...a, [current.id]: entries }));
+  };
+
+  // Auto-initialize the mortgage list to match numMortgages when reaching that step.
+  useEffect(() => {
+    if (!current || current.type !== "mortgages") return;
+    const n = Number(answers.numMortgages);
+    if (!(n >= 1 && n <= 3)) return;
+    if (mortgageValue.length === n) return;
+    const next: MortgageEntry[] = Array.from({ length: n }, (_, i) => {
+      const existing = mortgageValue[i];
+      return (
+        existing ?? {
+          position: i + 1,
+          lender: "",
+          balance: "",
+          payment: "",
+          maturity: "",
+          rate: "",
+        }
+      );
+    });
+    setMortgages(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, answers.numMortgages]);
 
   const next = () => {
     if (index + 1 >= visible.length) setDone(true);
