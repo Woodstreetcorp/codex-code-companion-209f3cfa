@@ -307,6 +307,7 @@ function Review({
 }) {
   const flow = flows[flowKey];
   const insights = computeInsights(flowKey, answers);
+  const guidance = computeGuidance(flowKey, answers);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -334,6 +335,40 @@ function Review({
             <SnapshotStat key={it.label} label={it.label} value={it.value} tone={it.tone} />
           ))}
         </div>
+
+        {guidance && (
+          <div className="mt-6 rounded-xl border border-border bg-background p-5">
+            <h3 className="text-sm font-semibold text-foreground">{guidance.title}</h3>
+            {guidance.summary && (
+              <p className="mt-1 text-sm text-muted-foreground">{guidance.summary}</p>
+            )}
+            {guidance.notes.length > 0 && (
+              <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+                {guidance.notes.map((n, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+                    <span>{n}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {guidance.nextSteps && guidance.nextSteps.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+                  Possible next steps
+                </p>
+                <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  {guidance.nextSteps.map((s, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-8">
           <h2 className="text-sm font-semibold text-foreground">Your responses</h2>
