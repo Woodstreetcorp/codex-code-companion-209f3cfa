@@ -62,6 +62,14 @@ const propertyTypes: Option[] = [
   { value: "multi", label: "Multi-unit (2–4 units)", hint: "A property with multiple separate legal units." },
 ];
 
+const unitCountOptions: Option[] = [
+  { value: "1", label: "1 unit", hint: "A single-family home, condo, or single-unit dwelling." },
+  { value: "2", label: "2 units", hint: "A duplex or property with two separate legal units." },
+  { value: "3", label: "3 units", hint: "A triplex or property with three separate legal units." },
+  { value: "4", label: "4 units", hint: "A fourplex or property with four separate legal units." },
+  { value: "5+", label: "5 or more units", hint: "Larger multi-unit properties typically use commercial financing." },
+];
+
 const incomeOptions: Option[] = [
   {
     value: "employed",
@@ -227,6 +235,13 @@ export const purchaseFlow: Question[] = [
     options: propertyTypes,
   },
   {
+    id: "units",
+    type: "choice",
+    title: "How many units does the property have?",
+    subtitle: "Unit count affects which lender programs and down payment rules apply.",
+    options: unitCountOptions,
+  },
+  {
     id: "price",
     type: "currency",
     title: "What is the purchase price?",
@@ -293,6 +308,13 @@ export const prePurchaseFlow: Question[] = [
     options: propertyTypes,
   },
   {
+    id: "units",
+    type: "choice",
+    title: "How many units does the property have?",
+    subtitle: "Unit count affects which lender programs and down payment rules apply.",
+    options: unitCountOptions,
+  },
+  {
     id: "firstTime",
     type: "choice",
     title: "Are you a first-time home buyer in Canada?",
@@ -344,6 +366,39 @@ const wantsCashOut = (a: Record<string, unknown>) => {
   return Array.isArray(intent) && (intent.includes("cash-out") || intent.includes("consolidate") || intent.includes("heloc"));
 };
 
+// "Lower my monthly payment" alone is ambiguous — ask a follow-up that may
+// route the file to REFINANCE_EQUITY_ACCESS.
+const lowerPaymentFollowUp: Option[] = [
+  {
+    value: "review-only",
+    label: "Only review my current mortgage terms",
+    hint: "You want to review rate or term changes — no additional borrowing.",
+  },
+  {
+    value: "borrow-more",
+    label: "I want to borrow additional money",
+    hint: "You'd like to access additional funds against your home.",
+  },
+  {
+    value: "consolidate",
+    label: "I want to consolidate debts",
+    hint: "You'd like to roll other debts into your mortgage.",
+  },
+  {
+    value: "unsure",
+    label: "I'm not sure",
+    hint: "We'll guide you through possible paths.",
+  },
+];
+
+const onlyLowerPayment = (a: Record<string, unknown>) => {
+  const intent = a.intent as string[] | undefined;
+  if (!Array.isArray(intent)) return false;
+  if (!intent.includes("lower-payment")) return false;
+  // Only show follow-up if user did NOT also pick a hard equity-access trigger.
+  return !intent.some((v) => v === "cash-out" || v === "consolidate" || v === "heloc");
+};
+
 const wantsAccessEquity: Option[] = [
   { value: "yes", label: "Yes, I'd like to access equity", hint: "You want to borrow additional funds against your home." },
   { value: "no", label: "No, not at this time", hint: "You're not looking to take out additional funds." },
@@ -356,6 +411,15 @@ export const refinanceFlow: Question[] = [
     title: "What are you hoping to do with your mortgage?",
     subtitle: "Select all that apply — this helps us tailor your options.",
     options: refinanceIntents,
+  },
+  {
+    id: "lowerPaymentIntent",
+    type: "choice",
+    title: "Are you hoping to borrow additional money or only review your current mortgage terms?",
+    subtitle:
+      "Lowering your monthly payment can be done in different ways. This helps us route you to the right path.",
+    options: lowerPaymentFollowUp,
+    showIf: onlyLowerPayment,
   },
   {
     id: "propertyType",
