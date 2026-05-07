@@ -1187,7 +1187,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
       <h2 className="text-xl font-semibold sm:text-2xl">
-        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Options"}
+        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Offers"}
       </h2>
       <p className="mt-2 text-sm text-primary-foreground/85">
         {tailored
