@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
-import { flows, type FlowKey, type Question } from "@/lib/flows";
+import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Plus, Trash2 } from "lucide-react";
+import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +17,7 @@ import {
   type PropertyUsage,
 } from "@/lib/calculations";
 
-type AnswerValue = string | string[];
+type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
 
 function formatCurrency(v: string) {
