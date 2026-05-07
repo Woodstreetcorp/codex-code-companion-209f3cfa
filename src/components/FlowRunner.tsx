@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
-import { flows, type FlowKey, type Question } from "@/lib/flows";
+import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Plus, Trash2 } from "lucide-react";
+import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +17,7 @@ import {
   type PropertyUsage,
 } from "@/lib/calculations";
 
-type AnswerValue = string | string[];
+type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
 
 function formatCurrency(v: string) {
@@ -42,7 +42,12 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
 
   const rawValue = current ? answers[current.id] : undefined;
   const stringValue = typeof rawValue === "string" ? rawValue : "";
-  const arrayValue = Array.isArray(rawValue) ? rawValue : [];
+  const arrayValue: string[] = Array.isArray(rawValue)
+    ? (rawValue.filter((v) => typeof v === "string") as string[])
+    : [];
+  const mortgageValue: MortgageEntry[] = Array.isArray(rawValue)
+    ? (rawValue.filter((v) => typeof v === "object") as MortgageEntry[])
+    : [];
 
   const canContinue = current
     ? current.type === "choice"
@@ -51,7 +56,10 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         ? arrayValue.length > 0
         : current.type === "text"
           ? stringValue.trim().length > 0
-          : stringValue.replace(/[^0-9]/g, "").length > 0
+          : current.type === "mortgages"
+            ? mortgageValue.length > 0 &&
+              mortgageValue.every((m) => m.lender.trim() && m.balance.trim())
+            : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
 
   // Live validation hint (e.g. down-payment minimum vs purchase price).
@@ -63,9 +71,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const score = parseInt(raw, 10);
       if (score < 500) {
         return {
-          ok: false,
+          ok: true,
           message:
-            "We require a minimum credit score of 500 to proceed. Consider speaking with a credit counsellor — we'd love to help once you're in range.",
+            "Scores below 500 may require a more specialized review and may have fewer available options.",
         };
       }
       if (score < 620) {
@@ -84,8 +92,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const down = parseCurrency(stringValue);
       if (price > 0 && down > 0) {
         const usage =
-          (answers.use as PropertyUsage) ??
-          (answers.primary === "no" ? "secondary" : "primary");
+          (answers.use as PropertyUsage) ?? "primary";
         const v = validateDownPayment(down, price, usage);
         const pct = downPaymentPercentage(down, price);
         return {
@@ -96,8 +103,19 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         };
       }
     }
+    if (flowKey === "refinance" && current.type === "mortgages") {
+      const value = parseCurrency(answers.value as string);
+      const total = mortgageValue.reduce((s, m) => s + parseCurrency(m.balance), 0);
+      if (value > 0 && total > value * 0.8) {
+        return {
+          ok: true,
+          message:
+            "Your current mortgage balances appear to be above 80% of the estimated property value. Some refinance options may be limited, and your file may require a more detailed review.",
+        };
+      }
+    }
     return null;
-  }, [current, flowKey, answers, stringValue]);
+  }, [current, flowKey, answers, stringValue, mortgageValue]);
 
   const setValue = (v: AnswerValue) => {
     if (!current) return;
@@ -105,11 +123,39 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   };
 
   const toggleMulti = (val: string) => {
-    const next = arrayValue.includes(val)
+    const next: string[] = arrayValue.includes(val)
       ? arrayValue.filter((v) => v !== val)
       : [...arrayValue, val];
     setValue(next);
   };
+
+  const setMortgages = (entries: MortgageEntry[]) => {
+    if (!current) return;
+    setAnswers((a) => ({ ...a, [current.id]: entries }));
+  };
+
+  // Auto-initialize the mortgage list to match numMortgages when reaching that step.
+  useEffect(() => {
+    if (!current || current.type !== "mortgages") return;
+    const n = Number(answers.numMortgages);
+    if (!(n >= 1 && n <= 3)) return;
+    if (mortgageValue.length === n) return;
+    const next: MortgageEntry[] = Array.from({ length: n }, (_, i) => {
+      const existing = mortgageValue[i];
+      return (
+        existing ?? {
+          position: i + 1,
+          lender: "",
+          balance: "",
+          payment: "",
+          maturity: "",
+          rate: "",
+        }
+      );
+    });
+    setMortgages(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, answers.numMortgages]);
 
   const next = () => {
     if (index + 1 >= visible.length) setDone(true);
@@ -267,6 +313,13 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                   )}
                 </div>
               )}
+
+              {current.type === "mortgages" && (
+                <MortgagesEditor
+                  entries={mortgageValue}
+                  onChange={setMortgages}
+                />
+              )}
             </div>
             {current.id === "credit" && <CreditScoreEducation />}
             {validationHint && (
@@ -311,19 +364,147 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   );
 }
 
-function labelFor(q: Question, val: AnswerValue | undefined) {
+function labelFor(q: Question, val: AnswerValue | undefined): string {
   if (val == null) return "—";
   if (q.type === "choice") {
     const v = typeof val === "string" ? val : "";
     return q.options.find((o) => o.value === v)?.label ?? v ?? "—";
   }
   if (q.type === "multi") {
-    const arr = Array.isArray(val) ? val : [];
+    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "string") : []) as string[];
     if (arr.length === 0) return "—";
     return arr.map((v) => q.options.find((o) => o.value === v)?.label ?? v).join(", ");
   }
-  if (q.type === "currency") return val ? `$${val}` : "—";
+  if (q.type === "mortgages") {
+    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "object") : []) as MortgageEntry[];
+    if (!arr.length) return "—";
+    return arr
+      .map(
+        (m) =>
+          `#${m.position} ${m.lender || "—"} · $${m.balance || "—"}`,
+      )
+      .join(" • ");
+  }
+  if (q.type === "currency") return val ? `$${val as string}` : "—";
   return (typeof val === "string" ? val : "") || "—";
+}
+
+function MortgagesEditor({
+  entries,
+  onChange,
+}: {
+  entries: MortgageEntry[];
+  onChange: (next: MortgageEntry[]) => void;
+}) {
+  const update = (i: number, patch: Partial<MortgageEntry>) => {
+    const next = entries.map((e, idx) => (idx === i ? { ...e, ...patch } : e));
+    onChange(next);
+  };
+  const add = () => {
+    if (entries.length >= 3) return;
+    onChange([
+      ...entries,
+      {
+        position: entries.length + 1,
+        lender: "",
+        balance: "",
+        payment: "",
+        maturity: "",
+        rate: "",
+      },
+    ]);
+  };
+  const remove = (i: number) => {
+    const next = entries.filter((_, idx) => idx !== i).map((e, idx) => ({ ...e, position: idx + 1 }));
+    onChange(next);
+  };
+  const positionLabel = (p: number) =>
+    p === 1 ? "First mortgage" : p === 2 ? "Second mortgage" : "Third mortgage";
+
+  return (
+    <div className="space-y-4">
+      {entries.map((m, i) => (
+        <div
+          key={i}
+          className="rounded-xl border-2 border-border bg-card p-4 sm:p-5 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-primary">{positionLabel(m.position)}</p>
+            {entries.length > 1 && (
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remove
+              </button>
+            )}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Current lender name">
+              <Input
+                value={m.lender}
+                onChange={(e) => update(i, { lender: e.target.value })}
+                placeholder="e.g. RBC"
+              />
+            </Field>
+            <Field label="Approximate balance">
+              <Input
+                inputMode="numeric"
+                value={m.balance}
+                onChange={(e) => update(i, { balance: formatCurrency(e.target.value) })}
+                placeholder="$ 350,000"
+              />
+            </Field>
+            <Field label="Current payment (optional)">
+              <Input
+                inputMode="numeric"
+                value={m.payment ?? ""}
+                onChange={(e) => update(i, { payment: formatCurrency(e.target.value) })}
+                placeholder="$ 1,800 / month"
+              />
+            </Field>
+            <Field label="Maturity / renewal date (optional)">
+              <Input
+                value={m.maturity ?? ""}
+                onChange={(e) => update(i, { maturity: e.target.value })}
+                placeholder="e.g. June 2026"
+              />
+            </Field>
+            <Field label="Interest rate (optional)">
+              <Input
+                inputMode="decimal"
+                value={m.rate ?? ""}
+                onChange={(e) => update(i, { rate: e.target.value.replace(/[^0-9.]/g, "") })}
+                placeholder="e.g. 5.49"
+              />
+            </Field>
+          </div>
+        </div>
+      ))}
+      {entries.length < 3 && (
+        <button
+          type="button"
+          onClick={add}
+          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-secondary hover:text-secondary"
+        >
+          <Plus className="h-4 w-4" /> Add another mortgage
+        </button>
+      )}
+      <p className="text-xs text-muted-foreground">
+        If you are not sure of the exact amount, enter your best estimate.
+      </p>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
 }
 
 function Review({
@@ -500,11 +681,11 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
   }
 
   if (flowKey === "refinance") {
-    const balance = parseCurrency(answers.balance as string);
+    const mortgages = (Array.isArray(answers.mortgages)
+      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+      : []) as MortgageEntry[];
+    const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
-    const currentRate = Number(String(answers.currentRate || "").replace(/[^0-9.]/g, ""));
-    const currentPay = parseCurrency(answers.currentPayment as string);
-    const yearsRem = Number(String(answers.yearsRemaining || "").replace(/[^0-9.]/g, "")) || 25;
     const out: Insight[] = [];
     const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
     const renewal = analyzeRenewalIntent(intents, {
@@ -529,48 +710,11 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
         tone: "accent",
       });
     }
-    if (currentPay > 0 && balance > 0 && currentRate > 0) {
-      const r = analyzeRefinance({
-        currentBalance: balance,
-        currentPayment: currentPay,
-        currentRatePct: currentRate,
-        yearsRemaining: yearsRem,
-        newRatePct: 4.79,
-        newTermYears: yearsRem,
-        closingCosts: 1500,
-        prepaymentPenalty: answers.prepayment === "yes" ? balance * 0.03 : 0,
-      });
-      out.push({
-        label: "Possible monthly savings",
-        value: r.monthlySavings > 0 ? formatCAD(r.monthlySavings) : "—",
-        tone: "primary",
-      });
-    }
     return out.length ? out : defaultInsights();
   }
 
   // pre-approval
-  const income = parseCurrency(answers.annualIncome as string);
-  const debt = parseCurrency(answers.monthlyDebt as string);
-  const out: Insight[] = [];
-  if (income > 0) {
-    // very rough GDS-style affordability heuristic for prototype only
-    const monthlyGross = income / 12;
-    const maxHousing = monthlyGross * 0.32 - debt * 0.5;
-    const principal = maxHousing > 0 ? estimatePrincipal(maxHousing, 5.49, 25) : 0;
-    out.push({
-      label: "Indicative max payment",
-      value: maxHousing > 0 ? formatCAD(maxHousing) : "—",
-      tone: "primary",
-    });
-    out.push({
-      label: "Indicative price ceiling",
-      value: principal > 0 ? formatCAD(principal * 1.1) : "—",
-      tone: "secondary",
-    });
-    out.push({ label: "Next step", value: "Broker call", tone: "accent" });
-  }
-  return out.length ? out : defaultInsights();
+  return defaultInsights();
 }
 
 function defaultInsights(): Insight[] {
@@ -676,7 +820,10 @@ function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
   }
 
   if (flowKey === "refinance") {
-    const balance = parseCurrency(answers.balance as string);
+    const mortgages = (Array.isArray(answers.mortgages)
+      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+      : []) as MortgageEntry[];
+    const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
     const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
     if (!intents.length) return null;
