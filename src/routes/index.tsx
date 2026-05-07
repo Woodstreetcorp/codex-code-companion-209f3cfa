@@ -4,11 +4,11 @@ import { ArrowRight, Home, Search, RefreshCw, ShieldCheck } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Mortgage Snapshot — Conversational Qualification" },
+      { title: "approvU — Mortgage Snapshot" },
       {
         name: "description",
         content:
-          "A conversational mortgage qualification experience. Purchase, pre-purchase readiness, and refinance snapshots.",
+          "approvU's guided mortgage qualification experience. Purchase, readiness, and refinance snapshots.",
       },
     ],
   }),
@@ -46,10 +46,10 @@ function Index() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2 text-primary">
             <ShieldCheck className="h-6 w-6" />
-            <span className="font-semibold">Mortgage Snapshot</span>
+            <span className="font-semibold tracking-tight">approvU</span>
           </div>
-          <span className="rounded-full bg-yellow px-3 py-1 text-xs font-medium text-yellow-foreground">
-            Prototype
+          <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+            Mortgage Snapshot
           </span>
         </div>
       </header>
@@ -105,7 +105,7 @@ function Index() {
       </section>
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
-        Prototype only · Information helps us understand your situation, not approve a mortgage.
+        © {new Date().getFullYear()} approvU · Information helps us understand your situation — not a mortgage approval.
       </footer>
     </div>
   );
