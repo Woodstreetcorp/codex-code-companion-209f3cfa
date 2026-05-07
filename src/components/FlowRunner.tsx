@@ -328,10 +328,20 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                   onChange={setMortgages}
                 />
               )}
+
+              {current.type === "locations" && (
+                <LocationsEditor
+                  values={arrayValue}
+                  onChange={(next) => setValue(next)}
+                  maxItems={current.maxItems ?? 5}
+                  placeholder={current.placeholder}
+                />
+              )}
             </div>
             {current.id === "credit" && <CreditScoreEducation />}
-            {current.id === "down" && flowKey === "purchase" && (
-              <DownPaymentGuidanceCard answers={answers} />
+            {((current.id === "down" && flowKey === "purchase") ||
+              (current.id === "savedDown" && flowKey === "pre")) && (
+              <DownPaymentGuidanceCard answers={answers} flowKey={flowKey} />
             )}
             {validationHint && (
               <p
