@@ -30,6 +30,7 @@ import {
   mapUsage,
   programLaneLabel,
 } from "@/lib/policy";
+import { SnapshotShareSection } from "@/components/SnapshotShare";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -292,6 +293,9 @@ function PurchaseSnapshot({
 
       {/* Review your answers */}
       <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
+
+      {/* Save / share / act */}
+      <SnapshotShareSection onEdit={onEdit} />
 
       {/* CTA */}
       <BottomCTA path={path} />
