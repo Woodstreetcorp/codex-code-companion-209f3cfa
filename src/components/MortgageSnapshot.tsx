@@ -230,7 +230,7 @@ function PurchaseSnapshot({
           Here's your snapshot
         </h2>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <SummaryCard
             icon={<Compass className="h-4 w-4" />}
             label="Likely Lending Path"
@@ -267,8 +267,13 @@ function PurchaseSnapshot({
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
         </div>
 
+        <TopUnlockCTA path={path} />
+
         <WhatThisMeans />
       </section>
+
+      {/* Mid-page CTA */}
+      <MidUnlockCTA path={path} />
 
       {/* Two-column supporting cards */}
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
