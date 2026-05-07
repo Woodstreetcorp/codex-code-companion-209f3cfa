@@ -224,7 +224,7 @@ export type RenewalIntent =
   | "cash-out" | "consolidate" | "heloc" | "unsure";
 
 export interface RenewalAnalysis {
-  recommendedFlow: "renewal" | "refinance" | "hybrid";
+  recommendedFlow: "renewal" | "refinance" | "hybrid" | "guided";
   isRefinance: boolean;
   documentationLevel: "minimal" | "standard" | "full";
   estimatedTimeline: string;
@@ -232,6 +232,7 @@ export interface RenewalAnalysis {
   warnings: string[];
   nextSteps: string[];
   availableEquity?: number;
+  needsFollowUp?: boolean;
 }
 
 export function analyzeRenewalIntent(
@@ -239,8 +240,53 @@ export function analyzeRenewalIntent(
   opts: { homeValue?: number; currentBalance?: number } = {},
 ): RenewalAnalysis {
   const set = new Set(intents);
-  const refinanceTriggers = ["cash-out", "consolidate", "heloc", "lower-payment"];
-  const isRefinance = refinanceTriggers.some((t) => set.has(t));
+  // Hard refinance triggers — equity access or borrowing additional funds.
+  // HELOC is ALWAYS treated as equity-access, even alongside renewal goals.
+  const hardRefinanceTriggers = ["heloc", "cash-out", "equity", "consolidate", "additional-funds"];
+  const isRefinance = hardRefinanceTriggers.some((t) => set.has(t));
+
+  // "Lower monthly payment" alone is ambiguous — ask a follow-up unless a
+  // hard refinance trigger is also present.
+  const onlyLowerPayment =
+    !isRefinance && set.has("lower-payment") &&
+    !["renew", "switch", "better-rate"].some((t) => set.has(t));
+
+  // "I'm not sure" alone routes to a guided review.
+  if (!isRefinance && set.size === 1 && set.has("unsure")) {
+    return {
+      recommendedFlow: "guided",
+      isRefinance: false,
+      documentationLevel: "minimal",
+      estimatedTimeline: "Flexible",
+      estimatedCosts: "Reviewed during your guided session",
+      warnings: [
+        "We'll walk through your situation together to identify the best path forward.",
+      ],
+      nextSteps: [
+        "A licensed broker will help you clarify your goals.",
+        "We'll review renewal, switch, and refinance options based on your needs.",
+      ],
+    };
+  }
+
+  if (onlyLowerPayment) {
+    return {
+      recommendedFlow: "guided",
+      isRefinance: false,
+      documentationLevel: "standard",
+      estimatedTimeline: "30–90 days",
+      estimatedCosts: "Depends on the path you choose",
+      warnings: [
+        "There are a few ways to lower your payment — a quick follow-up will help us match the right path.",
+      ],
+      nextSteps: [
+        "We'll ask whether you want to extend your amortization, change rate type, or restructure your mortgage.",
+        "Some options can be handled at renewal; others require a refinance.",
+      ],
+      needsFollowUp: true,
+    };
+  }
+
   const equity =
     opts.homeValue && opts.currentBalance
       ? Math.max(opts.homeValue * 0.8 - opts.currentBalance, 0)
@@ -248,12 +294,14 @@ export function analyzeRenewalIntent(
 
   if (isRefinance) {
     const reasons: string[] = [];
-    if (set.has("cash-out")) reasons.push("accessing home equity");
-    if (set.has("consolidate")) reasons.push("consolidating debt");
     if (set.has("heloc")) reasons.push("adding a HELOC");
+    if (set.has("cash-out") || set.has("equity")) reasons.push("accessing home equity");
+    if (set.has("consolidate")) reasons.push("consolidating debt");
+    if (set.has("additional-funds")) reasons.push("borrowing additional funds");
     if (set.has("lower-payment")) reasons.push("lowering monthly payment");
     return {
-      recommendedFlow: set.has("renew") ? "hybrid" : "refinance",
+      // Refinance trigger always wins — even if the user also selected renew.
+      recommendedFlow: "refinance",
       isRefinance: true,
       documentationLevel: "full",
       estimatedTimeline: "60–90 days",
