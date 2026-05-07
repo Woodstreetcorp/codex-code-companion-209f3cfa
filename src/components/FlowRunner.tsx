@@ -364,19 +364,147 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   );
 }
 
-function labelFor(q: Question, val: AnswerValue | undefined) {
+function labelFor(q: Question, val: AnswerValue | undefined): string {
   if (val == null) return "—";
   if (q.type === "choice") {
     const v = typeof val === "string" ? val : "";
     return q.options.find((o) => o.value === v)?.label ?? v ?? "—";
   }
   if (q.type === "multi") {
-    const arr = Array.isArray(val) ? val : [];
+    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "string") : []) as string[];
     if (arr.length === 0) return "—";
     return arr.map((v) => q.options.find((o) => o.value === v)?.label ?? v).join(", ");
   }
-  if (q.type === "currency") return val ? `$${val}` : "—";
+  if (q.type === "mortgages") {
+    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "object") : []) as MortgageEntry[];
+    if (!arr.length) return "—";
+    return arr
+      .map(
+        (m) =>
+          `#${m.position} ${m.lender || "—"} · $${m.balance || "—"}`,
+      )
+      .join(" • ");
+  }
+  if (q.type === "currency") return val ? `$${val as string}` : "—";
   return (typeof val === "string" ? val : "") || "—";
+}
+
+function MortgagesEditor({
+  entries,
+  onChange,
+}: {
+  entries: MortgageEntry[];
+  onChange: (next: MortgageEntry[]) => void;
+}) {
+  const update = (i: number, patch: Partial<MortgageEntry>) => {
+    const next = entries.map((e, idx) => (idx === i ? { ...e, ...patch } : e));
+    onChange(next);
+  };
+  const add = () => {
+    if (entries.length >= 3) return;
+    onChange([
+      ...entries,
+      {
+        position: entries.length + 1,
+        lender: "",
+        balance: "",
+        payment: "",
+        maturity: "",
+        rate: "",
+      },
+    ]);
+  };
+  const remove = (i: number) => {
+    const next = entries.filter((_, idx) => idx !== i).map((e, idx) => ({ ...e, position: idx + 1 }));
+    onChange(next);
+  };
+  const positionLabel = (p: number) =>
+    p === 1 ? "First mortgage" : p === 2 ? "Second mortgage" : "Third mortgage";
+
+  return (
+    <div className="space-y-4">
+      {entries.map((m, i) => (
+        <div
+          key={i}
+          className="rounded-xl border-2 border-border bg-card p-4 sm:p-5 space-y-3"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-primary">{positionLabel(m.position)}</p>
+            {entries.length > 1 && (
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="text-xs text-muted-foreground hover:text-accent inline-flex items-center gap-1"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remove
+              </button>
+            )}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Current lender name">
+              <Input
+                value={m.lender}
+                onChange={(e) => update(i, { lender: e.target.value })}
+                placeholder="e.g. RBC"
+              />
+            </Field>
+            <Field label="Approximate balance">
+              <Input
+                inputMode="numeric"
+                value={m.balance}
+                onChange={(e) => update(i, { balance: formatCurrency(e.target.value) })}
+                placeholder="$ 350,000"
+              />
+            </Field>
+            <Field label="Current payment (optional)">
+              <Input
+                inputMode="numeric"
+                value={m.payment ?? ""}
+                onChange={(e) => update(i, { payment: formatCurrency(e.target.value) })}
+                placeholder="$ 1,800 / month"
+              />
+            </Field>
+            <Field label="Maturity / renewal date (optional)">
+              <Input
+                value={m.maturity ?? ""}
+                onChange={(e) => update(i, { maturity: e.target.value })}
+                placeholder="e.g. June 2026"
+              />
+            </Field>
+            <Field label="Interest rate (optional)">
+              <Input
+                inputMode="decimal"
+                value={m.rate ?? ""}
+                onChange={(e) => update(i, { rate: e.target.value.replace(/[^0-9.]/g, "") })}
+                placeholder="e.g. 5.49"
+              />
+            </Field>
+          </div>
+        </div>
+      ))}
+      {entries.length < 3 && (
+        <button
+          type="button"
+          onClick={add}
+          className="inline-flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-secondary hover:text-secondary"
+        >
+          <Plus className="h-4 w-4" /> Add another mortgage
+        </button>
+      )}
+      <p className="text-xs text-muted-foreground">
+        If you are not sure of the exact amount, enter your best estimate.
+      </p>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
 }
 
 function Review({
