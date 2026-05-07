@@ -283,26 +283,13 @@ export const purchaseFlow: Question[] = [
 // ---------- PRE-APPROVAL ----------
 export const prePurchaseFlow: Question[] = [
   {
-    id: "location",
-    type: "text",
+    id: "locations",
+    type: "locations",
     title: "Where are you planning to buy?",
-    subtitle: "City, neighbourhood, or province — anything you have in mind helps.",
+    subtitle:
+      "Add up to 5 cities or neighbourhoods in Ontario you're considering. This helps us understand your search area.",
     placeholder: "e.g. Toronto, ON",
-  },
-  {
-    id: "priceRange",
-    type: "choice",
-    title: "What price range are you considering?",
-    subtitle: "This helps us understand the size of mortgage you may need.",
-    options: targetPriceRange,
-  },
-  {
-    id: "savedDown",
-    type: "currency",
-    title: "How much have you saved for down payment?",
-    subtitle: "This helps us see what's possible based on your savings.",
-    prefix: "$",
-    placeholder: "50,000",
+    maxItems: 5,
   },
   {
     id: "use",
@@ -342,6 +329,32 @@ export const prePurchaseFlow: Question[] = [
     subtitle: "This helps us understand your overall property ownership situation.",
     options: ownsResidence,
     showIf: needsOwnsResidence,
+  },
+  {
+    id: "priceRange",
+    type: "choice",
+    title: "What price range are you considering?",
+    subtitle:
+      "Pick a range, or choose 'I have a specific amount in mind' to enter an exact target price.",
+    options: targetPriceRange,
+  },
+  {
+    id: "specificPrice",
+    type: "currency",
+    title: "What target purchase price do you have in mind?",
+    subtitle: "Enter your best estimate. You can always adjust this later.",
+    prefix: "$",
+    placeholder: "750,000",
+    showIf: (a) => a.priceRange === "specific",
+  },
+  {
+    id: "savedDown",
+    type: "currency",
+    title: "How much have you saved for down payment?",
+    subtitle:
+      "We'll compare this against the estimated minimum down payment for your scenario, which depends on credit score, property usage, units, and price.",
+    prefix: "$",
+    placeholder: "50,000",
   },
 ];
 
