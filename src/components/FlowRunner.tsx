@@ -406,6 +406,10 @@ function labelFor(q: Question, val: AnswerValue | undefined): string {
       )
       .join(" • ");
   }
+  if (q.type === "locations") {
+    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "string") : []) as string[];
+    return arr.length ? arr.join(", ") : "—";
+  }
   if (q.type === "currency") return val ? `$${val as string}` : "—";
   return (typeof val === "string" ? val : "") || "—";
 }
