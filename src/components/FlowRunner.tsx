@@ -42,7 +42,12 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
 
   const rawValue = current ? answers[current.id] : undefined;
   const stringValue = typeof rawValue === "string" ? rawValue : "";
-  const arrayValue = Array.isArray(rawValue) ? rawValue : [];
+  const arrayValue: string[] = Array.isArray(rawValue)
+    ? (rawValue.filter((v) => typeof v === "string") as string[])
+    : [];
+  const mortgageValue: MortgageEntry[] = Array.isArray(rawValue)
+    ? (rawValue.filter((v) => typeof v === "object") as MortgageEntry[])
+    : [];
 
   const canContinue = current
     ? current.type === "choice"
@@ -51,7 +56,10 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         ? arrayValue.length > 0
         : current.type === "text"
           ? stringValue.trim().length > 0
-          : stringValue.replace(/[^0-9]/g, "").length > 0
+          : current.type === "mortgages"
+            ? mortgageValue.length > 0 &&
+              mortgageValue.every((m) => m.lender.trim() && m.balance.trim())
+            : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
 
   // Live validation hint (e.g. down-payment minimum vs purchase price).
@@ -63,9 +71,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const score = parseInt(raw, 10);
       if (score < 500) {
         return {
-          ok: false,
+          ok: true,
           message:
-            "We require a minimum credit score of 500 to proceed. Consider speaking with a credit counsellor — we'd love to help once you're in range.",
+            "Scores below 500 may require a more specialized review and may have fewer available options.",
         };
       }
       if (score < 620) {
@@ -84,8 +92,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const down = parseCurrency(stringValue);
       if (price > 0 && down > 0) {
         const usage =
-          (answers.use as PropertyUsage) ??
-          (answers.primary === "no" ? "secondary" : "primary");
+          (answers.use as PropertyUsage) ?? "primary";
         const v = validateDownPayment(down, price, usage);
         const pct = downPaymentPercentage(down, price);
         return {
@@ -96,8 +103,19 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         };
       }
     }
+    if (flowKey === "refinance" && current.type === "mortgages") {
+      const value = parseCurrency(answers.value as string);
+      const total = mortgageValue.reduce((s, m) => s + parseCurrency(m.balance), 0);
+      if (value > 0 && total > value * 0.8) {
+        return {
+          ok: true,
+          message:
+            "Your current mortgage balances appear to be above 80% of the estimated property value. Some refinance options may be limited, and your file may require a more detailed review.",
+        };
+      }
+    }
     return null;
-  }, [current, flowKey, answers, stringValue]);
+  }, [current, flowKey, answers, stringValue, mortgageValue]);
 
   const setValue = (v: AnswerValue) => {
     if (!current) return;
