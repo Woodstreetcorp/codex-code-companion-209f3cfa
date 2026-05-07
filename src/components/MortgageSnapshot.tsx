@@ -230,7 +230,7 @@ function PurchaseSnapshot({
           Here's your snapshot
         </h2>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
           <SummaryCard
             icon={<Compass className="h-4 w-4" />}
             label="Likely Lending Path"
@@ -267,8 +267,13 @@ function PurchaseSnapshot({
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
         </div>
 
+        <TopUnlockCTA path={path} />
+
         <WhatThisMeans />
       </section>
+
+      {/* Mid-page CTA */}
+      <MidUnlockCTA path={path} />
 
       {/* Two-column supporting cards */}
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -1182,7 +1187,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
       <h2 className="text-xl font-semibold sm:text-2xl">
-        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Options"}
+        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Offers"}
       </h2>
       <p className="mt-2 text-sm text-primary-foreground/85">
         {tailored
@@ -1194,7 +1199,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
           to="/portal"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
         >
-          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
+          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
           <ArrowRight className="ml-1.5 h-4 w-4" />
         </Link>
         <button className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10">
@@ -1210,6 +1215,46 @@ function BottomCTA({ path }: { path: LendingPath }) {
         {tailored ? "No obligation. No credit impact at this stage." : "Takes under 30 seconds. No obligation."}
       </p>
     </section>
+  );
+}
+
+function UnlockOffersButton({ tailored, className }: { tailored: boolean; className?: string }) {
+  return (
+    <Link
+      to="/portal"
+      className={
+        className ??
+        "inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
+      }
+    >
+      {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
+      <ArrowRight className="ml-1.5 h-4 w-4" />
+    </Link>
+  );
+}
+
+function TopUnlockCTA({ path }: { path: LendingPath }) {
+  const tailored = path === "Needs Tailored Review";
+  return (
+    <div className="mt-6 flex flex-col gap-2 rounded-xl border border-accent/30 bg-accent/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-medium text-foreground">
+        Ready to see your matches? Create your account to unlock your offers.
+      </p>
+      <UnlockOffersButton tailored={tailored} />
+    </div>
+  );
+}
+
+function MidUnlockCTA({ path }: { path: LendingPath }) {
+  const tailored = path === "Needs Tailored Review";
+  return (
+    <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 className="text-base font-semibold text-foreground">See your qualified mortgage offers</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Takes under 30 seconds. No obligation.</p>
+      </div>
+      <UnlockOffersButton tailored={tailored} />
+    </div>
   );
 }
 
