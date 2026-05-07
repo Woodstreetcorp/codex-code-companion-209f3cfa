@@ -681,11 +681,11 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
   }
 
   if (flowKey === "refinance") {
-    const balance = parseCurrency(answers.balance as string);
+    const mortgages = (Array.isArray(answers.mortgages)
+      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+      : []) as MortgageEntry[];
+    const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
-    const currentRate = Number(String(answers.currentRate || "").replace(/[^0-9.]/g, ""));
-    const currentPay = parseCurrency(answers.currentPayment as string);
-    const yearsRem = Number(String(answers.yearsRemaining || "").replace(/[^0-9.]/g, "")) || 25;
     const out: Insight[] = [];
     const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
     const renewal = analyzeRenewalIntent(intents, {
@@ -710,48 +710,11 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
         tone: "accent",
       });
     }
-    if (currentPay > 0 && balance > 0 && currentRate > 0) {
-      const r = analyzeRefinance({
-        currentBalance: balance,
-        currentPayment: currentPay,
-        currentRatePct: currentRate,
-        yearsRemaining: yearsRem,
-        newRatePct: 4.79,
-        newTermYears: yearsRem,
-        closingCosts: 1500,
-        prepaymentPenalty: answers.prepayment === "yes" ? balance * 0.03 : 0,
-      });
-      out.push({
-        label: "Possible monthly savings",
-        value: r.monthlySavings > 0 ? formatCAD(r.monthlySavings) : "—",
-        tone: "primary",
-      });
-    }
     return out.length ? out : defaultInsights();
   }
 
   // pre-approval
-  const income = parseCurrency(answers.annualIncome as string);
-  const debt = parseCurrency(answers.monthlyDebt as string);
-  const out: Insight[] = [];
-  if (income > 0) {
-    // very rough GDS-style affordability heuristic for prototype only
-    const monthlyGross = income / 12;
-    const maxHousing = monthlyGross * 0.32 - debt * 0.5;
-    const principal = maxHousing > 0 ? estimatePrincipal(maxHousing, 5.49, 25) : 0;
-    out.push({
-      label: "Indicative max payment",
-      value: maxHousing > 0 ? formatCAD(maxHousing) : "—",
-      tone: "primary",
-    });
-    out.push({
-      label: "Indicative price ceiling",
-      value: principal > 0 ? formatCAD(principal * 1.1) : "—",
-      tone: "secondary",
-    });
-    out.push({ label: "Next step", value: "Broker call", tone: "accent" });
-  }
-  return out.length ? out : defaultInsights();
+  return defaultInsights();
 }
 
 function defaultInsights(): Insight[] {
