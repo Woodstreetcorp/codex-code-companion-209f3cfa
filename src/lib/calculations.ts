@@ -122,3 +122,175 @@ export function ltv(balance: number, value: number): number {
   if (value <= 0) return 0;
   return +((balance / value) * 100).toFixed(1);
 }
+
+// ---------- Down payment validation & guidance ----------
+
+export interface DownPaymentValidation {
+  isValid: boolean;
+  message: string;
+  minimumRequired: number;
+  shortfall: number;
+}
+
+export function validateDownPayment(
+  downPaymentAmount: number,
+  propertyValue: number,
+  usage: PropertyUsage,
+): DownPaymentValidation {
+  const req = calculateMinimumDownPayment(propertyValue, usage);
+  if (downPaymentAmount < req.minimumAmount) {
+    return {
+      isValid: false,
+      message: `Minimum down payment is ${formatCAD(req.minimumAmount)} (${req.minimumPercentage}%). ${req.explanation}`,
+      minimumRequired: req.minimumAmount,
+      shortfall: req.minimumAmount - downPaymentAmount,
+    };
+  }
+  return {
+    isValid: true,
+    message: "Down payment meets the minimum requirement.",
+    minimumRequired: req.minimumAmount,
+    shortfall: 0,
+  };
+}
+
+export function downPaymentPercentage(down: number, value: number): number {
+  if (value <= 0) return 0;
+  return +((down / value) * 100).toFixed(2);
+}
+
+export function getDownPaymentGuidance(
+  propertyValue: number,
+  usage: PropertyUsage,
+): string[] {
+  const req = calculateMinimumDownPayment(propertyValue, usage);
+  const tips: string[] = [
+    `Minimum: ${formatCAD(req.minimumAmount)} (${req.minimumPercentage}%)`,
+    req.explanation,
+  ];
+  if (usage === "rental") tips.push("Investment properties require higher down payments to qualify.");
+  else if (propertyValue > 1_500_000) tips.push("Homes over $1.5M are not insurable — 20% minimum applies.");
+  else if (propertyValue > 500_000) tips.push("A tiered down payment structure applies above $500K.");
+  else tips.push("First-time buyer programs may also be available.");
+  return tips;
+}
+
+// ---------- Refinance recommendation analysis ----------
+
+export interface RefinanceRecommendation extends RefiSavings {
+  rateReduction: number;
+  analysis: string;
+}
+
+export function analyzeRefinance(opts: {
+  currentBalance: number;
+  currentPayment: number;
+  currentRatePct: number;
+  yearsRemaining: number;
+  newRatePct: number;
+  newTermYears: number;
+  closingCosts?: number;
+  prepaymentPenalty?: number;
+}): RefinanceRecommendation {
+  const base = refinanceSavings(opts);
+  const rateReduction = +(opts.currentRatePct - opts.newRatePct).toFixed(2);
+  const minRateReduction = 0.5;
+  const maxBreakEvenYears = 5;
+  let analysis = "";
+  let recommend = base.recommend;
+
+  if (rateReduction < minRateReduction) {
+    recommend = false;
+    analysis = `Rate reduction of ${rateReduction}% is below the recommended minimum of ${minRateReduction}%. Possible option: wait for better rates.`;
+  } else if (base.monthlySavings <= 0) {
+    recommend = false;
+    analysis = "This option would increase your monthly payment. May not be ideal unless you need to access equity.";
+  } else if (base.breakEvenMonths / 12 > maxBreakEvenYears) {
+    recommend = false;
+    analysis = `Break-even of ${(base.breakEvenMonths / 12).toFixed(1)} years exceeds the ${maxBreakEvenYears}-year guideline. Consider only if you plan to stay long-term.`;
+  } else if (base.lifetimeSavings > 0) {
+    recommend = true;
+    analysis = `Possible savings of ${formatCAD(base.monthlySavings)}/month, breaking even in ~${Math.ceil(base.breakEvenMonths)} months. Estimated lifetime savings: ${formatCAD(base.lifetimeSavings)}.`;
+  } else {
+    analysis = "Marginal savings. Review your long-term plans before proceeding.";
+  }
+  return { ...base, recommend, rateReduction, analysis };
+}
+
+// ---------- Renewal vs refinance routing ----------
+
+export type RenewalIntent =
+  | "renew" | "switch" | "lower-payment" | "better-rate"
+  | "cash-out" | "consolidate" | "heloc" | "unsure";
+
+export interface RenewalAnalysis {
+  recommendedFlow: "renewal" | "refinance" | "hybrid";
+  isRefinance: boolean;
+  documentationLevel: "minimal" | "standard" | "full";
+  estimatedTimeline: string;
+  estimatedCosts: string;
+  warnings: string[];
+  nextSteps: string[];
+  availableEquity?: number;
+}
+
+export function analyzeRenewalIntent(
+  intents: string[],
+  opts: { homeValue?: number; currentBalance?: number } = {},
+): RenewalAnalysis {
+  const set = new Set(intents);
+  const refinanceTriggers = ["cash-out", "consolidate", "heloc", "lower-payment"];
+  const isRefinance = refinanceTriggers.some((t) => set.has(t));
+  const equity =
+    opts.homeValue && opts.currentBalance
+      ? Math.max(opts.homeValue * 0.8 - opts.currentBalance, 0)
+      : undefined;
+
+  if (isRefinance) {
+    const reasons: string[] = [];
+    if (set.has("cash-out")) reasons.push("accessing home equity");
+    if (set.has("consolidate")) reasons.push("consolidating debt");
+    if (set.has("heloc")) reasons.push("adding a HELOC");
+    if (set.has("lower-payment")) reasons.push("lowering monthly payment");
+    return {
+      recommendedFlow: set.has("renew") ? "hybrid" : "refinance",
+      isRefinance: true,
+      documentationLevel: "full",
+      estimatedTimeline: "60–90 days",
+      estimatedCosts: "$2,000 – $4,000 (more if breaking early)",
+      warnings: [
+        `${reasons.join(", ")} typically requires a full refinance, not a simple renewal.`,
+        "At renewal you can only change the interest rate and rate type.",
+        "An appraisal and full income/credit verification are usually required.",
+      ],
+      nextSteps: [
+        "We'll estimate your available equity (typically up to 80% of home value).",
+        "We'll estimate any prepayment penalties from your current lender.",
+        "We'll guide you through the required documents.",
+        "We'll coordinate the home appraisal.",
+      ],
+      availableEquity: equity,
+    };
+  }
+
+  return {
+    recommendedFlow: "renewal",
+    isRefinance: false,
+    documentationLevel: "minimal",
+    estimatedTimeline: "30–60 days",
+    estimatedCosts: "$0 – $500",
+    warnings: [
+      "Good news — these changes can typically be made at renewal with no penalties.",
+      set.has("switch")
+        ? "Switching lenders at renewal is usually free; the new lender often covers costs."
+        : "We'll help you negotiate the best possible renewal terms.",
+    ],
+    nextSteps: [
+      "Compare offers from top lenders.",
+      "Verify credit qualifies for best-tier rates.",
+      "Choose between fixed and variable for your situation.",
+      "Select an optimal term length.",
+    ],
+    availableEquity: equity,
+  };
+}

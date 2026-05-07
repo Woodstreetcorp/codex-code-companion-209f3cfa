@@ -10,7 +10,10 @@ import {
   ltv,
   monthlyPayment,
   parseCurrency,
-  refinanceSavings,
+  analyzeRefinance,
+  analyzeRenewalIntent,
+  validateDownPayment,
+  downPaymentPercentage,
   type PropertyUsage,
 } from "@/lib/calculations";
 
@@ -50,6 +53,29 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
           ? stringValue.trim().length > 0
           : stringValue.replace(/[^0-9]/g, "").length > 0
     : true;
+
+  // Live validation hint (e.g. down-payment minimum vs purchase price).
+  const validationHint = useMemo(() => {
+    if (!current) return null;
+    if (flowKey === "purchase" && current.id === "down") {
+      const price = parseCurrency(answers.price as string);
+      const down = parseCurrency(stringValue);
+      if (price > 0 && down > 0) {
+        const usage =
+          (answers.use as PropertyUsage) ??
+          (answers.primary === "no" ? "secondary" : "primary");
+        const v = validateDownPayment(down, price, usage);
+        const pct = downPaymentPercentage(down, price);
+        return {
+          ok: v.isValid,
+          message: v.isValid
+            ? `That's ${pct}% down — meets the ${formatCAD(v.minimumRequired)} minimum.`
+            : `${v.message} You're short ${formatCAD(v.shortfall)}.`,
+        };
+      }
+    }
+    return null;
+  }, [current, flowKey, answers, stringValue]);
 
   const setValue = (v: AnswerValue) => {
     if (!current) return;
@@ -211,12 +237,25 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                 </div>
               )}
             </div>
+            {validationHint && (
+              <p
+                className={`mt-3 text-sm ${
+                  validationHint.ok ? "text-secondary" : "text-accent"
+                }`}
+              >
+                {validationHint.message}
+              </p>
+            )}
 
             <div className="mt-10 flex items-center justify-between">
               <Button variant="ghost" onClick={back} disabled={index === 0}>
                 <ArrowLeft className="mr-1 h-4 w-4" /> Back
               </Button>
-              <Button onClick={next} disabled={!canContinue} size="lg">
+              <Button
+                onClick={next}
+                disabled={!canContinue || (validationHint ? !validationHint.ok : false)}
+                size="lg"
+              >
                 Continue <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
@@ -268,6 +307,7 @@ function Review({
 }) {
   const flow = flows[flowKey];
   const insights = computeInsights(flowKey, answers);
+  const guidance = computeGuidance(flowKey, answers);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -295,6 +335,40 @@ function Review({
             <SnapshotStat key={it.label} label={it.label} value={it.value} tone={it.tone} />
           ))}
         </div>
+
+        {guidance && (
+          <div className="mt-6 rounded-xl border border-border bg-background p-5">
+            <h3 className="text-sm font-semibold text-foreground">{guidance.title}</h3>
+            {guidance.summary && (
+              <p className="mt-1 text-sm text-muted-foreground">{guidance.summary}</p>
+            )}
+            {guidance.notes.length > 0 && (
+              <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+                {guidance.notes.map((n: string, i: number) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+                    <span>{n}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {guidance.nextSteps && guidance.nextSteps.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+                  Possible next steps
+                </p>
+                <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  {guidance.nextSteps.map((s: string, i: number) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-8">
           <h2 className="text-sm font-semibold text-foreground">Your responses</h2>
@@ -400,16 +474,31 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
     const currentPay = parseCurrency(answers.currentPayment as string);
     const yearsRem = Number(String(answers.yearsRemaining || "").replace(/[^0-9.]/g, "")) || 25;
     const out: Insight[] = [];
+    const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
+    const renewal = analyzeRenewalIntent(intents, {
+      homeValue: value || undefined,
+      currentBalance: balance || undefined,
+    });
+    out.push({
+      label: "Recommended path",
+      value:
+        renewal.recommendedFlow === "refinance"
+          ? "Refinance"
+          : renewal.recommendedFlow === "hybrid"
+            ? "Renewal + Refinance"
+            : "Renewal",
+      tone: "primary",
+    });
     if (balance > 0 && value > 0) {
-      out.push({ label: "Current LTV", value: `${ltv(balance, value)}%`, tone: "primary" });
+      out.push({ label: "Current LTV", value: `${ltv(balance, value)}%`, tone: "secondary" });
       out.push({
         label: "Available equity",
         value: formatCAD(Math.max(value * 0.8 - balance, 0)),
-        tone: "secondary",
+        tone: "accent",
       });
     }
     if (currentPay > 0 && balance > 0 && currentRate > 0) {
-      const r = refinanceSavings({
+      const r = analyzeRefinance({
         currentBalance: balance,
         currentPayment: currentPay,
         currentRatePct: currentRate,
@@ -422,7 +511,7 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
       out.push({
         label: "Possible monthly savings",
         value: r.monthlySavings > 0 ? formatCAD(r.monthlySavings) : "—",
-        tone: "accent",
+        tone: "primary",
       });
     }
     return out.length ? out : defaultInsights();
@@ -458,6 +547,68 @@ function defaultInsights(): Insight[] {
     { label: "Possible programs", value: "3–5", tone: "secondary" },
     { label: "Next step", value: "Broker call", tone: "accent" },
   ];
+}
+
+type Guidance = {
+  title: string;
+  summary?: string;
+  notes: string[];
+  nextSteps?: string[];
+};
+
+function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
+  if (flowKey === "purchase") {
+    const price = parseCurrency(answers.price as string);
+    const down = parseCurrency(answers.down as string);
+    if (!price) return null;
+    const usage = usageOf(answers);
+    const req = calculateMinimumDownPayment(price, usage);
+    const notes: string[] = [
+      `Minimum down payment: ${formatCAD(req.minimumAmount)} (${req.minimumPercentage}%).`,
+      req.explanation,
+    ];
+    if (down > 0) {
+      const v = validateDownPayment(down, price, usage);
+      notes.push(
+        v.isValid
+          ? `You're putting down ${downPaymentPercentage(down, price)}% — meets the minimum.`
+          : `Short by ${formatCAD(v.shortfall)}.`,
+      );
+    }
+    return {
+      title: "Down payment guidance",
+      summary: "Canadian minimums based on property value and usage.",
+      notes,
+      nextSteps: [
+        "A licensed broker will review your down payment source.",
+        "We'll explore lender programs that may fit your scenario.",
+      ],
+    };
+  }
+
+  if (flowKey === "refinance") {
+    const balance = parseCurrency(answers.balance as string);
+    const value = parseCurrency(answers.value as string);
+    const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
+    if (!intents.length) return null;
+    const r = analyzeRenewalIntent(intents, {
+      homeValue: value || undefined,
+      currentBalance: balance || undefined,
+    });
+    return {
+      title:
+        r.recommendedFlow === "refinance"
+          ? "Looks like a refinance"
+          : r.recommendedFlow === "hybrid"
+            ? "Renewal + refinance"
+            : "Looks like a renewal",
+      summary: `Estimated timeline: ${r.estimatedTimeline} · Estimated costs: ${r.estimatedCosts}`,
+      notes: r.warnings,
+      nextSteps: r.nextSteps,
+    };
+  }
+
+  return null;
 }
 
 function estimatePrincipal(targetPayment: number, ratePct: number, years: number): number {
