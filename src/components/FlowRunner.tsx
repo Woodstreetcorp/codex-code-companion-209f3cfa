@@ -344,7 +344,7 @@ function Review({
             )}
             {guidance.notes.length > 0 && (
               <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                {guidance.notes.map((n, i) => (
+                {guidance.notes.map((n: string, i: number) => (
                   <li key={i} className="flex gap-2">
                     <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
                     <span>{n}</span>
@@ -358,7 +358,7 @@ function Review({
                   Possible next steps
                 </p>
                 <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-                  {guidance.nextSteps.map((s, i) => (
+                  {guidance.nextSteps.map((s: string, i: number) => (
                     <li key={i} className="flex gap-2">
                       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                       <span>{s}</span>
