@@ -215,6 +215,20 @@ function PurchaseSnapshot({
   const showBundle = path !== "Needs Tailored Review";
   const bundleName = getBundleName(flowKey, answers);
 
+  const heroHeadline =
+    path === "Prime Fit"
+      ? "You're matched to a Prime lending path"
+      : path === "Alternative Fit"
+        ? "You're matched to an Alternative lending path"
+        : "Your file needs a tailored review";
+  const heroTone: Tone = pathTone(path);
+  const heroBg =
+    heroTone === "primary"
+      ? "border-primary/25 bg-gradient-to-br from-primary/8 via-card to-secondary/8"
+      : heroTone === "secondary"
+        ? "border-secondary/30 bg-gradient-to-br from-secondary/10 via-card to-primary/5"
+        : "border-yellow/50 bg-gradient-to-br from-yellow/15 via-card to-accent/5";
+
   return (
     <SnapshotShell
       title="Your Mortgage Snapshot"
@@ -222,13 +236,13 @@ function PurchaseSnapshot({
       onEdit={onEdit}
     >
       {/* Hero summary cards */}
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+      <section className={`rounded-2xl border p-6 shadow-sm sm:p-8 ${heroBg}`}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
           <Sparkles className="h-3.5 w-3.5" />
           Snapshot ready
         </div>
-        <h2 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-          Here's your snapshot
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+          {heroHeadline}
         </h2>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
@@ -264,17 +278,12 @@ function PurchaseSnapshot({
           />
         </div>
 
-        <div className="mt-6 rounded-xl bg-secondary/5 p-5">
+        <div className="mt-6 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
         </div>
 
-        <TopUnlockCTA path={path} />
-
         <WhatThisMeans />
       </section>
-
-      {/* Mid-page CTA */}
-      <MidUnlockCTA path={path} />
 
       {/* Two-column supporting cards */}
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -690,11 +699,11 @@ function SummaryCard({
 }) {
   return (
     <div className={`rounded-xl border p-4 ${toneClass[tone]}`}>
-      <div className="flex items-center gap-1.5 text-xs font-medium opacity-80">
+      <p className="text-lg font-bold leading-tight tracking-tight sm:text-xl">{value}</p>
+      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide opacity-75">
         {icon}
-        <span className="uppercase tracking-wide">{label}</span>
+        <span>{label}</span>
       </div>
-      <p className="mt-2 text-base font-semibold leading-snug">{value}</p>
     </div>
   );
 }
@@ -1014,7 +1023,7 @@ function BundleCard({ name }: { name: string }) {
   return (
     <div className="rounded-2xl border border-yellow/40 bg-yellow/10 p-6 shadow-sm">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-primary">
-        <Gift className="h-4 w-4" /> You may qualify for the {name}
+        <Gift className="h-4 w-4" /> You may be eligible for the {name}
       </h3>
       <ul className="mt-4 space-y-2 text-sm text-foreground">
         <li className="flex items-center gap-2">
@@ -1191,7 +1200,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
       <h2 className="text-xl font-semibold sm:text-2xl">
-        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Offers"}
+        {tailored ? "Complete a Tailored Review" : "View Your Mortgage Options"}
       </h2>
       <p className="mt-2 text-sm text-primary-foreground/85">
         {tailored
@@ -1203,62 +1212,28 @@ function BottomCTA({ path }: { path: LendingPath }) {
           to="/portal"
           className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
         >
-          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
+          {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
           <ArrowRight className="ml-1.5 h-4 w-4" />
         </Link>
-        <button className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10"
+        >
           Edit My Inputs
         </button>
-        {!tailored && (
-          <button className="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline">
-            Talk to a Broker
-          </button>
-        )}
+        <button className="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline">
+          Talk to a Broker
+        </button>
       </div>
       <p className="mt-3 text-xs text-primary-foreground/70">
-        {tailored ? "No obligation. No credit impact at this stage." : "Takes under 30 seconds. No obligation."}
+        This snapshot is not a mortgage approval. {tailored ? "No credit impact at this stage." : "Takes under 30 seconds. No obligation."}
       </p>
     </section>
-  );
-}
-
-function UnlockOffersButton({ tailored, className }: { tailored: boolean; className?: string }) {
-  return (
-    <Link
-      to="/portal"
-      className={
-        className ??
-        "inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
-      }
-    >
-      {tailored ? "Continue to Full Review" : "Unlock My Mortgage Offers"}
-      <ArrowRight className="ml-1.5 h-4 w-4" />
-    </Link>
-  );
-}
-
-function TopUnlockCTA({ path }: { path: LendingPath }) {
-  const tailored = path === "Needs Tailored Review";
-  return (
-    <div className="mt-6 flex flex-col gap-2 rounded-xl border border-accent/30 bg-accent/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm font-medium text-foreground">
-        Ready to see your matches? Create your account to unlock your offers.
-      </p>
-      <UnlockOffersButton tailored={tailored} />
-    </div>
-  );
-}
-
-function MidUnlockCTA({ path }: { path: LendingPath }) {
-  const tailored = path === "Needs Tailored Review";
-  return (
-    <div className="mt-6 flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h3 className="text-base font-semibold text-foreground">See your qualified mortgage offers</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Takes under 30 seconds. No obligation.</p>
-      </div>
-      <UnlockOffersButton tailored={tailored} />
-    </div>
   );
 }
 
