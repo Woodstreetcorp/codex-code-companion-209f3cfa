@@ -57,6 +57,28 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   // Live validation hint (e.g. down-payment minimum vs purchase price).
   const validationHint = useMemo(() => {
     if (!current) return null;
+    if (current.id === "credit") {
+      const raw = stringValue.replace(/[^0-9]/g, "");
+      if (!raw) return null;
+      const score = parseInt(raw, 10);
+      if (score < 500) {
+        return {
+          ok: false,
+          message:
+            "We require a minimum credit score of 500 to proceed. Consider speaking with a credit counsellor — we'd love to help once you're in range.",
+        };
+      }
+      if (score < 620) {
+        return {
+          ok: true,
+          message: "Alternative lender programs may be available for this range.",
+        };
+      }
+      if (score > 900) {
+        return { ok: false, message: "Please enter a valid credit score between 500 and 900." };
+      }
+      return { ok: true, message: "Great — this falls in the prime lending range." };
+    }
     if (flowKey === "purchase" && current.id === "down") {
       const price = parseCurrency(answers.price as string);
       const down = parseCurrency(stringValue);
@@ -220,14 +242,17 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                       setValue(
                         current.type === "currency"
                           ? formatCurrency(e.target.value)
-                          : e.target.value,
+                          : current.id === "credit"
+                            ? e.target.value.replace(/[^0-9]/g, "").slice(0, 3)
+                            : e.target.value,
                       )
                     }
                     placeholder={current.placeholder}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && canContinue) next();
                     }}
-                    className={`h-14 text-lg ${current.prefix ? "pl-9" : ""}`}
+                    className={`h-14 text-lg ${current.prefix ? "pl-9" : ""} ${current.id === "credit" ? "text-center text-2xl font-semibold" : ""}`}
+                    maxLength={current.id === "credit" ? 3 : undefined}
                   />
                   {current.suffix && (
                     <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-muted-foreground">
@@ -237,6 +262,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                 </div>
               )}
             </div>
+            {current.id === "credit" && <CreditScoreEducation />}
             {validationHint && (
               <p
                 className={`mt-3 text-sm ${
@@ -542,6 +568,63 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
 }
 
 function defaultInsights(): Insight[] {
+  return [
+    { label: "Estimated readiness", value: "Strong", tone: "primary" },
+    { label: "Possible programs", value: "3–5", tone: "secondary" },
+    { label: "Next step", value: "Broker call", tone: "accent" },
+  ];
+}
+
+function CreditScoreEducation() {
+  return (
+    <div className="mt-6 space-y-4 max-w-md">
+      <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-4">
+        <p className="text-sm text-foreground leading-relaxed">
+          <span className="font-semibold">We work with prime and alternative lenders.</span>{" "}
+          Whether you have excellent credit or are working to rebuild, we'll help you find
+          mortgage options that fit your situation.
+        </p>
+      </div>
+      <details className="group rounded-lg">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-secondary hover:text-primary transition-colors">
+          <span>Understanding credit score ranges</span>
+          <ArrowRight className="h-4 w-4 rotate-90 transition-transform group-open:-rotate-90" />
+        </summary>
+        <div className="mt-3 space-y-4 text-sm">
+          <div className="border-l-4 border-mint pl-3">
+            <p className="mb-2 font-semibold text-foreground">Prime Mortgage Range (620–900)</p>
+            <CreditRow label="780+" hint="Typically qualifies for best rates" />
+            <CreditRow label="700–779" hint="Good qualification options" />
+            <CreditRow label="650–699" hint="Strong qualification range" />
+            <CreditRow label="620–649" hint="Strong qualification range" />
+          </div>
+          <div className="border-l-4 border-yellow pl-3">
+            <p className="mb-2 font-semibold text-foreground">Alternative Mortgage Range (500–619)</p>
+            <CreditRow label="550–619" hint="Alternative programs available" />
+            <CreditRow label="500–549" hint="Alternative programs available" />
+          </div>
+          <div className="border-l-4 border-accent pl-3">
+            <p className="mb-1 font-semibold text-foreground">Private Range (Below 500)</p>
+            <p className="text-xs text-muted-foreground">
+              We cannot assist with mortgages in this range at this time.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function CreditRow({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="font-medium text-foreground">{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </div>
+  );
+}
+
+function _legacyDefaultInsights(): Insight[] {
   return [
     { label: "Estimated readiness", value: "Strong", tone: "primary" },
     { label: "Possible programs", value: "3–5", tone: "secondary" },

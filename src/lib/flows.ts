@@ -41,13 +41,15 @@ const propertyTypes: Option[] = [
   { value: "multi", label: "Multi-unit (2–4 units)" },
 ];
 
-const credit: Option[] = [
-  { value: "excellent", label: "Excellent (740+)" },
-  { value: "good", label: "Good (680–739)" },
-  { value: "fair", label: "Fair (620–679)" },
-  { value: "below", label: "Below 620" },
-  { value: "unsure", label: "I'm not sure" },
-];
+// Credit score is collected as a numeric input with educational ranges.
+const creditQuestion: Question = {
+  id: "credit",
+  type: "number",
+  title: "What is your credit score?",
+  subtitle:
+    "This helps us match you with the right mortgage options. All credit scores are welcome.",
+  placeholder: "Enter your credit score (e.g., 679)",
+};
 
 const income: Option[] = [
   { value: "employed", label: "Employed", hint: "Salary or hourly wages" },
@@ -138,12 +140,7 @@ export const purchaseFlow: Question[] = [
     prefix: "$",
     placeholder: "750",
   },
-  {
-    id: "credit",
-    type: "choice",
-    title: "What is your approximate credit score?",
-    options: credit,
-  },
+  creditQuestion,
   {
     id: "address",
     type: "text",
@@ -253,12 +250,7 @@ export const prePurchaseFlow: Question[] = [
     title: "Will this be your primary residence?",
     options: yesNo,
   },
-  {
-    id: "credit",
-    type: "choice",
-    title: "What is your approximate credit score?",
-    options: credit,
-  },
+  creditQuestion,
   ...incomeBlock,
 ];
 
@@ -382,12 +374,7 @@ export const refinanceFlow: Question[] = [
     title: "Is this your primary residence?",
     options: yesNo,
   },
-  {
-    id: "credit",
-    type: "choice",
-    title: "What is your approximate credit score?",
-    options: credit,
-  },
+  creditQuestion,
   ...incomeBlock,
 ];
 
