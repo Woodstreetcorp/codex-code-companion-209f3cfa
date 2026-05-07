@@ -5,6 +5,7 @@ import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/fl
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MortgageSnapshot } from "@/components/MortgageSnapshot";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import {
   calculateMinimumDownPayment,
   formatCAD,
@@ -32,6 +33,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const [answers, setAnswers] = useState<Answers>({});
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
+  const [validatedAddresses, setValidatedAddresses] = useState<Record<string, boolean>>({});
 
   const visible = useMemo(
     () => flow.questions.filter((q) => !q.showIf || q.showIf(answers)),
@@ -56,7 +58,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       : current.type === "multi"
         ? arrayValue.length > 0
         : current.type === "text"
-          ? stringValue.trim().length > 0
+          ? current.id === "address"
+            ? !!validatedAddresses[current.id] && stringValue.trim().length > 0
+            : stringValue.trim().length > 0
           : current.type === "mortgages"
             ? mortgageValue.length > 0 &&
               mortgageValue.every((m) => m.lender.trim() && m.balance.trim())
