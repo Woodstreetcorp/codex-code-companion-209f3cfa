@@ -42,9 +42,15 @@ export type ParsedAddress = {
   country: string;
 };
 
-function parsePlace(place: google.maps.places.PlaceResult): ParsedAddress {
+type AddressComponent = { long_name: string; short_name: string; types: string[] };
+type PlaceResult = {
+  address_components?: AddressComponent[];
+  formatted_address?: string;
+};
+
+function parsePlace(place: PlaceResult): ParsedAddress {
   const get = (type: string, short = false) => {
-    const c = place.address_components?.find((c) => c.types.includes(type));
+    const c = place.address_components?.find((c: AddressComponent) => c.types.includes(type));
     return (short ? c?.short_name : c?.long_name) ?? "";
   };
   const streetNumber = get("street_number");
@@ -68,7 +74,7 @@ type Props = {
 
 export function AddressAutocomplete({ value, onChange, placeholder, onEnter }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const acRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const acRef = useRef<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -84,7 +90,7 @@ export function AddressAutocomplete({ value, onChange, placeholder, onEnter }: P
           types: ["address"],
         });
         ac.addListener("place_changed", () => {
-          const place = ac.getPlace();
+          const place = ac.getPlace() as PlaceResult;
           if (!place || !place.address_components) return;
           const parsed = parsePlace(place);
           if (parsed.country !== "CA") {
