@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { flows, type FlowKey, type Question } from "@/lib/flows";
@@ -115,6 +115,10 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
     if (index + 1 >= visible.length) setDone(true);
     else setIndex((i) => i + 1);
   };
+  const nextRef = useRef(next);
+  useEffect(() => {
+    nextRef.current = next;
+  });
   const back = () => {
     if (done) setDone(false);
     else if (index > 0) setIndex((i) => i - 1);
@@ -161,9 +165,10 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                     return (
                       <button
                         key={opt.value}
+                        type="button"
                         onClick={() => {
                           setValue(opt.value);
-                          setTimeout(next, 180);
+                          setTimeout(() => nextRef.current(), 180);
                         }}
                         className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                           selected
@@ -199,6 +204,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                     return (
                       <button
                         key={opt.value}
+                        type="button"
                         onClick={() => toggleMulti(opt.value)}
                         className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                           selected
