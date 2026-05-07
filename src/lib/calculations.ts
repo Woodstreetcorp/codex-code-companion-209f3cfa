@@ -3,6 +3,240 @@
 
 export type PropertyUsage = "primary" | "secondary" | "rental";
 
+// ---------- Mortgage path classification (purchase segmentation) ----------
+
+export type ClassificationPropertyUsage =
+  | "PRIMARY_RESIDENCE"
+  | "SECONDARY_VACATION"
+  | "RENTAL_INVESTMENT";
+
+export type IncomeVerificationMethod =
+  | "standard"
+  | "bank_statements"
+  | "stated"
+  | "other";
+
+export type MortgageCategory = "INSURED" | "INSURABLE" | "UNINSURABLE";
+
+export type BorrowerClassification =
+  | "PRIME_PLUS"
+  | "STANDARD_PRIME"
+  | "ALTERNATIVE_PLUS"
+  | "STANDARD_ALTERNATIVE"
+  | "TAILORED_REVIEW";
+
+export type LendingPath =
+  | "PRIME"
+  | "ALTERNATIVE"
+  | "TAILORED_REVIEW"
+  | "DOWN_PAYMENT_GAP"
+  | "COMMERCIAL_OR_TAILORED_REVIEW";
+
+export interface ClassificationInput {
+  purchase_price: number;
+  down_payment_amount: number;
+  down_payment_percent?: number; // optional; derived if missing
+  credit_score: number;
+  property_usage: ClassificationPropertyUsage;
+  number_of_units: number;
+  income_source?: string;
+  income_verification_method: IncomeVerificationMethod;
+}
+
+export interface ClassificationResult {
+  required_minimum_down_payment: number;
+  required_minimum_down_payment_percent: number;
+  down_payment_gap_amount: number;
+  down_payment_status: "MEETS_MINIMUM" | "BELOW_MINIMUM";
+  mortgage_category: MortgageCategory | null;
+  borrower_classification: BorrowerClassification;
+  lending_path: LendingPath;
+  snapshot_message: string;
+  next_step: string;
+}
+
+function requiredMinimumDownPayment(
+  price: number,
+  usage: ClassificationPropertyUsage,
+  units: number,
+): { amount: number; percent: number } {
+  if (units >= 5) {
+    return { amount: price * 0.25, percent: 25 };
+  }
+  if (usage === "RENTAL_INVESTMENT") {
+    return { amount: price * 0.2, percent: 20 };
+  }
+  if (usage === "SECONDARY_VACATION") {
+    return { amount: price * 0.2, percent: 20 };
+  }
+  // PRIMARY_RESIDENCE
+  if (units >= 3) {
+    return { amount: price * 0.1, percent: 10 };
+  }
+  // 1–2 unit primary: standard CMHC tiers
+  if (price < 500_000) {
+    return { amount: price * 0.05, percent: 5 };
+  }
+  if (price < 1_500_000) {
+    const amount = 500_000 * 0.05 + (price - 500_000) * 0.1;
+    return { amount, percent: +((amount / price) * 100).toFixed(2) };
+  }
+  return { amount: price * 0.2, percent: 20 };
+}
+
+export function classifyMortgagePath(input: ClassificationInput): ClassificationResult {
+  const {
+    purchase_price,
+    down_payment_amount,
+    credit_score,
+    property_usage,
+    number_of_units,
+    income_verification_method,
+  } = input;
+
+  const dpPercent =
+    input.down_payment_percent ??
+    (purchase_price > 0 ? +((down_payment_amount / purchase_price) * 100).toFixed(2) : 0);
+
+  const req = requiredMinimumDownPayment(purchase_price, property_usage, number_of_units);
+  const gap = Math.max(req.amount - down_payment_amount, 0);
+  const meets = down_payment_amount + 0.01 >= req.amount;
+
+  // Step 1.5 — commercial routing for 5+ units (overrides everything else).
+  if (number_of_units >= 5) {
+    return {
+      required_minimum_down_payment: req.amount,
+      required_minimum_down_payment_percent: req.percent,
+      down_payment_gap_amount: gap,
+      down_payment_status: meets ? "MEETS_MINIMUM" : "BELOW_MINIMUM",
+      mortgage_category: null,
+      borrower_classification: "TAILORED_REVIEW",
+      lending_path: "COMMERCIAL_OR_TAILORED_REVIEW",
+      snapshot_message:
+        "Properties with 5 or more units fall outside standard residential lending and need a commercial or tailored review.",
+      next_step: "We'll connect you with a broker who specializes in commercial multi-unit financing.",
+    };
+  }
+
+  // Step 2 — down payment gap.
+  if (!meets) {
+    return {
+      required_minimum_down_payment: req.amount,
+      required_minimum_down_payment_percent: req.percent,
+      down_payment_gap_amount: gap,
+      down_payment_status: "BELOW_MINIMUM",
+      mortgage_category: null,
+      borrower_classification: "TAILORED_REVIEW",
+      lending_path: "DOWN_PAYMENT_GAP",
+      snapshot_message: `Your down payment is ${formatCAD(gap)} short of the ${formatCAD(req.amount)} minimum (${req.percent}%) required for this property.`,
+      next_step:
+        "We'll review options to bridge the down payment gap or explore a different price range.",
+    };
+  }
+
+  // Step 3 — mortgage category.
+  let mortgage_category: MortgageCategory;
+  if (
+    dpPercent < 20 &&
+    purchase_price < 1_500_000 &&
+    property_usage === "PRIMARY_RESIDENCE" &&
+    number_of_units <= 2
+  ) {
+    mortgage_category = "INSURED";
+  } else if (
+    dpPercent >= 20 &&
+    property_usage === "PRIMARY_RESIDENCE" &&
+    number_of_units <= 4
+  ) {
+    mortgage_category = "INSURABLE";
+  } else {
+    mortgage_category = "UNINSURABLE";
+  }
+
+  // Step 4 — borrower classification.
+  let borrower_classification: BorrowerClassification;
+  if (credit_score >= 680 && income_verification_method === "standard") {
+    borrower_classification = "PRIME_PLUS";
+  } else if (credit_score >= 620) {
+    borrower_classification = "STANDARD_PRIME";
+  } else if (credit_score >= 550) {
+    borrower_classification = "ALTERNATIVE_PLUS";
+  } else if (credit_score >= 500) {
+    borrower_classification = "STANDARD_ALTERNATIVE";
+  } else {
+    borrower_classification = "TAILORED_REVIEW";
+  }
+
+  // Step 5 — downgrade rules.
+  let lending_path: LendingPath;
+  const downgradeNotes: string[] = [];
+
+  if (property_usage === "RENTAL_INVESTMENT" && dpPercent < 20) {
+    borrower_classification = "TAILORED_REVIEW";
+    downgradeNotes.push("Rental property with less than 20% down requires a tailored review.");
+  }
+  if (property_usage === "SECONDARY_VACATION" && dpPercent < 20) {
+    borrower_classification = "TAILORED_REVIEW";
+    downgradeNotes.push("Secondary/vacation property with less than 20% down requires a tailored review.");
+  }
+  if (property_usage === "PRIMARY_RESIDENCE" && number_of_units >= 3 && dpPercent < 10) {
+    borrower_classification = "TAILORED_REVIEW";
+    downgradeNotes.push("3–4 unit owner-occupied with less than 10% down requires a tailored review.");
+  }
+
+  // Self-employed with bank statements: route toward Alternative tiers.
+  if (income_verification_method === "bank_statements") {
+    if (borrower_classification === "PRIME_PLUS" || borrower_classification === "STANDARD_PRIME") {
+      borrower_classification = credit_score >= 650 ? "ALTERNATIVE_PLUS" : "STANDARD_ALTERNATIVE";
+      downgradeNotes.push("Self-employed with bank statements typically routes to Alternative lending.");
+    }
+  }
+
+  if (borrower_classification === "TAILORED_REVIEW") {
+    lending_path = "TAILORED_REVIEW";
+  } else if (
+    borrower_classification === "ALTERNATIVE_PLUS" ||
+    borrower_classification === "STANDARD_ALTERNATIVE"
+  ) {
+    lending_path = "ALTERNATIVE";
+  } else {
+    lending_path = "PRIME";
+  }
+
+  const pathLabel =
+    lending_path === "PRIME"
+      ? "prime lenders"
+      : lending_path === "ALTERNATIVE"
+        ? "alternative lenders"
+        : "a tailored review";
+
+  const snapshot_message =
+    `Based on a ${formatCAD(purchase_price)} ${property_usage.toLowerCase().replace("_", " ")} ` +
+    `with ${formatCAD(down_payment_amount)} (${dpPercent}%) down, your file looks ${mortgage_category.toLowerCase()} ` +
+    `and may qualify with ${pathLabel}.` +
+    (downgradeNotes.length ? ` Note: ${downgradeNotes.join(" ")}` : "");
+
+  const next_step =
+    lending_path === "PRIME"
+      ? "We'll compare offers from top prime lenders and confirm your best rate."
+      : lending_path === "ALTERNATIVE"
+        ? "We'll match you with alternative lenders that fit your income and credit profile."
+        : "A licensed broker will review your file and outline a tailored path forward.";
+
+  return {
+    required_minimum_down_payment: req.amount,
+    required_minimum_down_payment_percent: req.percent,
+    down_payment_gap_amount: 0,
+    down_payment_status: "MEETS_MINIMUM",
+    mortgage_category,
+    borrower_classification,
+    lending_path,
+    snapshot_message,
+    next_step,
+  };
+}
+
+
 export interface DownPaymentRequirement {
   minimumAmount: number;
   minimumPercentage: number;
