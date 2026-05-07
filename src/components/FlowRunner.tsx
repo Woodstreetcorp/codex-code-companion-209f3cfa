@@ -575,6 +575,63 @@ function defaultInsights(): Insight[] {
   ];
 }
 
+function CreditScoreEducation() {
+  return (
+    <div className="mt-6 space-y-4 max-w-md">
+      <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-4">
+        <p className="text-sm text-foreground leading-relaxed">
+          <span className="font-semibold">We work with prime and alternative lenders.</span>{" "}
+          Whether you have excellent credit or are working to rebuild, we'll help you find
+          mortgage options that fit your situation.
+        </p>
+      </div>
+      <details className="group rounded-lg">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-secondary hover:text-primary transition-colors">
+          <span>Understanding credit score ranges</span>
+          <ArrowRight className="h-4 w-4 rotate-90 transition-transform group-open:-rotate-90" />
+        </summary>
+        <div className="mt-3 space-y-4 text-sm">
+          <div className="border-l-4 border-aqua pl-3">
+            <p className="mb-2 font-semibold text-foreground">Prime Mortgage Range (620–900)</p>
+            <CreditRow label="780+" hint="Typically qualifies for best rates" />
+            <CreditRow label="700–779" hint="Good qualification options" />
+            <CreditRow label="650–699" hint="Strong qualification range" />
+            <CreditRow label="620–649" hint="Strong qualification range" />
+          </div>
+          <div className="border-l-4 border-yellow pl-3">
+            <p className="mb-2 font-semibold text-foreground">Alternative Mortgage Range (500–619)</p>
+            <CreditRow label="550–619" hint="Alternative programs available" />
+            <CreditRow label="500–549" hint="Alternative programs available" />
+          </div>
+          <div className="border-l-4 border-accent pl-3">
+            <p className="mb-1 font-semibold text-foreground">Private Range (Below 500)</p>
+            <p className="text-xs text-muted-foreground">
+              We cannot assist with mortgages in this range at this time.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function CreditRow({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <span className="font-medium text-foreground">{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </div>
+  );
+}
+
+function _legacyDefaultInsights(): Insight[] {
+  return [
+    { label: "Estimated readiness", value: "Strong", tone: "primary" },
+    { label: "Possible programs", value: "3–5", tone: "secondary" },
+    { label: "Next step", value: "Broker call", tone: "accent" },
+  ];
+}
+
 type Guidance = {
   title: string;
   summary?: string;
