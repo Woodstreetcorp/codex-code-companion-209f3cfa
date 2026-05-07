@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RefinanceRouteImport } from './routes/refinance'
 import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as IndexRouteImport } from './routes/index'
 
+const RefinanceRoute = RefinanceRouteImport.update({
+  id: '/refinance',
+  path: '/refinance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PurchaseRoute = PurchaseRouteImport.update({
   id: '/purchase',
   path: '/purchase',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
+  '/refinance': typeof RefinanceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
+  '/refinance': typeof RefinanceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
+  '/refinance': typeof RefinanceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pre-purchase' | '/purchase'
+  fullPaths: '/' | '/pre-purchase' | '/purchase' | '/refinance'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pre-purchase' | '/purchase'
-  id: '__root__' | '/' | '/pre-purchase' | '/purchase'
+  to: '/' | '/pre-purchase' | '/purchase' | '/refinance'
+  id: '__root__' | '/' | '/pre-purchase' | '/purchase' | '/refinance'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrePurchaseRoute: typeof PrePurchaseRoute
   PurchaseRoute: typeof PurchaseRoute
+  RefinanceRoute: typeof RefinanceRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/refinance': {
+      id: '/refinance'
+      path: '/refinance'
+      fullPath: '/refinance'
+      preLoaderRoute: typeof RefinanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/purchase': {
       id: '/purchase'
       path: '/purchase'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrePurchaseRoute: PrePurchaseRoute,
   PurchaseRoute: PurchaseRoute,
+  RefinanceRoute: RefinanceRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
