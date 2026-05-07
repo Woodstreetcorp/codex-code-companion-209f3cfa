@@ -52,7 +52,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-primary">
             <ShieldCheck className="h-5 w-5" />
-            Mortgage Snapshot
+            approvU
           </Link>
           <span className="text-xs text-muted-foreground">
             Step {done ? total : Math.min(index + 1, total)} of {total}
@@ -166,8 +166,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       </main>
 
       <footer className="mx-auto max-w-3xl px-4 pb-10 text-center text-xs text-muted-foreground">
-        This is a prototype. Information shown helps us understand your situation —
-        it is not a mortgage approval.
+        Information shown helps us understand your situation — it is not a mortgage approval.
       </footer>
     </div>
   );
