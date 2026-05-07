@@ -26,125 +26,196 @@ export type Question =
       prefix?: string;
       suffix?: string;
       showIf?: (a: Record<string, unknown>) => boolean;
+    }
+  | {
+      id: string;
+      type: "mortgages";
+      title: string;
+      subtitle?: string;
+      showIf?: (a: Record<string, unknown>) => boolean;
     };
 
+// ---------- Shared option sets ----------
+
 const propertyUse: Option[] = [
-  { value: "primary", label: "Primary residence", hint: "I will live here" },
-  { value: "secondary", label: "Second home", hint: "Vacation or family use" },
-  { value: "rental", label: "Rental / investment", hint: "Tenants will occupy" },
+  {
+    value: "primary",
+    label: "Primary residence",
+    hint: "You will live in the property as your main home.",
+  },
+  {
+    value: "rental",
+    label: "Rental / investment property",
+    hint: "The property will mainly be rented to tenants.",
+  },
+  {
+    value: "secondary",
+    label: "Secondary or vacation home",
+    hint: "You will use the property as a second home or vacation property.",
+  },
 ];
 
 const propertyTypes: Option[] = [
-  { value: "detached", label: "Detached house" },
-  { value: "semi", label: "Semi-detached / townhouse" },
-  { value: "condo", label: "Condo apartment" },
-  { value: "multi", label: "Multi-unit (2–4 units)" },
+  { value: "detached", label: "Detached house", hint: "A standalone single-family home." },
+  { value: "semi", label: "Semi-detached / townhouse", hint: "A home that shares one or more walls with neighbours." },
+  { value: "condo", label: "Condo apartment", hint: "A unit inside a condo building or complex." },
+  { value: "multi", label: "Multi-unit (2–4 units)", hint: "A property with multiple separate legal units." },
+];
+
+const incomeOptions: Option[] = [
+  {
+    value: "employed",
+    label: "Employed",
+    hint: "You receive regular employment income from an employer.",
+  },
+  {
+    value: "self",
+    label: "Self-Employed",
+    hint: "You earn income through a business, contract work, sole proprietorship, corporation, or professional practice.",
+  },
+  {
+    value: "other",
+    label: "Other income",
+    hint: "This may include pension, rental income, support income, investment income, or other sources.",
+  },
+  {
+    value: "combo",
+    label: "Combination of income sources",
+    hint: "You have more than one type of income.",
+  },
+];
+
+const selfEmployedVerify: Option[] = [
+  {
+    value: "tax",
+    label: "Standard Verification — Tax Documents",
+    hint: "Your income can be supported with tax documents such as T1 Generals, NOAs, or business financials.",
+  },
+  {
+    value: "bank",
+    label: "Alternative Verification — Bank Statements",
+    hint: "Your income may be supported using business or personal bank statements instead of traditional tax documents.",
+  },
+  {
+    value: "unsure",
+    label: "Not sure",
+    hint: "That's okay. We can still continue and place your file into a review path.",
+  },
+];
+
+const firstTimeBuyer: Option[] = [
+  {
+    value: "yes",
+    label: "Yes, I am a first-time buyer",
+    hint: "You have never owned a home, or you may meet the first-time buyer definition based on your ownership history.",
+  },
+  {
+    value: "no",
+    label: "No, I am not a first-time buyer",
+    hint: "You currently own a home or have owned one recently.",
+  },
+  {
+    value: "unsure",
+    label: "I'm not sure",
+    hint: "That's okay. We can still continue and review this later.",
+  },
+];
+
+const firstTimeBuyerSubtitle =
+  "You may be considered a first-time home buyer if you have never owned a home before, or if you have not owned and lived in a home as your principal residence within the last four years. Your final eligibility may depend on lender, insurer, and government program rules.";
+
+const ownsResidence: Option[] = [
+  {
+    value: "own",
+    label: "Yes, I own my residence",
+    hint: "You are on title to the home where you currently live.",
+  },
+  {
+    value: "rent",
+    label: "No, I am renting",
+    hint: "You rent the place where you currently live.",
+  },
+  {
+    value: "other",
+    label: "No, someone else owns it",
+    hint: "A friend, family member, spouse, or another person owns the home where you live.",
+  },
+];
+
+const offerStatus: Option[] = [
+  { value: "yes", label: "Yes, I have an accepted offer", hint: "You have a signed Agreement of Purchase and Sale." },
+  { value: "no", label: "No, not yet", hint: "You're still shopping or exploring options." },
+];
+
+const targetPriceRange: Option[] = [
+  { value: "u400", label: "Under $400,000", hint: "Lower-range purchase budget." },
+  { value: "400-600", label: "$400,000 – $600,000", hint: "Common entry-level range in many markets." },
+  { value: "600-900", label: "$600,000 – $900,000", hint: "Mid-range purchase budget." },
+  { value: "900-1.2", label: "$900,000 – $1.2M", hint: "Upper mid-range budget." },
+  { value: "1.2+", label: "Above $1.2M", hint: "Higher-value property range." },
 ];
 
 // Credit score is collected as a numeric input with educational ranges.
 const creditQuestion: Question = {
   id: "credit",
   type: "number",
-  title: "What is your credit score?",
+  title: "What is your approximate credit score?",
   subtitle:
-    "This helps us match you with the right mortgage options. All credit scores are welcome.",
-  placeholder: "Enter your credit score (e.g., 679)",
+    "This helps us understand which mortgage options may fit your situation. If you are not sure, enter your best estimate.",
+  placeholder: "e.g. 679",
 };
 
-const income: Option[] = [
-  { value: "employed", label: "Employed", hint: "Salary or hourly wages" },
-  { value: "self", label: "Self-employed", hint: "Business owner or contractor" },
-  { value: "other", label: "Other income", hint: "Pension, investments, etc." },
-];
-
-const selfEmployedVerify: Option[] = [
-  { value: "tax", label: "Tax documents", hint: "T1 Generals or Notice of Assessment" },
-  { value: "bank", label: "Bank statements", hint: "Recent business deposits" },
-];
-
-const yesNo: Option[] = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-];
-
-const timeframe: Option[] = [
-  { value: "0-3", label: "Within 3 months" },
-  { value: "3-6", label: "3–6 months" },
-  { value: "6-12", label: "6–12 months" },
-  { value: "12+", label: "More than a year" },
-];
-
-const targetPriceRange: Option[] = [
-  { value: "u400", label: "Under $400,000" },
-  { value: "400-600", label: "$400,000 – $600,000" },
-  { value: "600-900", label: "$600,000 – $900,000" },
-  { value: "900-1.2", label: "$900,000 – $1.2M" },
-  { value: "1.2+", label: "Above $1.2M" },
-];
-
-const locationOptions: Option[] = [
-  { value: "downtown", label: "Downtown / urban core" },
-  { value: "suburb", label: "Suburban" },
-  { value: "rural", label: "Rural" },
-  { value: "near-transit", label: "Near transit" },
-  { value: "near-schools", label: "Near schools" },
-  { value: "waterfront", label: "Waterfront" },
-];
-
-const offerStatus: Option[] = [
-  { value: "accepted", label: "I have an accepted offer" },
-  { value: "shopping", label: "Actively shopping" },
-  { value: "exploring", label: "Just exploring" },
-];
-
-const legalUnits: Option[] = [
-  { value: "1", label: "1 unit" },
-  { value: "2", label: "2 units" },
-  { value: "3", label: "3 units" },
-  { value: "4", label: "4 units" },
-];
-
+// Income block (used in all flows)
 const incomeBlock: Question[] = [
   {
     id: "income",
     type: "choice",
     title: "How do you earn income?",
-    subtitle: "This helps us understand which lender programs may fit.",
-    options: income,
+    subtitle: "This helps us understand which lender programs may fit your situation.",
+    options: incomeOptions,
   },
   {
     id: "selfVerify",
     type: "choice",
     title: "How can your self-employed income be verified?",
-    subtitle: "Lenders typically need one of these.",
+    subtitle:
+      "Different lenders review self-employed income in different ways. This helps us understand which lender path may fit.",
     options: selfEmployedVerify,
-    showIf: (a) => a.income === "self",
+    showIf: (a) => a.income === "self" || a.income === "combo",
   },
 ];
+
+const needsOwnsResidence = (a: Record<string, unknown>) =>
+  a.use === "rental" || a.use === "secondary";
 
 // ---------- PURCHASE ----------
 export const purchaseFlow: Question[] = [
   {
-    id: "annualIncome",
-    type: "currency",
-    title: "What is your annual household income?",
-    subtitle: "Before taxes, from all borrowers on the application.",
-    prefix: "$",
-    placeholder: "120,000",
+    id: "use",
+    type: "choice",
+    title: "How will you use the property?",
+    subtitle: "This helps us understand which lender programs may fit.",
+    options: propertyUse,
   },
   {
-    id: "monthlyDebt",
-    type: "currency",
-    title: "What are your total monthly debt payments?",
-    subtitle: "Car loans, credit cards, lines of credit, student loans, etc.",
-    prefix: "$",
-    placeholder: "750",
+    id: "firstTime",
+    type: "choice",
+    title: "Are you a first-time home buyer in Canada?",
+    subtitle: firstTimeBuyerSubtitle,
+    options: firstTimeBuyer,
+    showIf: (a) => a.use === "primary",
   },
-  creditQuestion,
+  {
+    id: "offer",
+    type: "choice",
+    title: "Do you have an accepted offer?",
+    subtitle: "This helps us understand your purchase timeline.",
+    options: offerStatus,
+  },
   {
     id: "address",
     type: "text",
-    title: "What is the property address?",
+    title: "Where is the property located?",
     subtitle: "Street, city, and province — we'll keep this private.",
     placeholder: "123 Main St, Toronto, ON",
   },
@@ -152,37 +223,14 @@ export const purchaseFlow: Question[] = [
     id: "propertyType",
     type: "choice",
     title: "What type of property is it?",
+    subtitle: "This may affect your available lender options.",
     options: propertyTypes,
-  },
-  {
-    id: "legalUnits",
-    type: "choice",
-    title: "How many legal units are on the property?",
-    subtitle: "A legal unit is a separate livable area registered with the municipality.",
-    options: legalUnits,
-  },
-  {
-    id: "firstTime",
-    type: "choice",
-    title: "Are you a first-time home buyer in Canada?",
-    options: yesNo,
-  },
-  {
-    id: "primary",
-    type: "choice",
-    title: "Will this be your primary residence?",
-    options: yesNo,
-  },
-  {
-    id: "offer",
-    type: "choice",
-    title: "What is your offer status?",
-    options: offerStatus,
   },
   {
     id: "price",
     type: "currency",
     title: "What is the purchase price?",
+    subtitle: "If you don't have an exact number yet, enter your best estimate.",
     prefix: "$",
     placeholder: "650,000",
   },
@@ -190,88 +238,105 @@ export const purchaseFlow: Question[] = [
     id: "down",
     type: "currency",
     title: "How much is your down payment?",
-    subtitle: "We'll show your loan-to-value in the snapshot.",
+    subtitle: "This helps us understand your loan-to-value position.",
     prefix: "$",
     placeholder: "65,000",
+  },
+  creditQuestion,
+  ...incomeBlock,
+  {
+    id: "ownsResidence",
+    type: "choice",
+    title: "Do you own your primary residence?",
+    subtitle: "This helps us understand your overall property ownership situation.",
+    options: ownsResidence,
+    showIf: needsOwnsResidence,
   },
 ];
 
 // ---------- PRE-APPROVAL ----------
 export const prePurchaseFlow: Question[] = [
   {
-    id: "annualIncome",
-    type: "currency",
-    title: "What is your annual household income?",
-    prefix: "$",
-    placeholder: "120,000",
-  },
-  {
-    id: "monthlyDebt",
-    type: "currency",
-    title: "What are your total monthly debt payments?",
-    prefix: "$",
-    placeholder: "750",
+    id: "location",
+    type: "text",
+    title: "Where are you planning to buy?",
+    subtitle: "City, neighbourhood, or province — anything you have in mind helps.",
+    placeholder: "e.g. Toronto, ON",
   },
   {
     id: "priceRange",
     type: "choice",
-    title: "What target price range are you considering?",
+    title: "What price range are you considering?",
+    subtitle: "This helps us understand the size of mortgage you may need.",
     options: targetPriceRange,
+  },
+  {
+    id: "savedDown",
+    type: "currency",
+    title: "How much have you saved for down payment?",
+    subtitle: "This helps us see what's possible based on your savings.",
+    prefix: "$",
+    placeholder: "50,000",
   },
   {
     id: "use",
     type: "choice",
     title: "How will you use the property?",
+    subtitle: "This helps us understand which lender programs may fit.",
     options: propertyUse,
   },
   {
-    id: "location",
-    type: "multi",
-    title: "Where are you looking?",
-    subtitle: "Select all that apply.",
-    options: locationOptions,
-  },
-  {
-    id: "timeframe",
+    id: "propertyType",
     type: "choice",
-    title: "When do you hope to buy?",
-    options: timeframe,
+    title: "What type of property are you considering?",
+    subtitle: "This may affect your available lender options.",
+    options: propertyTypes,
   },
   {
     id: "firstTime",
     type: "choice",
     title: "Are you a first-time home buyer in Canada?",
-    options: yesNo,
+    subtitle: firstTimeBuyerSubtitle,
+    options: firstTimeBuyer,
     showIf: (a) => a.use === "primary",
-  },
-  {
-    id: "primary",
-    type: "choice",
-    title: "Will this be your primary residence?",
-    options: yesNo,
   },
   creditQuestion,
   ...incomeBlock,
+  {
+    id: "ownsResidence",
+    type: "choice",
+    title: "Do you own your primary residence?",
+    subtitle: "This helps us understand your overall property ownership situation.",
+    options: ownsResidence,
+    showIf: needsOwnsResidence,
+  },
 ];
 
 // ---------- REFINANCE / RENEW / EQUITY ----------
 const refinanceIntents: Option[] = [
-  { value: "renew", label: "Renew my mortgage" },
-  { value: "switch", label: "Switch lenders" },
-  { value: "lower-payment", label: "Lower my monthly payment" },
-  { value: "better-rate", label: "Get a better rate" },
-  { value: "cash-out", label: "Access home equity / cash out" },
-  { value: "consolidate", label: "Consolidate debt" },
-  { value: "heloc", label: "Add a HELOC" },
-  { value: "unsure", label: "I'm not sure yet" },
+  { value: "renew", label: "Renew my mortgage", hint: "Your current mortgage term is ending and you want to review your options." },
+  { value: "switch", label: "Switch lenders", hint: "You may want to move your mortgage to a different lender." },
+  { value: "lower-payment", label: "Lower my monthly payment", hint: "You want to explore ways to reduce your mortgage payment." },
+  { value: "better-rate", label: "Get a better rate", hint: "You want to compare available rate options." },
+  { value: "cash-out", label: "Access home equity / cash out", hint: "You want to borrow against your home equity." },
+  { value: "consolidate", label: "Consolidate debt", hint: "You want to combine higher-interest debts into your mortgage." },
+  { value: "heloc", label: "Add a HELOC", hint: "You want access to a revolving home equity line of credit." },
+  { value: "unsure", label: "I'm not sure yet", hint: "That's okay. We can help identify possible paths." },
+];
+
+const numMortgagesOptions: Option[] = [
+  { value: "0", label: "No mortgage / paid off", hint: "The property is mortgage-free." },
+  { value: "1", label: "1 mortgage", hint: "There is one mortgage registered on the property." },
+  { value: "2", label: "2 mortgages", hint: "There are two mortgages registered on the property." },
+  { value: "3", label: "3 mortgages", hint: "There are three mortgages registered on the property." },
 ];
 
 const cashOutPurposes: Option[] = [
-  { value: "renovations", label: "Home renovations" },
-  { value: "debt", label: "Pay off other debt" },
-  { value: "investment", label: "Investment" },
-  { value: "education", label: "Education" },
-  { value: "other", label: "Other" },
+  { value: "renovations", label: "Home renovations", hint: "Funds will be used to renovate or improve the property." },
+  { value: "debt", label: "Pay off other debt", hint: "Funds will be used to pay down other debts." },
+  { value: "investment", label: "Investment", hint: "Funds will be used for an investment opportunity." },
+  { value: "education", label: "Education", hint: "Funds will be used for tuition or education costs." },
+  { value: "other", label: "Other", hint: "Funds will be used for another purpose." },
 ];
 
 const wantsCashOut = (a: Record<string, unknown>) => {
@@ -279,103 +344,101 @@ const wantsCashOut = (a: Record<string, unknown>) => {
   return Array.isArray(intent) && (intent.includes("cash-out") || intent.includes("consolidate") || intent.includes("heloc"));
 };
 
-const wantsRenew = (a: Record<string, unknown>) => {
-  const intent = a.intent as string[] | undefined;
-  return Array.isArray(intent) && intent.includes("renew");
-};
+const wantsAccessEquity: Option[] = [
+  { value: "yes", label: "Yes, I'd like to access equity", hint: "You want to borrow additional funds against your home." },
+  { value: "no", label: "No, not at this time", hint: "You're not looking to take out additional funds." },
+];
 
 export const refinanceFlow: Question[] = [
   {
     id: "intent",
     type: "multi",
     title: "What are you hoping to do with your mortgage?",
-    subtitle: "Select all that apply — we'll tailor the rest.",
+    subtitle: "Select all that apply — this helps us tailor your options.",
     options: refinanceIntents,
   },
   {
-    id: "renewalDate",
+    id: "propertyType",
+    type: "choice",
+    title: "What type of property are you refinancing?",
+    subtitle: "This may affect your available lender options.",
+    options: propertyTypes,
+  },
+  {
+    id: "address",
     type: "text",
-    title: "When does your current mortgage come up for renewal?",
-    subtitle: "An approximate month and year is fine.",
-    placeholder: "e.g. June 2026",
-    showIf: wantsRenew,
-  },
-  {
-    id: "balance",
-    type: "currency",
-    title: "What is your current mortgage balance?",
-    prefix: "$",
-    placeholder: "420,000",
-  },
-  {
-    id: "currentRate",
-    type: "number",
-    title: "What is your current interest rate?",
-    subtitle: "Approximate is fine.",
-    suffix: "%",
-    placeholder: "5.49",
-  },
-  {
-    id: "currentPayment",
-    type: "currency",
-    title: "What is your current monthly mortgage payment?",
-    prefix: "$",
-    placeholder: "2,400",
-  },
-  {
-    id: "yearsRemaining",
-    type: "number",
-    title: "How many years are left on your amortization?",
-    placeholder: "22",
-  },
-  {
-    id: "prepayment",
-    type: "choice",
-    title: "Does your current mortgage have a prepayment penalty?",
-    options: yesNo,
-  },
-  {
-    id: "value",
-    type: "currency",
-    title: "What is your estimated home value?",
-    prefix: "$",
-    placeholder: "750,000",
-  },
-  {
-    id: "cashAmount",
-    type: "currency",
-    title: "How much equity would you like to access?",
-    prefix: "$",
-    placeholder: "50,000",
-    showIf: wantsCashOut,
-  },
-  {
-    id: "cashPurpose",
-    type: "choice",
-    title: "What will the funds be used for?",
-    options: cashOutPurposes,
-    showIf: wantsCashOut,
+    title: "Where is the property located?",
+    subtitle: "Street, city, and province — we'll keep this private.",
+    placeholder: "123 Main St, Toronto, ON",
   },
   {
     id: "use",
     type: "choice",
     title: "How do you use the property?",
+    subtitle: "This helps us understand which lender programs may fit.",
     options: propertyUse,
   },
   {
-    id: "propertyType",
-    type: "choice",
-    title: "What type of property is it?",
-    options: propertyTypes,
+    id: "value",
+    type: "currency",
+    title: "What is your estimated property value?",
+    subtitle: "An approximate value is fine.",
+    prefix: "$",
+    placeholder: "750,000",
   },
   {
-    id: "primary",
+    id: "numMortgages",
     type: "choice",
-    title: "Is this your primary residence?",
-    options: yesNo,
+    title: "How many mortgages are currently registered on this property?",
+    subtitle:
+      "Some homeowners have more than one mortgage registered on the same property. This helps us understand your current equity position.",
+    options: numMortgagesOptions,
+  },
+  {
+    id: "mortgages",
+    type: "mortgages",
+    title: "Tell us about your existing mortgages",
+    subtitle:
+      "Enter approximate details for each mortgage. If you are not sure of the exact amount, enter your best estimate.",
+    showIf: (a) => {
+      const n = Number(a.numMortgages);
+      return n >= 1 && n <= 3;
+    },
+  },
+  {
+    id: "wantsEquity",
+    type: "choice",
+    title: "Do you want to access equity or cash out?",
+    subtitle: "This helps us understand whether you need additional funds.",
+    options: wantsAccessEquity,
+  },
+  {
+    id: "cashAmount",
+    type: "currency",
+    title: "How much cash out do you need?",
+    subtitle: "An approximate amount is fine.",
+    prefix: "$",
+    placeholder: "50,000",
+    showIf: (a) => a.wantsEquity === "yes" || wantsCashOut(a),
+  },
+  {
+    id: "cashPurpose",
+    type: "choice",
+    title: "What will the funds be used for?",
+    subtitle: "This helps us understand the purpose of the additional funds.",
+    options: cashOutPurposes,
+    showIf: (a) => a.wantsEquity === "yes" || wantsCashOut(a),
   },
   creditQuestion,
   ...incomeBlock,
+  {
+    id: "ownsResidence",
+    type: "choice",
+    title: "Do you own your primary residence?",
+    subtitle: "This helps us understand your overall property ownership situation.",
+    options: ownsResidence,
+    showIf: needsOwnsResidence,
+  },
 ];
 
 export type FlowKey = "purchase" | "pre" | "refinance";
@@ -388,7 +451,7 @@ export const flows: Record<
     title: "Purchase Mortgage Snapshot",
     subtitle: "A quick look at possible options for your home purchase.",
     questions: purchaseFlow,
-    resultTitle: "Your Purchase Snapshot",
+    resultTitle: "Your Mortgage Snapshot",
   },
   pre: {
     title: "Mortgage Readiness Check",
@@ -400,6 +463,15 @@ export const flows: Record<
     title: "Renew, Refinance, or Access Equity",
     subtitle: "Explore possible options for renewing, refinancing, or unlocking equity.",
     questions: refinanceFlow,
-    resultTitle: "Your Mortgage Snapshot",
+    resultTitle: "Your Refinance Snapshot",
   },
+};
+
+export type MortgageEntry = {
+  position: number;
+  lender: string;
+  balance: string;
+  payment?: string;
+  maturity?: string;
+  rate?: string;
 };
