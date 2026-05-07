@@ -368,8 +368,8 @@ export const refinanceFlow: Question[] = [
     id: "address",
     type: "text",
     title: "Where is the property located?",
-    subtitle: "Street, city, and province — we'll keep this private.",
-    placeholder: "123 Main St, Toronto, ON",
+    subtitle: "Start typing and select your address. Ontario, Canada only for now.",
+    placeholder: "Start typing your address…",
   },
   {
     id: "use",
