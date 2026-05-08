@@ -332,49 +332,49 @@ function PurchaseSnapshot({
       onEdit={onEdit}
     >
       {/* Hero summary cards */}
-      <section className={`rounded-2xl border p-4 shadow-sm sm:p-6 md:p-8 ${heroBg}`}>
+      <section className={`rounded-2xl border p-5 shadow-sm sm:p-7 md:p-9 ${heroBg}`}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
           <Sparkles className="h-3.5 w-3.5" />
           Snapshot ready
         </div>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
           {heroHeadline}
         </h2>
 
-        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <SummaryCard
-            icon={<Compass className="h-4 w-4" />}
-            label="Likely Lending Path"
-            value={path}
-            tone={pathTone(path)}
-          />
-          <SummaryCard
-            icon={<ShieldCheck className="h-4 w-4" />}
-            label="Mortgage Category"
-            value={category}
-            tone={categoryTone(category)}
-          />
-          <SummaryCard
-            icon={<CreditCard className="h-4 w-4" />}
-            label="Credit Position"
-            value={creditPosition}
-            tone={creditTone(creditPosition)}
-          />
-          <SummaryCard
-            icon={<Briefcase className="h-4 w-4" />}
-            label="Income Profile"
-            value={incomeProfile}
-            tone="secondary"
-          />
-          <SummaryCard
-            icon={<ArrowRight className="h-4 w-4" />}
-            label="Next Step"
-            value={nextStep}
-            tone="accent"
-          />
+        {/* Primary outcome — single, prominent path pill with next step */}
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold ${toneClass[pathTone(path)]}`}
+          >
+            <Compass className="h-3.5 w-3.5" />
+            {path}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent">
+            <ArrowRight className="h-3.5 w-3.5" />
+            {nextStep}
+          </span>
         </div>
 
-        <div className="mt-6 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
+        {/* Supporting facts — clean key/value rows, no fixed-width boxes */}
+        <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur sm:grid-cols-3 sm:p-5">
+          <HeroFact
+            icon={<ShieldCheck className="h-3.5 w-3.5" />}
+            label="Mortgage Category"
+            value={category}
+          />
+          <HeroFact
+            icon={<CreditCard className="h-3.5 w-3.5" />}
+            label="Credit Position"
+            value={creditPosition}
+          />
+          <HeroFact
+            icon={<Briefcase className="h-3.5 w-3.5" />}
+            label="Income Profile"
+            value={incomeProfile}
+          />
+        </dl>
+
+        <div className="mt-5 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
           {primeSubtype && (
             <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
@@ -834,6 +834,28 @@ function SummaryCard({
         <span className="shrink-0">{icon}</span>
         <span className="truncate">{label}</span>
       </div>
+    </div>
+  );
+}
+
+function HeroFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-secondary">{icon}</span>
+        <span>{label}</span>
+      </dt>
+      <dd className="mt-1 break-words text-base font-semibold text-foreground sm:text-lg">
+        {value}
+      </dd>
     </div>
   );
 }
