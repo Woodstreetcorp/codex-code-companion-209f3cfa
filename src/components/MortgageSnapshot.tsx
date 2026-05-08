@@ -341,18 +341,26 @@ function PurchaseSnapshot({
           {heroHeadline}
         </h2>
 
-        {/* Primary outcome — single, prominent path pill with next step */}
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        {/* Primary outcome — informational path tag + primary CTA */}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold ${toneClass[pathTone(path)]}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${toneClass[pathTone(path)]}`}
           >
             <Compass className="h-3.5 w-3.5" />
             {path}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1.5 text-sm font-medium text-accent">
-            <ArrowRight className="h-3.5 w-3.5" />
+        </div>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Link
+            to="/portal"
+            className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
+          >
             {nextStep}
-          </span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            Takes under 30 seconds · No credit impact
+          </p>
         </div>
 
         {/* Supporting facts — clean key/value rows, no fixed-width boxes */}
