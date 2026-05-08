@@ -1015,6 +1015,20 @@ function RequestCard({
         down_payment_amount: down || undefined,
       })
     : null;
+  // Alternative override: credit 500–619 forces 20% (or 25% if <550) min DP.
+  const score = getCreditScore(answers);
+  let ruleLabel = policy?.rule_applied_label;
+  let minDpAmount = policy?.minimum_down_payment_amount ?? 0;
+  let minDpPercent = policy?.minimum_down_payment_percent ?? 0;
+  if (price > 0 && score >= 500 && score < 620) {
+    const altPct = score < 550 ? 25 : 20;
+    minDpAmount = price * (altPct / 100);
+    minDpPercent = altPct;
+    ruleLabel =
+      altPct === 25
+        ? "Alternative lender minimum: 25% down for credit below 550"
+        : "Alternative lender minimum: 20% down for credit 500–619";
+  }
 
   const microcopy =
     category === "Insured"
@@ -1055,7 +1069,13 @@ function RequestCard({
         value={(answers.address as string) || (answers.location as string) || "—"}
       />
       {policy && (
-        <Row label="Rule Applied" value={policy.rule_applied_label} />
+        <Row label="Rule Applied" value={ruleLabel ?? policy.rule_applied_label} />
+      )}
+      {policy && minDpAmount > 0 && (
+        <Row
+          label="Estimated Minimum Down Payment"
+          value={`${formatCAD(minDpAmount)} (${minDpPercent}%)`}
+        />
       )}
       {microcopy && (
         <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
