@@ -119,6 +119,27 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         };
       }
     }
+    if (flowKey === "refinance" && current.id === "cashAmount") {
+      const value = parseCurrency(answers.value as string);
+      const mortgages = (answers.mortgages as MortgageEntry[] | undefined) ?? [];
+      const totalBalances = Array.isArray(mortgages)
+        ? mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0)
+        : 0;
+      const cashOut = parseCurrency(stringValue);
+      const maxCashOut = Math.max(value * 0.8 - totalBalances, 0);
+      if (value > 0 && cashOut > 0) {
+        if (cashOut > maxCashOut) {
+          return {
+            ok: false,
+            message: `Based on an 80% loan-to-value limit, the maximum estimated cash out is ${formatCAD(maxCashOut)}. You're over by ${formatCAD(cashOut - maxCashOut)}.`,
+          };
+        }
+        return {
+          ok: true,
+          message: `That's within your estimated maximum of ${formatCAD(maxCashOut)} (80% LTV).`,
+        };
+      }
+    }
     return null;
   }, [current, flowKey, answers, stringValue, mortgageValue]);
 
@@ -351,6 +372,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
               (current.id === "savedDown" && flowKey === "pre")) && (
               <DownPaymentGuidanceCard answers={answers} flowKey={flowKey} />
             )}
+            {current.id === "cashAmount" && flowKey === "refinance" && (
+              <CashOutMaxCard answers={answers} />
+            )}
             {validationHint && (
               <p
                 className={`mt-3 text-sm ${
@@ -537,6 +561,53 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
     </label>
+  );
+}
+
+function CashOutMaxCard({ answers }: { answers: Answers }) {
+  const value = parseCurrency(answers.value as string);
+  const mortgages = (answers.mortgages as MortgageEntry[] | undefined) ?? [];
+  const totalBalances = Array.isArray(mortgages)
+    ? mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0)
+    : 0;
+  if (value <= 0) return null;
+  const cap = value * 0.8;
+  const maxCashOut = Math.max(cap - totalBalances, 0);
+  const overLimit = totalBalances >= cap;
+  return (
+    <div className="mt-5 rounded-xl border-2 border-secondary/30 bg-secondary/5 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
+            Estimated max cash out
+          </p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{formatCAD(maxCashOut)}</p>
+        </div>
+        <div className="text-right text-xs text-muted-foreground">
+          <p>80% of {formatCAD(value)}</p>
+          <p className="mt-0.5">= {formatCAD(cap)}</p>
+        </div>
+      </div>
+      <dl className="mt-4 space-y-1.5 text-sm">
+        <div className="flex justify-between">
+          <dt className="text-muted-foreground">Property value</dt>
+          <dd className="font-medium text-foreground">{formatCAD(value)}</dd>
+        </div>
+        <div className="flex justify-between">
+          <dt className="text-muted-foreground">Existing mortgage balance(s)</dt>
+          <dd className="font-medium text-foreground">− {formatCAD(totalBalances)}</dd>
+        </div>
+        <div className="flex justify-between border-t border-border pt-1.5">
+          <dt className="text-muted-foreground">80% LTV cap</dt>
+          <dd className="font-medium text-foreground">{formatCAD(cap)}</dd>
+        </div>
+      </dl>
+      <p className="mt-3 text-xs text-muted-foreground">
+        {overLimit
+          ? "Your existing balances already exceed the 80% LTV cap, so additional cash out may not be available through standard refinance programs."
+          : "Most refinance programs cap total borrowing at 80% of the property value. Final amount depends on lender, credit, and income review."}
+      </p>
+    </div>
   );
 }
 
