@@ -220,6 +220,14 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
                         type="button"
                         onClick={() => {
                           setValue(opt.value);
+                          if (
+                            flowKey === "purchase" &&
+                            current.id === "offer" &&
+                            opt.value === "no"
+                          ) {
+                            setTimeout(() => navigate({ to: "/pre-purchase" }), 180);
+                            return;
+                          }
                           setTimeout(() => nextRef.current(), 180);
                         }}
                         className={`group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all ${
