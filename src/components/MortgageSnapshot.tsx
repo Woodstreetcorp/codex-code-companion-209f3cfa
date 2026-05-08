@@ -1003,8 +1003,8 @@ function RequestCard({
   category: MortgageCategory;
 }) {
   const isPre = flowKey === "pre";
-  const price = parseCurrency(answers.price as string);
-  const down = parseCurrency(answers.down as string);
+  const price = getEffectivePrice(answers);
+  const down = getEffectiveDown(answers);
   const loan = price > down ? price - down : 0;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : null;
   const policy = price > 0
