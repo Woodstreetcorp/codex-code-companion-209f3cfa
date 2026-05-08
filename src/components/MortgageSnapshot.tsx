@@ -105,7 +105,45 @@ function getLendingPath(a: Answers): LendingPath {
     income_verification: a.selfVerify as string | undefined,
     meets_minimum_dp: meetsMin,
   });
+  // If lane is Alternative, run the Alternative classifier so its DP/LTV
+  // rules can downgrade the path to TAILORED_REVIEW when applicable.
+  if (lane === "ALTERNATIVE_FIT") {
+    const alt = classifyAlternative(buildAlternativeInput(a));
+    return laneLabel(alt.lending_path) as LendingPath;
+  }
   return laneLabel(lane) as LendingPath;
+}
+
+function buildAlternativeInput(a: Answers) {
+  const score = getCreditScore(a);
+  const price = parseCurrency(a.price as string);
+  const down = parseCurrency(a.down as string);
+  const value = parseCurrency(a.value as string);
+  const isRefi = !!a.value || !!a.mortgages;
+  const transaction_type: TransactionType = isRefi
+    ? "REFINANCE"
+    : a.priceRange || a.savedDown || a.specificPrice
+      ? "PRE_PURCHASE"
+      : "PURCHASE";
+  const dpPct = price > 0 && down > 0 ? +((down / price) * 100).toFixed(2) : undefined;
+  let estLtv: number | undefined;
+  if (isRefi && value > 0 && Array.isArray(a.mortgages)) {
+    const balance = (a.mortgages as MortgageEntry[]).reduce(
+      (s, m) => s + parseCurrency(m.balance),
+      0,
+    );
+    const cashOut = parseCurrency(a.cashAmount as string);
+    estLtv = +(((balance + cashOut) / value) * 100).toFixed(1);
+  }
+  return {
+    credit_score: score,
+    income_type: a.income as string | undefined,
+    income_verification: a.selfVerify as string | undefined,
+    transaction_type,
+    down_payment_percent: dpPct,
+    estimated_ltv: estLtv,
+    product_match_count: 1,
+  };
 }
 
 function getMortgageCategory(flowKey: FlowKey, a: Answers): MortgageCategory {
