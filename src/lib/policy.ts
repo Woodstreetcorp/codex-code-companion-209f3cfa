@@ -249,6 +249,118 @@ export function classifyPrimeSubtype(input: LaneInput): PrimeSubtype {
   return input.credit_score >= 680 ? "PRIME_PLUS" : "STANDARD_PRIME";
 }
 
+// ---------- Alternative classification ----------
+
+export type TransactionType = "PURCHASE" | "PRE_PURCHASE" | "REFINANCE";
+
+export interface AlternativeInput {
+  credit_score: number;
+  income_type?: string; // employed | self | other | combo
+  income_verification?: string; // tax | bank | unsure
+  transaction_type: TransactionType;
+  // Purchase / Pre-purchase
+  down_payment_percent?: number;
+  // Refinance
+  estimated_ltv?: number;
+  // Optional product matching (defaults to 1 when not provided)
+  product_match_count?: number;
+}
+
+export interface AlternativeResult {
+  lending_path: LendingLane;
+  alternative_class: AlternativeSubtype;
+  alternative_structure: AlternativeStructure;
+  required_down_payment_percent?: number;
+  max_ltv?: number;
+  reasons: string[];
+}
+
+export function classifyAlternative(input: AlternativeInput): AlternativeResult {
+  const reasons: string[] = [];
+  let lending_path: LendingLane = "ALTERNATIVE_FIT";
+  let alternative_class: AlternativeSubtype = null;
+  let alternative_structure: AlternativeStructure = null;
+  let required_down_payment_percent: number | undefined;
+  let max_ltv: number | undefined;
+
+  const { credit_score, income_type, income_verification, transaction_type } = input;
+  const productMatchCount = input.product_match_count ?? 1;
+
+  // Step 1 — borrower class
+  if (
+    credit_score >= 620 &&
+    (income_type === "self" || income_type === "combo") &&
+    income_verification === "bank"
+  ) {
+    alternative_class = "ALTERNATIVE_PLUS";
+    reasons.push("PRIME_CREDIT_WITH_BANK_STATEMENT_INCOME");
+  } else if (credit_score >= 500 && credit_score < 620) {
+    alternative_class = "STANDARD_ALTERNATIVE";
+    reasons.push("CREDIT_IN_ALTERNATIVE_RANGE");
+  } else if (credit_score < 500) {
+    lending_path = "TAILORED_REVIEW";
+    reasons.push("CREDIT_BELOW_500");
+  } else {
+    // Doesn't qualify for Alternative — caller should use Prime classifier.
+    return {
+      lending_path: "PRIME_FIT",
+      alternative_class: null,
+      alternative_structure: null,
+      reasons: [],
+    };
+  }
+
+  // Step 2 — Alternative LTV / DP rule
+  if (transaction_type === "PURCHASE" || transaction_type === "PRE_PURCHASE") {
+    if (credit_score < 550) {
+      required_down_payment_percent = 25;
+      max_ltv = 75;
+      reasons.push("ALTERNATIVE_CREDIT_BELOW_550_MAX_75_LTV");
+    } else {
+      required_down_payment_percent = 20;
+      max_ltv = 80;
+      reasons.push("ALTERNATIVE_MIN_20_DOWN_PAYMENT");
+    }
+    if (
+      input.down_payment_percent !== undefined &&
+      input.down_payment_percent < required_down_payment_percent
+    ) {
+      lending_path = "TAILORED_REVIEW";
+      reasons.push("ALTERNATIVE_DOWN_PAYMENT_BELOW_REQUIRED");
+    }
+  } else if (transaction_type === "REFINANCE") {
+    if (credit_score < 550) {
+      max_ltv = 75;
+      reasons.push("ALTERNATIVE_CREDIT_BELOW_550_MAX_75_LTV");
+    } else {
+      max_ltv = 80;
+      reasons.push("ALTERNATIVE_MAX_80_LTV");
+    }
+    if (input.estimated_ltv !== undefined && input.estimated_ltv > max_ltv) {
+      lending_path = "TAILORED_REVIEW";
+      reasons.push("ALTERNATIVE_REFINANCE_LTV_ABOVE_LIMIT");
+    }
+  }
+
+  // Step 3 — structure
+  if (lending_path === "ALTERNATIVE_FIT" && productMatchCount > 0) {
+    alternative_structure = "CONFIRMING_ALTERNATIVE";
+  } else if (lending_path === "ALTERNATIVE_FIT" && productMatchCount === 0) {
+    lending_path = "TAILORED_REVIEW";
+    alternative_structure = "NON_CONFIRMING_ALTERNATIVE";
+    reasons.push("NO_ALTERNATIVE_PRODUCT_MATCH");
+  }
+
+  return {
+    lending_path,
+    alternative_class,
+    alternative_structure,
+    required_down_payment_percent,
+    max_ltv,
+    reasons,
+  };
+}
+
 export function laneLabel(l: LendingLane): string {
   return l === "PRIME_FIT"
     ? "Prime Fit"
