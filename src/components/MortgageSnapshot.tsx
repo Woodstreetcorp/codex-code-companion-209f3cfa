@@ -1123,6 +1123,96 @@ function SocialPill({ href, icon, label }: { href: string; icon: ReactNode; labe
 }
 
 function ReferralCard() {
+  // placeholder anchor (no-op)
+  return _ReferralCardImpl();
+}
+
+function HomeLifeOfferBundle() {
+  const offers = [
+    {
+      icon: <FileText className="h-4 w-4" />,
+      title: "Appraisal Fee Credit",
+      desc: "Up to $400 credited toward your property appraisal.",
+    },
+    {
+      icon: <Scale className="h-4 w-4" />,
+      title: "Legal Fee Credit",
+      desc: "Save on closing legal costs with our partner network.",
+    },
+    {
+      icon: <Activity className="h-4 w-4" />,
+      title: "Annual Mortgage Strategy Review",
+      desc: "A yearly check-in to keep your mortgage optimized.",
+    },
+    {
+      icon: <ShieldCheck className="h-4 w-4" />,
+      title: "Credit Monitoring",
+      desc: "Free credit tracking and alerts for 12 months.",
+    },
+  ];
+  return (
+    <section className="mt-4 rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/5 via-card to-card p-5 shadow-sm sm:p-6">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+            <Gift className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-semibold text-foreground sm:text-lg">
+                Your Home Life Offer Bundle
+              </h3>
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                Preview
+              </span>
+            </div>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+              If you continue, you may qualify for added benefits and partner offers alongside
+              your refinance options.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {offers.map((o) => (
+          <div
+            key={o.title}
+            className="rounded-2xl border border-border bg-background/70 p-3 transition hover:border-accent/40 hover:shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                {o.icon}
+              </div>
+              <div className="text-sm font-semibold text-foreground">{o.title}</div>
+            </div>
+            <p className="mt-2 text-xs leading-snug text-muted-foreground">{o.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-4 text-[11px] leading-snug text-muted-foreground">
+        These offers are preview benefits and may vary based on your selected mortgage option,
+        location, and final application details.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          to="/portal"
+          className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow-sm hover:opacity-95 sm:flex-none sm:px-6"
+        >
+          View My Eligible Offers
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Button variant="outline" className="h-11 rounded-xl">
+          Talk to a Broker
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function _ReferralCardImpl() {
   const [copied, setCopied] = useState(false);
   const code = "REFI-YOU50";
   const link = `${SHARE_URL}?ref=${code}`;
