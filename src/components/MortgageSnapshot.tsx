@@ -927,18 +927,14 @@ function ShareDialog({ onClose }: { onClose: () => void }) {
 }
 
 function ShareWinCard({
-  withinLimit,
-  availableEquity,
-  lvr,
+  shareText,
+  headline,
+  subhead,
 }: {
-  withinLimit: boolean;
-  availableEquity: number;
-  lvr: number;
+  shareText: string;
+  headline?: string;
+  subhead?: string;
 }) {
-  const shareText = useMemo(
-    () => buildShareText(withinLimit, availableEquity),
-    [withinLimit, availableEquity],
-  );
   const enc = encodeURIComponent;
   const xHref = `https://twitter.com/intent/tweet?text=${enc(shareText)}&url=${enc(SHARE_URL)}`;
   const liHref = `https://www.linkedin.com/sharing/share-offsite/?url=${enc(SHARE_URL)}`;
@@ -952,13 +948,11 @@ function ShareWinCard({
             Share your win
           </div>
           <h3 className="mt-3 text-xl font-semibold leading-snug sm:text-2xl">
-            {withinLimit
-              ? "Smart move — let your network know."
-              : "Got a snapshot? Help a friend get one too."}
+            {headline ?? "Smart move — let your network know."}
           </h3>
           <p className="mt-2 text-sm text-primary-foreground/85">
-            Most homeowners never check their refinance position. Share approvU and help
-            someone discover their equity in 2 minutes — no credit impact.
+            {subhead ??
+              "Most people never check where they stand on a mortgage. Share approvU and help a friend get clarity in 2 minutes — no credit impact."}
           </p>
         </div>
 
@@ -974,7 +968,6 @@ function ShareWinCard({
           </div>
         </div>
       </div>
-      <span className="hidden">{lvr}</span>
     </section>
   );
 }
