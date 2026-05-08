@@ -87,13 +87,16 @@ export function getMinimumDownPaymentPolicy(input: {
 
   // VACATION / SECONDARY
   if (property_usage === "VACATION") {
+    // Global override: vacation homes at or above $1.5M are uninsurable
+    // regardless of down payment.
     if (property_value >= 1_500_000) {
       const amt = property_value * 0.2;
       return {
         minimum_down_payment_amount: amt,
         minimum_down_payment_percent: 20,
         purchase_price: property_value,
-        rule_applied_label: "20% minimum down payment required for homes at or above $1.5M",
+        rule_applied_label:
+          "20% minimum down payment required for vacation homes at or above $1.5M",
         rule_reference_title: "Down Payment Rule Applied",
         rule_reference_text:
           "Secondary/vacation homes priced at or above $1.5M fall outside insured programs.",
@@ -101,26 +104,52 @@ export function getMinimumDownPaymentPolicy(input: {
         program_lane: "UNINSURABLE",
       };
     }
-    if (dp >= property_value * 0.2) {
-      const amt = property_value * 0.2;
-      const lane: ProgramLane = property_value <= 1_000_000 ? "INSURABLE" : "UNINSURABLE";
-      return {
-        minimum_down_payment_amount: amt,
-        minimum_down_payment_percent: 20,
-        purchase_price: property_value,
-        rule_applied_label: "20% down payment may place this secondary property in an insurable path",
-        rule_reference_title: "Down Payment Rule Applied",
-        rule_reference_text:
-          "Secondary/vacation homes with at least 20% down may fit insurable programs (subject to property value).",
-        reason:
-          property_value <= 1_000_000
+
+    // Single-unit vacation: branch on down payment
+    if (unit_count === 1) {
+      if (dp > 0 && dp >= property_value * 0.2) {
+        const amt = property_value * 0.2;
+        const isInsurable = property_value <= 1_000_000;
+        return {
+          minimum_down_payment_amount: amt,
+          minimum_down_payment_percent: 20,
+          purchase_price: property_value,
+          rule_applied_label: isInsurable
+            ? "20% down on a vacation home up to $1M may fit insurable programs"
+            : "20% down on a vacation home above $1M typically falls into uninsurable programs",
+          rule_reference_title: "Down Payment Rule Applied",
+          rule_reference_text: isInsurable
+            ? "Single-unit vacation homes priced at or below $1M with at least 20% down may qualify for insurable programs."
+            : "Single-unit vacation homes priced above $1M with at least 20% down typically fall into uninsurable programs.",
+          reason: isInsurable
             ? "VACATION_DP_GE20_PRICE_LE1M_INSURABLE"
             : "VACATION_DP_GE20_PRICE_GT1M_UNINSURABLE",
-        program_lane: lane,
-      };
+          program_lane: isInsurable ? "INSURABLE" : "UNINSURABLE",
+        };
+      }
+      // Less than 20% down — insured path with tiered minimum applies.
+      return tieredOwnerOccupied(
+        property_value,
+        "VACATION_1_UNIT_INSURED_PATH",
+        "INSURED",
+      );
     }
-    // Single-unit secondary, less than 20% down — insured path tiers apply.
-    return tieredOwnerOccupied(property_value, "VACATION_1_UNIT_INSURED_PATH", "INSURED");
+
+    // Multi-unit vacation: not eligible for insured vacation programs;
+    // require 20% down and treat as uninsurable.
+    const amt = property_value * 0.2;
+    return {
+      minimum_down_payment_amount: amt,
+      minimum_down_payment_percent: 20,
+      purchase_price: property_value,
+      rule_applied_label:
+        "20% minimum down payment required for multi-unit vacation properties",
+      rule_reference_title: "Down Payment Rule Applied",
+      rule_reference_text:
+        "Multi-unit secondary/vacation properties typically fall outside insured programs.",
+      reason: "VACATION_MULTI_UNIT_UNINSURABLE",
+      program_lane: "UNINSURABLE",
+    };
   }
 
   // OWNER_OCCUPIED
