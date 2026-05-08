@@ -195,6 +195,12 @@ function PurchaseSnapshot({
   const score = getCreditScore(answers);
   const path = getLendingPath(answers);
   const category = getMortgageCategory(flowKey, answers);
+  const primeSubtype = classifyPrimeSubtype({
+    credit_score: score,
+    income_type: answers.income as string | undefined,
+    income_verification: answers.selfVerify as string | undefined,
+    meets_minimum_dp: true,
+  });
   const creditPosition = getCreditPosition(score);
   const incomeProfile = getIncomeProfile(answers);
   const nextStep = getNextStep(path);
