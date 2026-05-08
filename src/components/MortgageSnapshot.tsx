@@ -332,7 +332,7 @@ function PurchaseSnapshot({
       onEdit={onEdit}
     >
       {/* Hero summary cards */}
-      <section className={`rounded-2xl border p-6 shadow-sm sm:p-8 ${heroBg}`}>
+      <section className={`rounded-2xl border p-4 shadow-sm sm:p-6 md:p-8 ${heroBg}`}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
           <Sparkles className="h-3.5 w-3.5" />
           Snapshot ready
@@ -341,7 +341,7 @@ function PurchaseSnapshot({
           {heroHeadline}
         </h2>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
           <SummaryCard
             icon={<Compass className="h-4 w-4" />}
             label="Likely Lending Path"
