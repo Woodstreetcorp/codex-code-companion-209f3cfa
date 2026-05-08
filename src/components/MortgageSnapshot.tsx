@@ -287,6 +287,11 @@ function PurchaseSnapshot({
 
         <div className="mt-6 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
+          {primeSubtype && (
+            <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+              Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
+            </p>
+          )}
         </div>
 
         <WhatThisMeans />
