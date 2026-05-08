@@ -474,21 +474,7 @@ function RefinanceSnapshot({
   const availableEquity = Math.max(maxAllowed - balance, 0);
 
   const creditPath = getLendingPath(answers);
-  // For above-limit requests, the snapshot path is always Tailored Review,
-  // regardless of credit. For within-limit, fall back to credit-derived path.
   const refinancePath: LendingPath = withinLimit ? creditPath : "Needs Tailored Review";
-
-  // Reusable building blocks ----------------------------------------------
-  const outcomeCard = (
-    <OutcomeCard
-      withinLimit={withinLimit}
-      hasNumbers={value > 0 || requested > 0}
-    />
-  );
-  const pathCard = (
-    <RefinancePathCard withinLimit={withinLimit} path={refinancePath} />
-  );
-  const ctaCard = <RefinanceCTACard withinLimit={withinLimit} />;
 
   const requestCard = (
     <Card title="Your Refinance Request" icon={<FileText className="h-4 w-4" />}>
@@ -657,56 +643,69 @@ function RefinanceSnapshot({
   return (
     <SnapshotShell
       title="Your Refinance Snapshot"
-      subtitle="Here's a quick view of your refinance position based on the information you provided."
+      subtitle="A quick view of your refinance position — built to share, save, and act on."
       onEdit={onEdit}
       trustLine="No obligation • No credit impact at this stage"
     >
-      {/* Mobile order: outcome → path → CTA → request → equity → meaning → guidance → review */}
-      <div className="space-y-4 lg:hidden">
-        {outcomeCard}
-        {pathCard}
-        {ctaCard}
+      <RefinanceHero
+        withinLimit={withinLimit}
+        hasNumbers={value > 0 || requested > 0}
+        availableEquity={availableEquity}
+        value={value}
+        maxAllowed={maxAllowed}
+        requested={requested}
+        lvr={lvr}
+        path={refinancePath}
+      />
+
+      <ShareWinCard
+        withinLimit={withinLimit}
+        availableEquity={availableEquity}
+        lvr={lvr}
+      />
+
+      <ReferralCard />
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {requestCard}
         {equityCard}
-        {meaningCard}
-        {guidanceCard}
-        {reviewCard}
       </div>
 
-      {/* Desktop two-column */}
-      <div className="hidden gap-6 lg:grid lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          {requestCard}
-          {equityCard}
-          {meaningCard}
-          {guidanceCard}
-          {reviewCard}
-        </div>
-        <aside className="space-y-4">
-          <div className="lg:sticky lg:top-6 space-y-4">
-            {outcomeCard}
-            {pathCard}
-            {ctaCard}
-          </div>
-        </aside>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {meaningCard}
+        {guidanceCard}
       </div>
+
+      {reviewCard}
+
+      <SnapshotShareSection onEdit={onEdit} />
 
       <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={onEdit}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
         </Button>
         <div className="flex flex-col gap-2 sm:flex-row">
-          {!withinLimit && (
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Adjust My Numbers
-            </Button>
-          )}
-          <Button variant="outline">
-            {withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review"}
+          <Button variant="outline" onClick={onEdit}>
+            Adjust My Numbers
           </Button>
           <Button variant="ghost">Talk to a Broker</Button>
         </div>
       </div>
+
+      {/* Mobile sticky CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-md gap-2">
+          <Link
+            to="/portal"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow"
+          >
+            {withinLimit ? "See My Options" : "Adjust My Numbers"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <ShareSheetButton compact />
+        </div>
+      </div>
+      <div className="h-20 lg:hidden" aria-hidden />
     </SnapshotShell>
   );
 }
