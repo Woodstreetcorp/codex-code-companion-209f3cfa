@@ -53,6 +53,41 @@ function getCreditScore(a: Answers): number {
   return typeof v === "string" ? parseInt(v.replace(/\D/g, ""), 10) || 0 : 0;
 }
 
+// ---------- Effective price/down helpers (handles pre-purchase) ----------
+
+function priceRangeMidpoint(v?: string): number {
+  switch (v) {
+    case "u400":
+      return 350_000;
+    case "400-600":
+      return 500_000;
+    case "600-900":
+      return 750_000;
+    case "900-1.2":
+      return 1_050_000;
+    case "1.2-1.5":
+      return 1_350_000;
+    case "1.5+":
+      return 1_700_000;
+    default:
+      return 0;
+  }
+}
+
+function getEffectivePrice(a: Answers): number {
+  const direct = parseCurrency(a.price as string);
+  if (direct > 0) return direct;
+  const specific = parseCurrency(a.specificPrice as string);
+  if (specific > 0) return specific;
+  return priceRangeMidpoint(a.priceRange as string | undefined);
+}
+
+function getEffectiveDown(a: Answers): number {
+  const direct = parseCurrency(a.down as string);
+  if (direct > 0) return direct;
+  return parseCurrency(a.savedDown as string);
+}
+
 function getCreditPosition(score: number): CreditPosition {
   if (score >= 700) return "Strong Prime Position";
   if (score >= 620) return "Prime Position";
