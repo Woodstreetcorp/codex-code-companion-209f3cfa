@@ -26,10 +26,12 @@ import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
 import {
   classifyLane,
   classifyPrimeSubtype,
+  classifyAlternative,
   getMinimumDownPaymentPolicy,
   laneLabel,
   mapUsage,
   programLaneLabel,
+  type TransactionType,
 } from "@/lib/policy";
 import { SnapshotShareSection } from "@/components/SnapshotShare";
 
