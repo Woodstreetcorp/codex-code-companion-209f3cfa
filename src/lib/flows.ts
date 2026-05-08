@@ -377,8 +377,8 @@ const numMortgagesOptions: Option[] = [
 ];
 
 const cashOutPurposes: Option[] = [
-  { value: "renovations", label: "Home renovations", hint: "Funds will be used to renovate or improve the property." },
-  { value: "debt", label: "Pay off other debt", hint: "Funds will be used to pay down other debts." },
+  { value: "home_renovations", label: "Home renovations", hint: "Funds will be used to renovate or improve the property." },
+  { value: "debt_consolidation", label: "Pay off other debt", hint: "Funds will be used to pay down other debts." },
   { value: "investment", label: "Investment", hint: "Funds will be used for an investment opportunity." },
   { value: "education", label: "Education", hint: "Funds will be used for tuition or education costs." },
   { value: "other", label: "Other", hint: "Funds will be used for another purpose." },
@@ -509,12 +509,25 @@ export const refinanceFlow: Question[] = [
     showIf: (a) => a.wantsEquity === "yes" || wantsCashOut(a),
   },
   {
-    id: "cashPurpose",
-    type: "choice",
-    title: "What will the funds be used for?",
-    subtitle: "This helps us understand the purpose of the additional funds.",
+    id: "cashout_purposes",
+    type: "multi",
+    title: "What will the additional funds be used for?",
+    subtitle:
+      "Select all that apply. This helps us understand how you plan to use the equity from your home.",
     options: cashOutPurposes,
     showIf: (a) => a.wantsEquity === "yes" || wantsCashOut(a),
+  },
+  {
+    id: "other_cashout_purpose_detail",
+    type: "text",
+    title: "Tell us more about how you'll use the funds",
+    subtitle: "Briefly describe what the additional funds will be used for.",
+    placeholder: "e.g. Help a family member with a down payment",
+    showIf: (a) => {
+      if (!(a.wantsEquity === "yes" || wantsCashOut(a))) return false;
+      const purposes = a.cashout_purposes;
+      return Array.isArray(purposes) && purposes.includes("other");
+    },
   },
   creditQuestion,
   ...incomeBlock,
