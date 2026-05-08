@@ -820,8 +820,6 @@ function RefinanceSnapshot({
 
       {reviewCard}
 
-      <SnapshotShareSection onEdit={onEdit} />
-
       <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={onEdit}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
@@ -831,6 +829,13 @@ function RefinanceSnapshot({
             Adjust My Numbers
           </Button>
           <Button variant="ghost">Talk to a Broker</Button>
+          <Link
+            to="/portal"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent px-4 text-sm font-semibold text-accent-foreground shadow hover:opacity-95"
+          >
+            Unlock Mortgage Options
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
 
