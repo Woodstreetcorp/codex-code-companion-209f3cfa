@@ -872,7 +872,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-primary">
         {icon}
         {title}
@@ -1263,7 +1263,7 @@ function ReviewAnswers({
   if (incomeProfile !== "—") rows.push({ label: "Income profile", value: incomeProfile });
 
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+    <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 md:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Review your answers</h2>
@@ -1275,14 +1275,14 @@ function ReviewAnswers({
           Edit answers
         </Button>
       </div>
-      <dl className="mt-5 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+      <dl className="mt-5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
         {rows.map((r, i) => (
           <div
             key={`${r.label}-${i}`}
-            className="flex items-start justify-between gap-4 border-b border-border/50 py-2.5"
+            className="flex items-start justify-between gap-3 border-b border-border/50 py-2.5"
           >
-            <dt className="text-sm text-muted-foreground">{r.label}</dt>
-            <dd className="text-right text-sm font-medium text-foreground">{r.value}</dd>
+            <dt className="min-w-0 shrink-0 max-w-[50%] text-sm text-muted-foreground">{r.label}</dt>
+            <dd className="min-w-0 break-words text-right text-sm font-medium text-foreground">{r.value}</dd>
           </div>
         ))}
       </dl>
