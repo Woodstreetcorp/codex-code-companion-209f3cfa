@@ -25,6 +25,7 @@ import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/fl
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
 import {
   classifyLane,
+  classifyPrimeSubtype,
   getMinimumDownPaymentPolicy,
   laneLabel,
   mapUsage,
@@ -194,6 +195,12 @@ function PurchaseSnapshot({
   const score = getCreditScore(answers);
   const path = getLendingPath(answers);
   const category = getMortgageCategory(flowKey, answers);
+  const primeSubtype = classifyPrimeSubtype({
+    credit_score: score,
+    income_type: answers.income as string | undefined,
+    income_verification: answers.selfVerify as string | undefined,
+    meets_minimum_dp: true,
+  });
   const creditPosition = getCreditPosition(score);
   const incomeProfile = getIncomeProfile(answers);
   const nextStep = getNextStep(path);
@@ -280,6 +287,11 @@ function PurchaseSnapshot({
 
         <div className="mt-6 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
           <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
+          {primeSubtype && (
+            <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+              Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
+            </p>
+          )}
         </div>
 
         <WhatThisMeans />
@@ -372,6 +384,17 @@ function RefinanceSnapshot({
       <Row
         label="Property Type"
         value={prettifyType(answers.propertyType as string)}
+      />
+      <Row label="Program Lane" value="Uninsurable" />
+      <Row
+        label="Refinance Status"
+        value={
+          value === 0 && requested === 0
+            ? "—"
+            : withinLimit
+              ? "Within estimated refinance range"
+              : "Above estimated refinance range"
+        }
       />
       <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
         The total new loan requested includes your existing mortgage balance(s) plus any
@@ -889,6 +912,14 @@ function RequestCard({
   const down = parseCurrency(answers.down as string);
   const loan = price > down ? price - down : 0;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : null;
+  const policy = price > 0
+    ? getMinimumDownPaymentPolicy({
+        property_usage: mapUsage(answers.use as string | undefined),
+        property_value: price,
+        unit_count: Number(answers.units) || 1,
+        down_payment_amount: down || undefined,
+      })
+    : null;
 
   const microcopy =
     category === "Insured"
@@ -922,6 +953,9 @@ function RequestCard({
         label="Property Location"
         value={(answers.address as string) || (answers.location as string) || "—"}
       />
+      {policy && (
+        <Row label="Rule Applied" value={policy.rule_applied_label} />
+      )}
       {microcopy && (
         <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
           {microcopy}
