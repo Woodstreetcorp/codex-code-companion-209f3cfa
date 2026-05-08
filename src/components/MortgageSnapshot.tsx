@@ -8,6 +8,16 @@ import {
   CircleDollarSign,
   Compass,
   CreditCard,
+  Check,
+  Copy as CopyIcon,
+  Facebook,
+  Linkedin,
+  Mail,
+  MessageCircle,
+  Share2,
+  Trophy,
+  Twitter,
+  Users,
   FileText,
   Gift,
   Home,
@@ -19,7 +29,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/flows";
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
@@ -464,21 +474,7 @@ function RefinanceSnapshot({
   const availableEquity = Math.max(maxAllowed - balance, 0);
 
   const creditPath = getLendingPath(answers);
-  // For above-limit requests, the snapshot path is always Tailored Review,
-  // regardless of credit. For within-limit, fall back to credit-derived path.
   const refinancePath: LendingPath = withinLimit ? creditPath : "Needs Tailored Review";
-
-  // Reusable building blocks ----------------------------------------------
-  const outcomeCard = (
-    <OutcomeCard
-      withinLimit={withinLimit}
-      hasNumbers={value > 0 || requested > 0}
-    />
-  );
-  const pathCard = (
-    <RefinancePathCard withinLimit={withinLimit} path={refinancePath} />
-  );
-  const ctaCard = <RefinanceCTACard withinLimit={withinLimit} />;
 
   const requestCard = (
     <Card title="Your Refinance Request" icon={<FileText className="h-4 w-4" />}>
@@ -647,127 +643,402 @@ function RefinanceSnapshot({
   return (
     <SnapshotShell
       title="Your Refinance Snapshot"
-      subtitle="Here's a quick view of your refinance position based on the information you provided."
+      subtitle="A quick view of your refinance position — built to share, save, and act on."
       onEdit={onEdit}
       trustLine="No obligation • No credit impact at this stage"
     >
-      {/* Mobile order: outcome → path → CTA → request → equity → meaning → guidance → review */}
-      <div className="space-y-4 lg:hidden">
-        {outcomeCard}
-        {pathCard}
-        {ctaCard}
+      <RefinanceHero
+        withinLimit={withinLimit}
+        hasNumbers={value > 0 || requested > 0}
+        availableEquity={availableEquity}
+        value={value}
+        maxAllowed={maxAllowed}
+        requested={requested}
+        lvr={lvr}
+        path={refinancePath}
+      />
+
+      <ShareWinCard
+        withinLimit={withinLimit}
+        availableEquity={availableEquity}
+        lvr={lvr}
+      />
+
+      <ReferralCard />
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {requestCard}
         {equityCard}
-        {meaningCard}
-        {guidanceCard}
-        {reviewCard}
       </div>
 
-      {/* Desktop two-column */}
-      <div className="hidden gap-6 lg:grid lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          {requestCard}
-          {equityCard}
-          {meaningCard}
-          {guidanceCard}
-          {reviewCard}
-        </div>
-        <aside className="space-y-4">
-          <div className="lg:sticky lg:top-6 space-y-4">
-            {outcomeCard}
-            {pathCard}
-            {ctaCard}
-          </div>
-        </aside>
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        {meaningCard}
+        {guidanceCard}
       </div>
+
+      {reviewCard}
+
+      <SnapshotShareSection onEdit={onEdit} />
 
       <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" onClick={onEdit}>
           <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
         </Button>
         <div className="flex flex-col gap-2 sm:flex-row">
-          {!withinLimit && (
-            <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Adjust My Numbers
-            </Button>
-          )}
-          <Button variant="outline">
-            {withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review"}
+          <Button variant="outline" onClick={onEdit}>
+            Adjust My Numbers
           </Button>
           <Button variant="ghost">Talk to a Broker</Button>
         </div>
       </div>
+
+      {/* Mobile sticky CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-md gap-2">
+          <Link
+            to="/portal"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow"
+          >
+            {withinLimit ? "See My Options" : "Adjust My Numbers"}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <ShareSheetButton compact />
+        </div>
+      </div>
+      <div className="h-20 lg:hidden" aria-hidden />
     </SnapshotShell>
   );
 }
 
-function OutcomeCard({
+// ---------- Refinance hero, share, referral ----------
+
+const SHARE_URL = "https://approvu.app/r/refinance";
+
+function RefinanceHero({
   withinLimit,
   hasNumbers,
+  availableEquity,
+  value,
+  maxAllowed,
+  requested,
+  lvr,
+  path,
 }: {
   withinLimit: boolean;
   hasNumbers: boolean;
+  availableEquity: number;
+  value: number;
+  maxAllowed: number;
+  requested: number;
+  lvr: number;
+  path: LendingPath;
 }) {
+  const headline = !hasNumbers
+    ? "Your refinance snapshot is ready"
+    : withinLimit
+      ? "You're within the estimated refinance range"
+      : "Your request may need a tailored review";
+  const heroBg = withinLimit
+    ? "border-secondary/30 bg-gradient-to-br from-secondary/10 via-card to-primary/5"
+    : "border-yellow/50 bg-gradient-to-br from-yellow/15 via-card to-accent/5";
   return (
-    <section
-      className={`rounded-2xl border p-6 shadow-sm ${
-        withinLimit
-          ? "border-secondary/30 bg-secondary/5"
-          : "border-yellow/50 bg-yellow/10"
-      }`}
-    >
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
+    <section className={`rounded-3xl border p-5 shadow-sm sm:p-7 md:p-9 ${heroBg}`}>
+      <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
         <Sparkles className="h-3.5 w-3.5" />
-        Snapshot Outcome
+        Snapshot ready
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-background/70 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+          <ShieldCheck className="h-3 w-3 text-secondary" /> No credit impact
+        </span>
       </div>
-      <h2 className="mt-2 text-xl font-semibold text-foreground sm:text-2xl">
-        {!hasNumbers
-          ? "Your snapshot is ready"
-          : withinLimit
-            ? "You're within the estimated refinance range"
-            : "Your request may need adjustment"}
+
+      <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+        {headline}
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        {withinLimit
-          ? "Based on the property value and mortgage balances provided, your refinance request appears to fit within the estimated loan-to-value range. Final options are still subject to lender review, income qualification, and supporting documents."
-          : "Based on the property value and mortgage balances provided, your requested refinance amount appears to be above the estimated refinance range. You may still have options, but the structure may need to be reviewed or adjusted."}
-      </p>
-      <div className="mt-3">
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Pill tone={pathTone(path)}>
+          <Compass className="mr-1 h-3.5 w-3.5" /> {path}
+        </Pill>
         <Pill tone={withinLimit ? "secondary" : "yellow"}>
-          {withinLimit ? "Within estimated refinance range" : "Above estimated refinance range"}
+          {withinLimit ? "Within refinance range" : "Above estimated range"}
         </Pill>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        This is not a final approval or decline. A licensed broker can review the details
-        and help identify possible paths.
-      </p>
+
+      {/* Big equity number — the moment of delight */}
+      {value > 0 && (
+        <div className="mt-6 rounded-2xl border border-border/60 bg-card/80 p-5 backdrop-blur">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Estimated equity available to access
+          </p>
+          <p className="mt-1 text-4xl font-bold tracking-tight text-primary sm:text-5xl">
+            {formatCAD(availableEquity)}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Based on 80% of your property value, less existing balances.
+          </p>
+
+          <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+            <HeroStat label="Property" value={formatCAD(value)} />
+            <HeroStat label="Max @ 80% LTV" value={formatCAD(maxAllowed)} />
+            <HeroStat
+              label="Requested"
+              value={requested ? `${formatCAD(requested)} · ${lvr}%` : "—"}
+              tone={withinLimit ? "primary" : "yellow"}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Primary actions */}
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Link
+          to="/portal"
+          className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
+        >
+          {withinLimit ? "See My Refinance Options" : "Continue for Tailored Review"}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <ShareSheetButton />
+        <p className="text-xs text-muted-foreground sm:ml-auto">
+          Takes under 30 sec · Soft check only
+        </p>
+      </div>
     </section>
   );
 }
 
-function RefinancePathCard({
-  withinLimit,
-  path,
+function HeroStat({
+  label,
+  value,
+  tone = "secondary",
 }: {
-  withinLimit: boolean;
-  path: LendingPath;
+  label: string;
+  value: string;
+  tone?: Tone;
 }) {
   return (
-    <Card title="Your Refinance Path" icon={<Compass className="h-4 w-4" />}>
-      <Pill tone={pathTone(path)}>{path}</Pill>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        {withinLimit
-          ? "Your refinance request appears to fit within typical lender ranges. The next step focuses on income, credit, and lender fit."
-          : "Your refinance request appears to need a more detailed review because the current mortgage balance and requested cash-out appear to exceed the estimated equity available."}
+    <div className="min-w-0 rounded-lg border border-border/60 bg-background/60 p-2.5">
+      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
       </p>
-      {!withinLimit && (
-        <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
-          <li>• Current LTV appears above the typical refinance range</li>
-          <li>• Available equity appears limited</li>
-          <li>• Broker review may help identify restructuring options</li>
-        </ul>
-      )}
-    </Card>
+      <p className={`mt-0.5 truncate text-sm font-semibold ${tone === "yellow" ? "text-foreground" : "text-foreground"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function buildShareText(withinLimit: boolean, availableEquity: number) {
+  if (withinLimit && availableEquity > 0) {
+    return `I just checked my refinance position with approvU and could access up to ${formatCAD(availableEquity)} in home equity. Took 2 minutes — no credit check.`;
+  }
+  return "I just checked my refinance path with approvU in 2 minutes — no credit check needed.";
+}
+
+function ShareSheetButton({ compact = false }: { compact?: boolean }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={
+          compact
+            ? "inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card text-foreground shadow-sm"
+            : "inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-muted sm:w-auto"
+        }
+        aria-label="Share snapshot"
+      >
+        <Share2 className="h-4 w-4" />
+        {!compact && <span>Share</span>}
+      </button>
+      {open && <ShareDialog onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function ShareDialog({ onClose }: { onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const text = "I just checked my refinance path with approvU. See where you stand in 2 minutes.";
+  const url = SHARE_URL;
+  const enc = encodeURIComponent;
+  const links = [
+    { label: "Twitter / X", icon: Twitter, href: `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}` },
+    { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}` },
+    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}` },
+    { label: "WhatsApp", icon: MessageCircle, href: `https://wa.me/?text=${enc(`${text} ${url}`)}` },
+    { label: "Email", icon: Mail, href: `mailto:?subject=${enc("My approvU refinance snapshot")}&body=${enc(`${text}\n\n${url}`)}` },
+  ];
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // ignore
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-2xl border border-border bg-card p-5 shadow-xl sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-foreground">Share your snapshot</h3>
+          <button onClick={onClose} className="text-sm text-muted-foreground hover:text-foreground">
+            Close
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Public shares only mention you checked your refinance path — your numbers stay private.
+        </p>
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {links.map(({ label, icon: Icon, href }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-background p-3 text-[11px] font-medium text-foreground hover:bg-muted"
+            >
+              <Icon className="h-5 w-5 text-secondary" />
+              {label}
+            </a>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-border bg-background p-2">
+          <span className="flex-1 truncate px-2 text-xs text-muted-foreground">{url}</span>
+          <button
+            type="button"
+            onClick={copy}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />}
+            {copied ? "Copied" : "Copy link"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShareWinCard({
+  withinLimit,
+  availableEquity,
+  lvr,
+}: {
+  withinLimit: boolean;
+  availableEquity: number;
+  lvr: number;
+}) {
+  const shareText = useMemo(
+    () => buildShareText(withinLimit, availableEquity),
+    [withinLimit, availableEquity],
+  );
+  const enc = encodeURIComponent;
+  const xHref = `https://twitter.com/intent/tweet?text=${enc(shareText)}&url=${enc(SHARE_URL)}`;
+  const liHref = `https://www.linkedin.com/sharing/share-offsite/?url=${enc(SHARE_URL)}`;
+  const waHref = `https://wa.me/?text=${enc(`${shareText} ${SHARE_URL}`)}`;
+  return (
+    <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary via-primary to-secondary p-5 text-primary-foreground shadow-md sm:p-7">
+      <div className="grid gap-5 lg:grid-cols-[1.2fr,1fr] lg:items-center">
+        <div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-primary-foreground/90">
+            <Trophy className="h-3 w-3" />
+            Share your win
+          </div>
+          <h3 className="mt-3 text-xl font-semibold leading-snug sm:text-2xl">
+            {withinLimit
+              ? "Smart move — let your network know."
+              : "Got a snapshot? Help a friend get one too."}
+          </h3>
+          <p className="mt-2 text-sm text-primary-foreground/85">
+            Most homeowners never check their refinance position. Share approvU and help
+            someone discover their equity in 2 minutes — no credit impact.
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-primary-foreground/10 p-4 ring-1 ring-primary-foreground/20 backdrop-blur">
+          <p className="text-xs uppercase tracking-wide text-primary-foreground/70">Preview</p>
+          <p className="mt-2 text-sm leading-snug text-primary-foreground">
+            "{shareText}"
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SocialPill href={xHref} icon={<Twitter className="h-3.5 w-3.5" />} label="Post on X" />
+            <SocialPill href={liHref} icon={<Linkedin className="h-3.5 w-3.5" />} label="LinkedIn" />
+            <SocialPill href={waHref} icon={<MessageCircle className="h-3.5 w-3.5" />} label="WhatsApp" />
+          </div>
+        </div>
+      </div>
+      <span className="hidden">{lvr}</span>
+    </section>
+  );
+}
+
+function SocialPill({ href, icon, label }: { href: string; icon: ReactNode; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-foreground/90"
+    >
+      {icon}
+      {label}
+    </a>
+  );
+}
+
+function ReferralCard() {
+  const [copied, setCopied] = useState(false);
+  const code = "REFI-YOU50";
+  const link = `${SHARE_URL}?ref=${code}`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      // ignore
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <section className="mt-4 rounded-3xl border border-secondary/30 bg-secondary/5 p-5 shadow-sm sm:p-6">
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+          <Users className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-base font-semibold text-foreground">
+            Refer a friend, both get $50 closing credit
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            When a friend funds a mortgage through approvU, you each receive a $50 credit at
+            closing. No limit on referrals.
+          </p>
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-1 items-center rounded-xl border border-border bg-background px-3 py-2 text-xs">
+              <span className="truncate font-mono text-foreground">{link}</span>
+            </div>
+            <button
+              type="button"
+              onClick={copy}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              {copied ? <Check className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
+              {copied ? "Copied" : "Copy referral link"}
+            </button>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Code <span className="font-mono">{code}</span> · Terms apply.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1440,50 +1711,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
   );
 }
 
-function RefinanceCTACard({ withinLimit }: { withinLimit: boolean }) {
-  const primary = withinLimit ? "See My Refinance Options" : "Adjust My Numbers";
-  const secondary = withinLimit ? "Adjust My Numbers" : "Continue for Tailored Review";
-  return (
-    <div className="rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-primary-foreground/80">
-        <ArrowRight className="h-3.5 w-3.5" />
-        Next Best Step
-      </div>
-      <h3 className="mt-2 flex items-center gap-2 text-lg font-semibold">
-        <CircleDollarSign className="h-4 w-4" />
-        {primary}
-      </h3>
-      <p className="mt-2 text-sm text-primary-foreground/85">
-        {withinLimit
-          ? "Create your account to view your possible refinance options."
-          : "Try adjusting your cash-out amount, or continue for a tailored review with a licensed broker."}
-      </p>
-      <div className="mt-4 flex flex-col gap-2">
-        <Link
-          to="/portal"
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-accent px-5 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
-        >
-          {primary}
-        </Link>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center justify-center rounded-lg border border-primary-foreground/30 px-4 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10"
-        >
-          {secondary}
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline"
-        >
-          Talk to a Broker
-        </button>
-      </div>
-      <p className="mt-3 text-xs text-primary-foreground/70">
-        No obligation. No credit impact at this stage.
-      </p>
-    </div>
-  );
-}
+// (RefinanceCTACard removed — replaced by RefinanceHero + ShareWinCard.)
 
 // Avoid an unused-import lint failure in case some icons aren't used in current branches
 const _unused = { Home, MapPin, flows };
