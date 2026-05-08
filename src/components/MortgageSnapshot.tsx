@@ -53,6 +53,41 @@ function getCreditScore(a: Answers): number {
   return typeof v === "string" ? parseInt(v.replace(/\D/g, ""), 10) || 0 : 0;
 }
 
+// ---------- Effective price/down helpers (handles pre-purchase) ----------
+
+function priceRangeMidpoint(v?: string): number {
+  switch (v) {
+    case "u400":
+      return 350_000;
+    case "400-600":
+      return 500_000;
+    case "600-900":
+      return 750_000;
+    case "900-1.2":
+      return 1_050_000;
+    case "1.2-1.5":
+      return 1_350_000;
+    case "1.5+":
+      return 1_700_000;
+    default:
+      return 0;
+  }
+}
+
+function getEffectivePrice(a: Answers): number {
+  const direct = parseCurrency(a.price as string);
+  if (direct > 0) return direct;
+  const specific = parseCurrency(a.specificPrice as string);
+  if (specific > 0) return specific;
+  return priceRangeMidpoint(a.priceRange as string | undefined);
+}
+
+function getEffectiveDown(a: Answers): number {
+  const direct = parseCurrency(a.down as string);
+  if (direct > 0) return direct;
+  return parseCurrency(a.savedDown as string);
+}
+
 function getCreditPosition(score: number): CreditPosition {
   if (score >= 700) return "Strong Prime Position";
   if (score >= 620) return "Prime Position";
@@ -87,8 +122,8 @@ function getIncomeProfile(a: Answers): string {
 
 function getLendingPath(a: Answers): LendingPath {
   const score = getCreditScore(a);
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   let meetsMin = true;
   if (price > 0) {
     const policy = getMinimumDownPaymentPolicy({
@@ -116,8 +151,8 @@ function getLendingPath(a: Answers): LendingPath {
 
 function buildAlternativeInput(a: Answers) {
   const score = getCreditScore(a);
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   const value = parseCurrency(a.value as string);
   const isRefi = !!a.value || !!a.mortgages;
   const transaction_type: TransactionType = isRefi
@@ -148,8 +183,8 @@ function buildAlternativeInput(a: Answers) {
 
 function getMortgageCategory(flowKey: FlowKey, a: Answers): MortgageCategory {
   if (flowKey === "refinance") return "Refinance";
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   if (!price) return "Insurable";
   const policy = getMinimumDownPaymentPolicy({
     property_usage: mapUsage(a.use as string | undefined),
@@ -968,8 +1003,8 @@ function RequestCard({
   category: MortgageCategory;
 }) {
   const isPre = flowKey === "pre";
-  const price = parseCurrency(answers.price as string);
-  const down = parseCurrency(answers.down as string);
+  const price = getEffectivePrice(answers);
+  const down = getEffectiveDown(answers);
   const loan = price > down ? price - down : 0;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : null;
   const policy = price > 0
@@ -995,9 +1030,15 @@ function RequestCard({
         <>
           <Row label="Target Price Range" value={prettifyPriceRange(answers.priceRange as string)} />
           <Row
-            label="Saved Down Payment"
-            value={parseCurrency(answers.savedDown as string) ? formatCAD(parseCurrency(answers.savedDown as string)) : "—"}
+            label="Estimated Property Value"
+            value={price ? formatCAD(price) : "—"}
           />
+          <Row
+            label="Saved Down Payment"
+            value={down ? formatCAD(down) : "—"}
+          />
+          <Row label="Estimated Loan Amount" value={loan ? formatCAD(loan) : "—"} />
+          <Row label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
         </>
       ) : (
         <>
