@@ -25,6 +25,7 @@ import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/fl
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
 import {
   classifyLane,
+  classifyPrimeSubtype,
   getMinimumDownPaymentPolicy,
   laneLabel,
   mapUsage,
