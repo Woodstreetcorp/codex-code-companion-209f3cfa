@@ -251,6 +251,8 @@ export const purchaseFlow: Question[] = [
     subtitle: "Unit count affects which lender programs and down payment rules apply.",
     options: unitCountOptions,
   },
+  creditQuestion,
+  ...incomeBlock,
   {
     id: "price",
     type: "currency",
@@ -267,8 +269,6 @@ export const purchaseFlow: Question[] = [
     prefix: "$",
     placeholder: "65,000",
   },
-  creditQuestion,
-  ...incomeBlock,
   {
     id: "ownsResidence",
     type: "choice",
