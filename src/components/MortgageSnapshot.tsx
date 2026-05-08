@@ -1030,9 +1030,15 @@ function RequestCard({
         <>
           <Row label="Target Price Range" value={prettifyPriceRange(answers.priceRange as string)} />
           <Row
-            label="Saved Down Payment"
-            value={parseCurrency(answers.savedDown as string) ? formatCAD(parseCurrency(answers.savedDown as string)) : "—"}
+            label="Estimated Property Value"
+            value={price ? formatCAD(price) : "—"}
           />
+          <Row
+            label="Saved Down Payment"
+            value={down ? formatCAD(down) : "—"}
+          />
+          <Row label="Estimated Loan Amount" value={loan ? formatCAD(loan) : "—"} />
+          <Row label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
         </>
       ) : (
         <>
