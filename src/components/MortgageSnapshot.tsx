@@ -46,8 +46,6 @@ import {
   programLaneLabel,
   type TransactionType,
 } from "@/lib/policy";
-import { SnapshotShareSection } from "@/components/SnapshotShare";
-
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
 
@@ -320,8 +318,7 @@ function PurchaseSnapshot({
         ? "Your profile appears aligned with Alternative lending programs designed for borrowers with transitional income or credit situations. A licensed broker can help you review available paths and next steps."
         : "Your profile may require a more personalized review before matching you with lender options. This helps ensure your file is reviewed accurately.";
 
-  const showBundle = path !== "Needs Tailored Review";
-  const bundleName = getBundleName(flowKey, answers);
+  // Bundle widget removed in favor of full Home Life Offer Bundle section above.
 
   // The "moment of delight" big number
   const heroBigNumberLabel = isPre
