@@ -22,6 +22,9 @@ import {
   Gift,
   Home,
   Info,
+  Scale,
+  Activity,
+  Lightbulb,
   MapPin,
   PiggyBank,
   ShieldCheck,
@@ -784,6 +787,8 @@ function RefinanceSnapshot({
         lvr={lvr}
         path={refinancePath}
       />
+
+      <HomeLifeOfferBundle />
 
       <ShareWinCard
         shareText={buildShareText(withinLimit, availableEquity)}
