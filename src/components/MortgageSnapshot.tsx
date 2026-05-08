@@ -659,9 +659,13 @@ function RefinanceSnapshot({
       />
 
       <ShareWinCard
-        withinLimit={withinLimit}
-        availableEquity={availableEquity}
-        lvr={lvr}
+        shareText={buildShareText(withinLimit, availableEquity)}
+        headline={
+          withinLimit
+            ? "Smart move — let your network know."
+            : "Got a snapshot? Help a friend get one too."
+        }
+        subhead="Most homeowners never check their refinance position. Share approvU and help someone discover their equity in 2 minutes — no credit impact."
       />
 
       <ReferralCard />
