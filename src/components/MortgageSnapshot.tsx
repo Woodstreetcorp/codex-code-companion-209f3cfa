@@ -8,6 +8,16 @@ import {
   CircleDollarSign,
   Compass,
   CreditCard,
+  Check,
+  Copy as CopyIcon,
+  Facebook,
+  Linkedin,
+  Mail,
+  MessageCircle,
+  Share2,
+  Trophy,
+  Twitter,
+  Users,
   FileText,
   Gift,
   Home,
@@ -19,7 +29,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/flows";
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
