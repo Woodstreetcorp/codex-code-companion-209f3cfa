@@ -332,7 +332,7 @@ function PurchaseSnapshot({
       onEdit={onEdit}
     >
       {/* Hero summary cards */}
-      <section className={`rounded-2xl border p-6 shadow-sm sm:p-8 ${heroBg}`}>
+      <section className={`rounded-2xl border p-4 shadow-sm sm:p-6 md:p-8 ${heroBg}`}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
           <Sparkles className="h-3.5 w-3.5" />
           Snapshot ready
@@ -341,7 +341,7 @@ function PurchaseSnapshot({
           {heroHeadline}
         </h2>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
           <SummaryCard
             icon={<Compass className="h-4 w-4" />}
             label="Likely Lending Path"
@@ -826,11 +826,13 @@ function SummaryCard({
   tone: Tone;
 }) {
   return (
-    <div className={`rounded-xl border p-4 ${toneClass[tone]}`}>
-      <p className="text-lg font-bold leading-tight tracking-tight sm:text-xl">{value}</p>
-      <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide opacity-75">
-        {icon}
-        <span>{label}</span>
+    <div className={`min-w-0 rounded-xl border p-3 sm:p-4 ${toneClass[tone]}`}>
+      <p className="break-words text-sm font-bold leading-tight tracking-tight sm:text-base xl:text-lg">
+        {value}
+      </p>
+      <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide opacity-75 sm:text-[11px]">
+        <span className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
       </div>
     </div>
   );
@@ -870,7 +872,7 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-primary">
         {icon}
         {title}
@@ -890,10 +892,10 @@ function Row({
   emphasis?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border/60 py-2.5 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
+    <div className="flex items-start justify-between gap-3 border-b border-border/60 py-2.5 last:border-0">
+      <span className="min-w-0 shrink-0 max-w-[45%] text-sm text-muted-foreground">{label}</span>
       <span
-        className={`text-right text-sm ${emphasis ? "font-semibold text-primary" : "font-medium text-foreground"}`}
+        className={`min-w-0 break-words text-right text-sm ${emphasis ? "font-semibold text-primary" : "font-medium text-foreground"}`}
       >
         {value}
       </span>
@@ -1261,7 +1263,7 @@ function ReviewAnswers({
   if (incomeProfile !== "—") rows.push({ label: "Income profile", value: incomeProfile });
 
   return (
-    <section className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+    <section className="mt-8 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6 md:p-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Review your answers</h2>
@@ -1273,14 +1275,14 @@ function ReviewAnswers({
           Edit answers
         </Button>
       </div>
-      <dl className="mt-5 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+      <dl className="mt-5 grid gap-x-6 gap-y-1 sm:grid-cols-2">
         {rows.map((r, i) => (
           <div
             key={`${r.label}-${i}`}
-            className="flex items-start justify-between gap-4 border-b border-border/50 py-2.5"
+            className="flex items-start justify-between gap-3 border-b border-border/50 py-2.5"
           >
-            <dt className="text-sm text-muted-foreground">{r.label}</dt>
-            <dd className="text-right text-sm font-medium text-foreground">{r.value}</dd>
+            <dt className="min-w-0 shrink-0 max-w-[50%] text-sm text-muted-foreground">{r.label}</dt>
+            <dd className="min-w-0 break-words text-right text-sm font-medium text-foreground">{r.value}</dd>
           </div>
         ))}
       </dl>
@@ -1368,7 +1370,7 @@ function prettifyPriceRange(v?: string): string {
 function BottomCTA({ path }: { path: LendingPath }) {
   const tailored = path === "Needs Tailored Review";
   return (
-    <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
+    <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-sm sm:p-8">
       <h2 className="text-xl font-semibold sm:text-2xl">
         {tailored ? "Complete a Tailored Review" : "View Your Mortgage Options"}
       </h2>
@@ -1377,10 +1379,10 @@ function BottomCTA({ path }: { path: LendingPath }) {
           ? "Your profile needs a deeper review to match you accurately with the right lender options."
           : "Create your account to see your qualified mortgage products and select your preferred structure."}
       </p>
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
           to="/portal"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90 sm:w-auto"
         >
           {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
           <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -1392,11 +1394,11 @@ function BottomCTA({ path }: { path: LendingPath }) {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-          className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
         >
           Edit My Inputs
         </button>
-        <button className="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline">
+        <button className="inline-flex h-11 w-full items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline sm:w-auto">
           Talk to a Broker
         </button>
       </div>
