@@ -901,6 +901,14 @@ function RequestCard({
   const down = parseCurrency(answers.down as string);
   const loan = price > down ? price - down : 0;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : null;
+  const policy = price > 0
+    ? getMinimumDownPaymentPolicy({
+        property_usage: mapUsage(answers.use as string | undefined),
+        property_value: price,
+        unit_count: Number(answers.units) || 1,
+        down_payment_amount: down || undefined,
+      })
+    : null;
 
   const microcopy =
     category === "Insured"
@@ -934,6 +942,9 @@ function RequestCard({
         label="Property Location"
         value={(answers.address as string) || (answers.location as string) || "—"}
       />
+      {policy && (
+        <Row label="Rule Applied" value={policy.rule_applied_label} />
+      )}
       {microcopy && (
         <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
           {microcopy}
