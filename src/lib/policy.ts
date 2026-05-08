@@ -222,6 +222,16 @@ export interface LaneInput {
   program_lane?: ProgramLane;
 }
 
+function isAlternativeBankStatementIncome(
+  income_type?: string,
+  income_verification?: string,
+): boolean {
+  return (
+    income_verification === "bank" &&
+    (income_type === "self" || income_type === "combo")
+  );
+}
+
 export function classifyLane(input: LaneInput): LendingLane {
   const { credit_score, income_type, income_verification, meets_minimum_dp } = input;
   if (!meets_minimum_dp) return "TAILORED_REVIEW";
@@ -231,7 +241,7 @@ export function classifyLane(input: LaneInput): LendingLane {
     income_type === "employed" ||
     income_type === "other" ||
     (income_type === "self" && income_verification === "tax");
-  const bankStmt = income_type === "self" && income_verification === "bank";
+  const bankStmt = isAlternativeBankStatementIncome(income_type, income_verification);
 
   if (credit_score >= 620 && standardIncome) return "PRIME_FIT";
   if (bankStmt && credit_score >= 550) return "ALTERNATIVE_FIT";
@@ -290,11 +300,7 @@ export function classifyAlternative(input: AlternativeInput): AlternativeResult 
   if (credit_score < 500) {
     lending_path = "TAILORED_REVIEW";
     reasons.push("CREDIT_BELOW_500");
-  } else if (
-    credit_score >= 620 &&
-    (income_type === "self" || income_type === "combo") &&
-    income_verification === "bank"
-  ) {
+  } else if (credit_score >= 620 && isAlternativeBankStatementIncome(income_type, income_verification)) {
     alternative_class = "ALTERNATIVE_PLUS";
     reasons.push("PRIME_CREDIT_WITH_BANK_STATEMENT_INCOME");
   } else {
