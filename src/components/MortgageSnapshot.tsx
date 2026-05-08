@@ -46,7 +46,7 @@ type CreditPosition =
   | "Prime Position"
   | "Alternative Position"
   | "Needs Review";
-type MortgageCategory = "Insured" | "Insurable" | "Uninsurable" | "Refinance";
+type MortgageCategory = "Insured" | "Insurable" | "Uninsurable" | "Refinance" | "Confirming";
 
 function getCreditScore(a: Answers): number {
   const v = a.credit;
@@ -225,7 +225,15 @@ function pathTone(p: LendingPath): Tone {
   return p === "Prime Fit" ? "primary" : p === "Alternative Fit" ? "secondary" : "yellow";
 }
 function categoryTone(c: MortgageCategory): Tone {
-  return c === "Insured" ? "secondary" : c === "Insurable" ? "primary" : c === "Uninsurable" ? "yellow" : "mint";
+  return c === "Insured"
+    ? "secondary"
+    : c === "Insurable"
+      ? "primary"
+      : c === "Uninsurable"
+        ? "yellow"
+        : c === "Confirming"
+          ? "secondary"
+          : "mint";
 }
 function creditTone(p: CreditPosition): Tone {
   return p === "Strong Prime Position" || p === "Prime Position"
@@ -269,7 +277,9 @@ function PurchaseSnapshot({
 }) {
   const score = getCreditScore(answers);
   const path = getLendingPath(answers);
-  const category = getMortgageCategory(flowKey, answers);
+  const baseCategory = getMortgageCategory(flowKey, answers);
+  const category: MortgageCategory =
+    path === "Alternative Fit" ? "Confirming" : baseCategory;
   const primeSubtype = classifyPrimeSubtype({
     credit_score: score,
     income_type: answers.income as string | undefined,
