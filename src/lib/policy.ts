@@ -287,27 +287,24 @@ export function classifyAlternative(input: AlternativeInput): AlternativeResult 
   const productMatchCount = input.product_match_count ?? 1;
 
   // Step 1 — borrower class
-  if (
+  if (credit_score < 500) {
+    lending_path = "TAILORED_REVIEW";
+    reasons.push("CREDIT_BELOW_500");
+  } else if (
     credit_score >= 620 &&
     (income_type === "self" || income_type === "combo") &&
     income_verification === "bank"
   ) {
     alternative_class = "ALTERNATIVE_PLUS";
     reasons.push("PRIME_CREDIT_WITH_BANK_STATEMENT_INCOME");
-  } else if (credit_score >= 500 && credit_score < 620) {
-    alternative_class = "STANDARD_ALTERNATIVE";
-    reasons.push("CREDIT_IN_ALTERNATIVE_RANGE");
-  } else if (credit_score < 500) {
-    lending_path = "TAILORED_REVIEW";
-    reasons.push("CREDIT_BELOW_500");
   } else {
-    // Doesn't qualify for Alternative — caller should use Prime classifier.
-    return {
-      lending_path: "PRIME_FIT",
-      alternative_class: null,
-      alternative_structure: null,
-      reasons: [],
-    };
+    // Credit 500–619 (any income type) OR credit >=620 without bank-stmt self/combo
+    alternative_class = "STANDARD_ALTERNATIVE";
+    reasons.push(
+      credit_score >= 620
+        ? "STANDARD_ALTERNATIVE_INCOME_PROFILE"
+        : "CREDIT_IN_ALTERNATIVE_RANGE"
+    );
   }
 
   // Step 2 — Alternative LTV / DP rule
