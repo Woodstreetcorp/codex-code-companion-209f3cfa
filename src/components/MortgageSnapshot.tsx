@@ -810,11 +810,6 @@ function RefinanceSnapshot({
         {equityCard}
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {meaningCard}
-        {guidanceCard}
-      </div>
-
       {reviewCard}
 
       <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
