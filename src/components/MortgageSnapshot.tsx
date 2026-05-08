@@ -1333,7 +1333,8 @@ function shortLabel(q: Question): string {
     intent: "Refinance goal",
     numMortgages: "Mortgages on title",
     wantsEquity: "Wants to access equity",
-    cashPurpose: "Funds will be used for",
+    cashout_purposes: "Funds will be used for",
+    other_cashout_purpose_detail: "Other purpose details",
     units: "Number of units",
     lowerPaymentIntent: "Lower payment goal",
   };
