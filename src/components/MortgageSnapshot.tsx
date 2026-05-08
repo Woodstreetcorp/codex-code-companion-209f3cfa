@@ -1015,19 +1015,24 @@ function RequestCard({
         down_payment_amount: down || undefined,
       })
     : null;
-  // Alternative override: credit 500–619 forces 20% (or 25% if <550) min DP.
   const score = getCreditScore(answers);
+  const lane = classifyLane({
+    credit_score: score,
+    income_type: answers.income as string | undefined,
+    income_verification: answers.selfVerify as string | undefined,
+    meets_minimum_dp: down >= (policy?.minimum_down_payment_amount ?? 0),
+  });
   let ruleLabel = policy?.rule_applied_label;
   let minDpAmount = policy?.minimum_down_payment_amount ?? 0;
   let minDpPercent = policy?.minimum_down_payment_percent ?? 0;
-  if (price > 0 && score >= 500 && score < 620) {
+  if (price > 0 && lane === "ALTERNATIVE_FIT") {
     const altPct = score < 550 ? 25 : 20;
     minDpAmount = price * (altPct / 100);
     minDpPercent = altPct;
     ruleLabel =
       altPct === 25
         ? "Alternative lender minimum: 25% down for credit below 550"
-        : "Alternative lender minimum: 20% down for credit 500–619";
+        : "Alternative lender minimum: 20% down for Alternative-fit borrowers";
   }
 
   const microcopy =

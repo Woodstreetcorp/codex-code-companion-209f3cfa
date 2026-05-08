@@ -243,6 +243,7 @@ export function classifyLane(input: LaneInput): LendingLane {
     (income_type === "self" && income_verification === "tax");
   const bankStmt = isAlternativeBankStatementIncome(income_type, income_verification);
 
+  if (credit_score >= 620 && bankStmt) return "ALTERNATIVE_FIT";
   if (credit_score >= 620 && standardIncome) return "PRIME_FIT";
   if (bankStmt && credit_score >= 550) return "ALTERNATIVE_FIT";
   if (credit_score >= 500 && credit_score <= 619) return "ALTERNATIVE_FIT";
@@ -302,7 +303,7 @@ export function classifyAlternative(input: AlternativeInput): AlternativeResult 
     reasons.push("CREDIT_BELOW_500");
   } else if (credit_score >= 620 && isAlternativeBankStatementIncome(income_type, income_verification)) {
     alternative_class = "ALTERNATIVE_PLUS";
-    reasons.push("PRIME_CREDIT_WITH_BANK_STATEMENT_INCOME");
+    reasons.push("ALTERNATIVE_PLUS_BANK_STATEMENT_INCOME");
   } else {
     // Credit 500–619 (any income type) OR credit >=620 without bank-stmt self/combo
     alternative_class = "STANDARD_ALTERNATIVE";
