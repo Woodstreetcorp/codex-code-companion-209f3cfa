@@ -119,6 +119,27 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
         };
       }
     }
+    if (flowKey === "refinance" && current.id === "cashAmount") {
+      const value = parseCurrency(answers.value as string);
+      const mortgages = (answers.mortgages as MortgageEntry[] | undefined) ?? [];
+      const totalBalances = Array.isArray(mortgages)
+        ? mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0)
+        : 0;
+      const cashOut = parseCurrency(stringValue);
+      const maxCashOut = Math.max(value * 0.8 - totalBalances, 0);
+      if (value > 0 && cashOut > 0) {
+        if (cashOut > maxCashOut) {
+          return {
+            ok: false,
+            message: `Based on an 80% loan-to-value limit, the maximum estimated cash out is ${formatCAD(maxCashOut)}. You're over by ${formatCAD(cashOut - maxCashOut)}.`,
+          };
+        }
+        return {
+          ok: true,
+          message: `That's within your estimated maximum of ${formatCAD(maxCashOut)} (80% LTV).`,
+        };
+      }
+    }
     return null;
   }, [current, flowKey, answers, stringValue, mortgageValue]);
 
@@ -350,6 +371,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
             {((current.id === "down" && flowKey === "purchase") ||
               (current.id === "savedDown" && flowKey === "pre")) && (
               <DownPaymentGuidanceCard answers={answers} flowKey={flowKey} />
+            )}
+            {current.id === "cashAmount" && flowKey === "refinance" && (
+              <CashOutMaxCard answers={answers} />
             )}
             {validationHint && (
               <p
