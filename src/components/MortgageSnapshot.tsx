@@ -241,6 +241,10 @@ function PurchaseSnapshot({
     income_verification: answers.selfVerify as string | undefined,
     meets_minimum_dp: true,
   });
+  const altResult =
+    path === "Alternative Fit"
+      ? classifyAlternative(buildAlternativeInput(answers))
+      : null;
   const creditPosition = getCreditPosition(score);
   const incomeProfile = getIncomeProfile(answers);
   const nextStep = getNextStep(path);
@@ -330,6 +334,22 @@ function PurchaseSnapshot({
           {primeSubtype && (
             <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
               Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
+            </p>
+          )}
+          {altResult && altResult.alternative_class && (
+            <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+              Internal classification:{" "}
+              {altResult.alternative_class === "ALTERNATIVE_PLUS"
+                ? "Alternative-Plus"
+                : "Standard-Alternative"}
+              {altResult.alternative_structure
+                ? ` · ${
+                    altResult.alternative_structure === "CONFIRMING_ALTERNATIVE"
+                      ? "Confirming"
+                      : "Non-confirming"
+                  }`
+                : ""}
+              {altResult.max_ltv ? ` · Max LTV ${altResult.max_ltv}%` : ""}
             </p>
           )}
         </div>
