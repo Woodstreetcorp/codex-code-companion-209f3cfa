@@ -1370,7 +1370,7 @@ function prettifyPriceRange(v?: string): string {
 function BottomCTA({ path }: { path: LendingPath }) {
   const tailored = path === "Needs Tailored Review";
   return (
-    <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
+    <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-sm sm:p-8">
       <h2 className="text-xl font-semibold sm:text-2xl">
         {tailored ? "Complete a Tailored Review" : "View Your Mortgage Options"}
       </h2>
@@ -1379,10 +1379,10 @@ function BottomCTA({ path }: { path: LendingPath }) {
           ? "Your profile needs a deeper review to match you accurately with the right lender options."
           : "Create your account to see your qualified mortgage products and select your preferred structure."}
       </p>
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
           to="/portal"
-          className="inline-flex h-11 items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90 sm:w-auto"
         >
           {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
           <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -1394,11 +1394,11 @@ function BottomCTA({ path }: { path: LendingPath }) {
               window.scrollTo({ top: 0, behavior: "smooth" });
             }
           }}
-          className="inline-flex h-11 items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-primary-foreground/30 bg-transparent px-5 text-sm font-medium text-primary-foreground hover:bg-primary-foreground/10 sm:w-auto"
         >
           Edit My Inputs
         </button>
-        <button className="inline-flex h-11 items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline">
+        <button className="inline-flex h-11 w-full items-center justify-center rounded-lg px-3 text-sm text-primary-foreground/85 underline-offset-2 hover:underline sm:w-auto">
           Talk to a Broker
         </button>
       </div>
