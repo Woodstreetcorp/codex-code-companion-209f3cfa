@@ -844,15 +844,32 @@ function DownPaymentGuidanceCard({
     unit_count: units,
     down_payment_amount: down || undefined,
   });
-  const meets = down >= policy.minimum_down_payment_amount;
-  const gap = Math.max(policy.minimum_down_payment_amount - down, 0);
   const credit = parseInt((answers.credit as string)?.replace(/\D/g, "") || "0", 10);
+
+  // Alternative lender path overrides the insured/insurable minimums
+  // when credit is below 620: 20% min (or 25% if below 550).
+  let minAmount = policy.minimum_down_payment_amount;
+  let minPercent = policy.minimum_down_payment_percent;
+  let ruleLabel = policy.rule_applied_label;
+  let ruleReference = policy.rule_reference_text;
+  if (credit > 0 && credit < 620 && credit >= 500) {
+    const altPct = credit < 550 ? 25 : 20;
+    minAmount = price * (altPct / 100);
+    minPercent = altPct;
+    ruleLabel =
+      altPct === 25
+        ? "Alternative lender minimum: 25% down for credit below 550"
+        : "Alternative lender minimum: 20% down for credit 500–619";
+    ruleReference =
+      "Credit scores below 620 typically route to Alternative lender programs, which require a higher minimum down payment than insured/insurable programs.";
+  }
+
+  const meets = down >= minAmount;
+  const gap = Math.max(minAmount - down, 0);
   const creditNote =
-    credit > 0 && credit < 620
-      ? "Note: With a credit score below 620, alternative lender programs may require additional down payment beyond this minimum."
-      : credit > 0 && credit < 500
-        ? "Note: With a credit score below 500, a more specialized review may apply and additional down payment is often expected."
-        : null;
+    credit > 0 && credit < 500
+      ? "Note: Scores below 500 typically need a more specialized review and may require additional down payment beyond this minimum."
+      : null;
 
   return (
     <div className="mt-6 max-w-xl space-y-3">
@@ -861,9 +878,9 @@ function DownPaymentGuidanceCard({
           Minimum Down Payment Required
         </p>
         <p className="mt-2 text-2xl font-semibold text-primary">
-          {formatCAD(policy.minimum_down_payment_amount)}{" "}
+          {formatCAD(minAmount)}{" "}
           <span className="text-base font-medium text-muted-foreground">
-            ({policy.minimum_down_payment_percent}%)
+            ({minPercent}%)
           </span>
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -875,14 +892,14 @@ function DownPaymentGuidanceCard({
         <div className="mt-3 rounded-lg bg-background/60 p-3">
           <p className="text-xs font-medium text-foreground">Rule applied</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {policy.rule_applied_label}
+            {ruleLabel}
           </p>
           <details className="group mt-2">
             <summary className="cursor-pointer text-xs font-medium text-secondary hover:text-primary">
               Why this rule?
             </summary>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {policy.rule_reference_text}
+              {ruleReference}
             </p>
           </details>
           {creditNote && (
@@ -900,7 +917,7 @@ function DownPaymentGuidanceCard({
             estimated minimum required for this scenario.
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            <Mini label="Minimum required" value={formatCAD(policy.minimum_down_payment_amount)} />
+            <Mini label="Minimum required" value={formatCAD(minAmount)} />
             <Mini label="You entered" value={formatCAD(down)} />
             <Mini label="Estimated gap" value={formatCAD(gap)} accent />
           </div>
