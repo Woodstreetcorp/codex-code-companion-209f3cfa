@@ -385,6 +385,17 @@ function RefinanceSnapshot({
         label="Property Type"
         value={prettifyType(answers.propertyType as string)}
       />
+      <Row label="Program Lane" value="Uninsurable" />
+      <Row
+        label="Refinance Status"
+        value={
+          value === 0 && requested === 0
+            ? "—"
+            : withinLimit
+              ? "Within estimated refinance range"
+              : "Above estimated refinance range"
+        }
+      />
       <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
         The total new loan requested includes your existing mortgage balance(s) plus any
         additional cash-out requested.
