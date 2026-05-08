@@ -1127,8 +1127,19 @@ function ReferralCard() {
   return _ReferralCardImpl();
 }
 
-function HomeLifeOfferBundle() {
-  const offers = [
+function HomeLifeOfferBundle({
+  variant = "refinance",
+}: {
+  variant?: "refinance" | "purchase";
+}) {
+  const purchaseOffers = [
+    { icon: <Scale className="h-4 w-4" />, title: "Legal Fee Credit", desc: "Save on closing legal costs with our partner network." },
+    { icon: <FileText className="h-4 w-4" />, title: "Appraisal Fee Credit", desc: "Up to $400 credited toward your property appraisal." },
+    { icon: <Briefcase className="h-4 w-4" />, title: "Moving Service Discount", desc: "Preferred rates with vetted local movers." },
+    { icon: <ShieldCheck className="h-4 w-4" />, title: "Home Insurance Referral", desc: "Get matched with insurers tailored to your home." },
+    { icon: <Activity className="h-4 w-4" />, title: "Mortgage Strategy Review", desc: "Annual check-in to keep your mortgage optimized." },
+  ];
+  const refinanceOffers = [
     {
       icon: <FileText className="h-4 w-4" />,
       title: "Appraisal Fee Credit",
@@ -1150,6 +1161,12 @@ function HomeLifeOfferBundle() {
       desc: "Free credit tracking and alerts for 12 months.",
     },
   ];
+  const offers = variant === "purchase" ? purchaseOffers : refinanceOffers;
+  const helper =
+    variant === "purchase"
+      ? "If you continue, you may qualify for added homeownership benefits and partner offers alongside your mortgage options."
+      : "If you continue, you may qualify for added benefits and partner offers alongside your refinance options.";
+  const secondaryLabel = variant === "purchase" ? "Unlock Mortgage Options" : "Talk to a Broker";
   return (
     <section className="mt-4 rounded-3xl border border-accent/30 bg-gradient-to-br from-accent/5 via-card to-card p-5 shadow-sm sm:p-6">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -1167,14 +1184,13 @@ function HomeLifeOfferBundle() {
               </span>
             </div>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              If you continue, you may qualify for added benefits and partner offers alongside
-              your refinance options.
+              {helper}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-3 sm:grid-cols-2 ${offers.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         {offers.map((o) => (
           <div
             key={o.title}
@@ -1204,9 +1220,18 @@ function HomeLifeOfferBundle() {
           View My Eligible Offers
           <ArrowRight className="h-4 w-4" />
         </Link>
-        <Button variant="outline" className="h-11 rounded-xl">
-          Talk to a Broker
-        </Button>
+        {variant === "purchase" ? (
+          <Link
+            to="/portal"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground shadow-sm hover:bg-accent/5 sm:px-6"
+          >
+            {secondaryLabel}
+          </Link>
+        ) : (
+          <Button variant="outline" className="h-11 rounded-xl">
+            {secondaryLabel}
+          </Button>
+        )}
       </div>
     </section>
   );
