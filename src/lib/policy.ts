@@ -5,6 +5,11 @@ export type PropertyUsageCode = "OWNER_OCCUPIED" | "RENTAL" | "VACATION";
 export type ProgramLane = "INSURED" | "INSURABLE" | "UNINSURABLE";
 export type LendingLane = "PRIME_FIT" | "ALTERNATIVE_FIT" | "TAILORED_REVIEW";
 export type PrimeSubtype = "PRIME_PLUS" | "STANDARD_PRIME" | null;
+export type AlternativeSubtype = "ALTERNATIVE_PLUS" | "STANDARD_ALTERNATIVE" | null;
+export type AlternativeStructure =
+  | "CONFIRMING_ALTERNATIVE"
+  | "NON_CONFIRMING_ALTERNATIVE"
+  | null;
 export type RefinanceStatus =
   | "WITHIN_REFINANCE_RANGE"
   | "ABOVE_REFINANCE_RANGE"
