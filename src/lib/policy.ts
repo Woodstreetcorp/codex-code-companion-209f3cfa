@@ -224,6 +224,7 @@ export function classifyLane(input: LaneInput): LendingLane {
 
   const standardIncome =
     income_type === "employed" ||
+    income_type === "other" ||
     (income_type === "self" && income_verification === "tax");
   const bankStmt = income_type === "self" && income_verification === "bank";
 
@@ -232,6 +233,15 @@ export function classifyLane(input: LaneInput): LendingLane {
   if (credit_score >= 500 && credit_score <= 619) return "ALTERNATIVE_FIT";
   if (credit_score >= 620) return "PRIME_FIT";
   return "TAILORED_REVIEW";
+}
+
+/**
+ * Internal Prime subtype — exposed for developer/admin handoff.
+ * Borrower-facing UI should continue to show "Prime Fit".
+ */
+export function classifyPrimeSubtype(input: LaneInput): PrimeSubtype {
+  if (classifyLane(input) !== "PRIME_FIT") return null;
+  return input.credit_score >= 680 ? "PRIME_PLUS" : "STANDARD_PRIME";
 }
 
 export function laneLabel(l: LendingLane): string {
