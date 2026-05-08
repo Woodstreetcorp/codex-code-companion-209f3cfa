@@ -122,8 +122,8 @@ function getIncomeProfile(a: Answers): string {
 
 function getLendingPath(a: Answers): LendingPath {
   const score = getCreditScore(a);
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   let meetsMin = true;
   if (price > 0) {
     const policy = getMinimumDownPaymentPolicy({
@@ -151,8 +151,8 @@ function getLendingPath(a: Answers): LendingPath {
 
 function buildAlternativeInput(a: Answers) {
   const score = getCreditScore(a);
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   const value = parseCurrency(a.value as string);
   const isRefi = !!a.value || !!a.mortgages;
   const transaction_type: TransactionType = isRefi
@@ -183,8 +183,8 @@ function buildAlternativeInput(a: Answers) {
 
 function getMortgageCategory(flowKey: FlowKey, a: Answers): MortgageCategory {
   if (flowKey === "refinance") return "Refinance";
-  const price = parseCurrency(a.price as string);
-  const down = parseCurrency(a.down as string);
+  const price = getEffectivePrice(a);
+  const down = getEffectiveDown(a);
   if (!price) return "Insurable";
   const policy = getMinimumDownPaymentPolicy({
     property_usage: mapUsage(a.use as string | undefined),
