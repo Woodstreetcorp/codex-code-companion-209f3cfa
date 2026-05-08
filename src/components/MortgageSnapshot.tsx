@@ -304,12 +304,11 @@ function PurchaseSnapshot({
   const incomeProfile = getIncomeProfile(answers);
   const nextStep = getNextStep(path);
 
-  const price =
-    parseCurrency(answers.price as string) || parseCurrency(answers.savedDown as string) * 0;
-  const down = parseCurrency(answers.down as string);
+  const isPre = flowKey === "pre";
+  const price = getEffectivePrice(answers);
+  const down = getEffectiveDown(answers);
   const loan = price > down ? price - down : price;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : 0;
-  const usage = (answers.use as string) ?? "primary";
 
   const interpretation =
     path === "Prime Fit"
@@ -321,12 +320,137 @@ function PurchaseSnapshot({
   const showBundle = path !== "Needs Tailored Review";
   const bundleName = getBundleName(flowKey, answers);
 
-  const heroHeadline =
-    path === "Prime Fit"
-      ? "You're matched to a Prime lending path"
-      : path === "Alternative Fit"
-        ? "You're matched to an Alternative lending path"
-        : "Your file needs a tailored review";
+  // The "moment of delight" big number
+  const heroBigNumberLabel = isPre
+    ? price > 0
+      ? "Estimated mortgage you may qualify for"
+      : "Your snapshot is ready"
+    : loan > 0
+      ? "Estimated mortgage amount"
+      : "Your snapshot is ready";
+  const heroBigNumber = loan > 0 ? formatCAD(loan) : "—";
+
+  const shareText = isPre
+    ? `I just mapped out my home-buying path with approvU in 2 minutes — no credit check. ${path === "Prime Fit" ? "Matched to a Prime lending path." : ""}`.trim()
+    : loan > 0 && path === "Prime Fit"
+      ? `I just got matched to a Prime mortgage path with approvU in 2 minutes — no credit check.`
+      : `I just checked my mortgage path with approvU in 2 minutes — no credit check.`;
+
+  return (
+    <SnapshotShell
+      title={isPre ? "Your Pre-Purchase Snapshot" : "Your Mortgage Snapshot"}
+      subtitle={
+        isPre
+          ? "A quick view of your buying position — built to share, save, and act on."
+          : "Your likely mortgage path and next best step — share, save, or unlock options."
+      }
+      onEdit={onEdit}
+      trustLine="No obligation • No credit impact at this stage"
+    >
+      <PurchaseHero
+        path={path}
+        category={category}
+        creditPosition={creditPosition}
+        incomeProfile={incomeProfile}
+        bigLabel={heroBigNumberLabel}
+        bigValue={heroBigNumber}
+        price={price}
+        down={down}
+        lvr={lvr}
+        nextStep={nextStep}
+        interpretation={interpretation}
+        primeSubtype={primeSubtype}
+        altResult={altResult}
+        isPre={isPre}
+      />
+
+      <ShareWinCard
+        shareText={shareText}
+        headline={
+          path === "Prime Fit"
+            ? "Smart move — let your network know."
+            : "Got your snapshot? Help a friend get one too."
+        }
+        subhead="Most people never check where they stand on a mortgage. Share approvU and help a friend get clarity in 2 minutes — no credit impact."
+      />
+
+      <ReferralCard />
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-2">
+        <RequestCard flowKey={flowKey} answers={answers} category={category} />
+        <CreditPositionCard score={score} position={creditPosition} />
+      </section>
+
+      <section className="mt-4 grid gap-4 lg:grid-cols-2">
+        <IncomeVerificationCard answers={answers} />
+        {showBundle ? <BundleCard name={bundleName} /> : <TailoredBundlePlaceholder />}
+      </section>
+
+      <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
+
+      <SnapshotShareSection onEdit={onEdit} />
+
+      <div className="mt-8 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="ghost" onClick={onEdit}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
+        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="outline" onClick={onEdit}>
+            Adjust My Numbers
+          </Button>
+          <Button variant="ghost">Talk to a Broker</Button>
+        </div>
+      </div>
+
+      {/* Mobile sticky CTA */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
+        <div className="mx-auto flex max-w-md gap-2">
+          <Link
+            to="/portal"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow"
+          >
+            {nextStep}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <ShareSheetButton compact />
+        </div>
+      </div>
+      <div className="h-20 lg:hidden" aria-hidden />
+    </SnapshotShell>
+  );
+}
+
+function PurchaseHero({
+  path,
+  category,
+  creditPosition,
+  incomeProfile,
+  bigLabel,
+  bigValue,
+  price,
+  down,
+  lvr,
+  nextStep,
+  interpretation,
+  primeSubtype,
+  altResult,
+  isPre,
+}: {
+  path: LendingPath;
+  category: MortgageCategory;
+  creditPosition: CreditPosition;
+  incomeProfile: string;
+  bigLabel: string;
+  bigValue: string;
+  price: number;
+  down: number;
+  lvr: number;
+  nextStep: string;
+  interpretation: string;
+  primeSubtype: ReturnType<typeof classifyPrimeSubtype>;
+  altResult: ReturnType<typeof classifyAlternative> | null;
+  isPre: boolean;
+}) {
   const heroTone: Tone = pathTone(path);
   const heroBg =
     heroTone === "primary"
@@ -336,117 +460,120 @@ function PurchaseSnapshot({
         : "border-yellow/50 bg-gradient-to-br from-yellow/15 via-card to-accent/5";
 
   return (
-    <SnapshotShell
-      title="Your Mortgage Snapshot"
-      subtitle="Based on what you shared, here is your likely mortgage path and next best step."
-      onEdit={onEdit}
-    >
-      {/* Hero summary cards */}
-      <section className={`rounded-2xl border p-5 shadow-sm sm:p-7 md:p-9 ${heroBg}`}>
-        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
-          <Sparkles className="h-3.5 w-3.5" />
-          Snapshot ready
-        </div>
-        <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
-          {heroHeadline}
-        </h2>
+    <section className={`rounded-3xl border p-5 shadow-sm sm:p-7 md:p-9 ${heroBg}`}>
+      <div className="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-widest text-secondary">
+        <Sparkles className="h-3.5 w-3.5" />
+        Snapshot ready
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-background/70 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+          <ShieldCheck className="h-3 w-3 text-secondary" /> No credit impact
+        </span>
+      </div>
 
-        {/* Primary outcome — informational path tag + primary CTA */}
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${toneClass[pathTone(path)]}`}
-          >
-            <Compass className="h-3.5 w-3.5" />
-            {path}
-          </span>
-        </div>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <Link
-            to="/portal"
-            className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
-          >
-            {nextStep}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <p className="text-xs text-muted-foreground">
-            Takes under 30 seconds · No credit impact
+      <h2 className="mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
+        {path === "Prime Fit"
+          ? "You're matched to a Prime lending path"
+          : path === "Alternative Fit"
+            ? "You're matched to an Alternative lending path"
+            : "Your file needs a tailored review"}
+      </h2>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Pill tone={pathTone(path)}>
+          <Compass className="mr-1 h-3.5 w-3.5" /> {path}
+        </Pill>
+        <Pill tone={categoryTone(category)}>{category}</Pill>
+      </div>
+
+      {/* Big number — moment of delight */}
+      {price > 0 && (
+        <div className="mt-6 rounded-2xl border border-border/60 bg-card/80 p-5 backdrop-blur">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {bigLabel}
           </p>
+          <p className="mt-1 text-4xl font-bold tracking-tight text-primary sm:text-5xl">
+            {bigValue}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isPre
+              ? "Based on your target price range and saved down payment."
+              : "Based on your purchase price and down payment."}
+          </p>
+
+          <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+            <HeroStat
+              label={isPre ? "Target price" : "Purchase price"}
+              value={formatCAD(price)}
+            />
+            <HeroStat
+              label={isPre ? "Saved down" : "Down payment"}
+              value={down ? formatCAD(down) : "—"}
+            />
+            <HeroStat label="LTV" value={lvr ? `${lvr}%` : "—"} />
+          </div>
         </div>
+      )}
 
-        {/* Supporting facts — clean key/value rows, no fixed-width boxes */}
-        <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 rounded-xl border border-border/60 bg-card/70 p-4 backdrop-blur sm:grid-cols-3 sm:p-5">
-          <HeroFact
-            icon={<ShieldCheck className="h-3.5 w-3.5" />}
-            label="Mortgage Category"
-            value={category}
-          />
-          <HeroFact
-            icon={<CreditCard className="h-3.5 w-3.5" />}
-            label="Credit Position"
-            value={creditPosition}
-          />
-          <HeroFact
-            icon={<Briefcase className="h-3.5 w-3.5" />}
-            label="Income Profile"
-            value={incomeProfile}
-          />
-        </dl>
+      {/* Profile facts */}
+      <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur sm:grid-cols-3 sm:p-5">
+        <HeroFact
+          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+          label="Mortgage Category"
+          value={category}
+        />
+        <HeroFact
+          icon={<CreditCard className="h-3.5 w-3.5" />}
+          label="Credit Position"
+          value={creditPosition}
+        />
+        <HeroFact
+          icon={<Briefcase className="h-3.5 w-3.5" />}
+          label="Income Profile"
+          value={incomeProfile}
+        />
+      </dl>
 
-        <div className="mt-5 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
-          <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
-          {primeSubtype && (
-            <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
-              Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
-            </p>
-          )}
-          {altResult && altResult.alternative_class && (
-            <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
-              Internal classification:{" "}
-              {altResult.alternative_class === "ALTERNATIVE_PLUS"
-                ? "Alternative-Plus"
-                : "Standard-Alternative"}
-              {altResult.alternative_structure
-                ? ` · ${
-                    altResult.alternative_structure === "CONFIRMING_ALTERNATIVE"
-                      ? "Confirming"
-                      : "Non-confirming"
-                  }`
-                : ""}
-              {altResult.max_ltv ? ` · Max LTV ${altResult.max_ltv}%` : ""}
-            </p>
-          )}
-        </div>
+      {/* Primary actions */}
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Link
+          to="/portal"
+          className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
+        >
+          {nextStep}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <ShareSheetButton />
+        <p className="text-xs text-muted-foreground sm:ml-auto">
+          Takes under 30 sec · Soft check only
+        </p>
+      </div>
 
-        <WhatThisMeans />
-      </section>
-
-      {/* Two-column supporting cards */}
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
-        <RequestCard flowKey={flowKey} answers={answers} category={category} />
-        <CreditPositionCard score={score} position={creditPosition} />
-      </section>
-
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
-        <IncomeVerificationCard answers={answers} />
-        {showBundle ? (
-          <BundleCard name={bundleName} />
-        ) : (
-          <TailoredBundlePlaceholder />
+      <div className="mt-5 rounded-xl bg-card/70 p-5 ring-1 ring-border/60 backdrop-blur">
+        <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
+        {primeSubtype && (
+          <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+            Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
+          </p>
         )}
-      </section>
+        {altResult && altResult.alternative_class && (
+          <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
+            Internal classification:{" "}
+            {altResult.alternative_class === "ALTERNATIVE_PLUS"
+              ? "Alternative-Plus"
+              : "Standard-Alternative"}
+            {altResult.alternative_structure
+              ? ` · ${
+                  altResult.alternative_structure === "CONFIRMING_ALTERNATIVE"
+                    ? "Confirming"
+                    : "Non-confirming"
+                }`
+              : ""}
+            {altResult.max_ltv ? ` · Max LTV ${altResult.max_ltv}%` : ""}
+          </p>
+        )}
+      </div>
 
-      {/* Review your answers */}
-      <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
-
-      {/* Save / share / act */}
-      <SnapshotShareSection onEdit={onEdit} />
-
-      {/* CTA */}
-      <BottomCTA path={path} />
-
-      {/* Hidden vars for QA only — referenced to keep TS happy */}
-      <span className="hidden">{lvr}{usage}</span>
-    </SnapshotShell>
+      <WhatThisMeans />
+    </section>
   );
 }
 
