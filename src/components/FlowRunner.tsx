@@ -16,7 +16,7 @@ import {
   downPaymentPercentage,
   type PropertyUsage,
 } from "@/lib/calculations";
-import { getMinimumDownPaymentPolicy, mapUsage } from "@/lib/policy";
+import { classifyLane, getMinimumDownPaymentPolicy, mapUsage } from "@/lib/policy";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -845,23 +845,32 @@ function DownPaymentGuidanceCard({
     down_payment_amount: down || undefined,
   });
   const credit = parseInt((answers.credit as string)?.replace(/\D/g, "") || "0", 10);
+  const incomeType = answers.income as string | undefined;
+  const incomeVerification = answers.selfVerify as string | undefined;
+  const baseMeetsMinimum = down >= policy.minimum_down_payment_amount;
+  const lane = classifyLane({
+    credit_score: credit,
+    income_type: incomeType,
+    income_verification: incomeVerification,
+    meets_minimum_dp: baseMeetsMinimum,
+  });
 
   // Alternative lender path overrides the insured/insurable minimums
-  // when credit is below 620: 20% min (or 25% if below 550).
+  // when the borrower routes to Alternative: 20% min (or 25% if below 550).
   let minAmount = policy.minimum_down_payment_amount;
   let minPercent = policy.minimum_down_payment_percent;
   let ruleLabel = policy.rule_applied_label;
   let ruleReference = policy.rule_reference_text;
-  if (credit > 0 && credit < 620 && credit >= 500) {
+  if (price > 0 && lane === "ALTERNATIVE_FIT") {
     const altPct = credit < 550 ? 25 : 20;
     minAmount = price * (altPct / 100);
     minPercent = altPct;
     ruleLabel =
       altPct === 25
         ? "Alternative lender minimum: 25% down for credit below 550"
-        : "Alternative lender minimum: 20% down for credit 500–619";
+        : "Alternative lender minimum: 20% down for Alternative-fit borrowers";
     ruleReference =
-      "Credit scores below 620 typically route to Alternative lender programs, which require a higher minimum down payment than insured/insurable programs.";
+      "Alternative lender programs in this prototype require at least 20% down, or 25% when credit is below 550.";
   }
 
   const meets = down >= minAmount;
