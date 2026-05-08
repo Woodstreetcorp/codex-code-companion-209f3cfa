@@ -838,6 +838,28 @@ function SummaryCard({
   );
 }
 
+function HeroFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-secondary">{icon}</span>
+        <span>{label}</span>
+      </dt>
+      <dd className="mt-1 break-words text-base font-semibold text-foreground sm:text-lg">
+        {value}
+      </dd>
+    </div>
+  );
+}
+
 function WhatThisMeans() {
   return (
     <details className="group mt-5 rounded-xl border border-border bg-background p-4">
