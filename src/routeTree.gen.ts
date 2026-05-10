@@ -14,6 +14,7 @@ import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
 
 const RefinanceRoute = RefinanceRouteImport.update({
   id: '/refinance',
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InternalAccountHandoffRoute = InternalAccountHandoffRouteImport.update({
+  id: '/internal/account-handoff',
+  path: '/internal/account-handoff',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
+  '/internal/account-handoff': typeof InternalAccountHandoffRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
+  '/internal/account-handoff': typeof InternalAccountHandoffRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
+  '/internal/account-handoff': typeof InternalAccountHandoffRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/portal' | '/pre-purchase' | '/purchase' | '/refinance'
+  fullPaths:
+    | '/'
+    | '/portal'
+    | '/pre-purchase'
+    | '/purchase'
+    | '/refinance'
+    | '/internal/account-handoff'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/portal' | '/pre-purchase' | '/purchase' | '/refinance'
+  to:
+    | '/'
+    | '/portal'
+    | '/pre-purchase'
+    | '/purchase'
+    | '/refinance'
+    | '/internal/account-handoff'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/pre-purchase'
     | '/purchase'
     | '/refinance'
+    | '/internal/account-handoff'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   PrePurchaseRoute: typeof PrePurchaseRoute
   PurchaseRoute: typeof PurchaseRoute
   RefinanceRoute: typeof RefinanceRoute
+  InternalAccountHandoffRoute: typeof InternalAccountHandoffRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/internal/account-handoff': {
+      id: '/internal/account-handoff'
+      path: '/internal/account-handoff'
+      fullPath: '/internal/account-handoff'
+      preLoaderRoute: typeof InternalAccountHandoffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,7 +161,18 @@ const rootRouteChildren: RootRouteChildren = {
   PrePurchaseRoute: PrePurchaseRoute,
   PurchaseRoute: PurchaseRoute,
   RefinanceRoute: RefinanceRoute,
+  InternalAccountHandoffRoute: InternalAccountHandoffRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
