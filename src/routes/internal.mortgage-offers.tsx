@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Star, TrendingDown, Shield, Filter, Info } from "lucide-react";
 import { InternalShell } from "@/components/InternalShell";
 
-export const Route = createFileRoute("/internal/mortgage-options")({
+export const Route = createFileRoute("/internal/mortgage-offers")({
   head: () => ({
     meta: [
       { title: "approvU — Your Mortgage Options" },
