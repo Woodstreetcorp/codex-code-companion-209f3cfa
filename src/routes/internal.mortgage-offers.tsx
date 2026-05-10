@@ -5,7 +5,7 @@ import { InternalShell } from "@/components/InternalShell";
 export const Route = createFileRoute("/internal/mortgage-offers")({
   head: () => ({
     meta: [
-      { title: "approvU — Your Mortgage Options" },
+      { title: "approvU — Your Mortgage Offers" },
       {
         name: "description",
         content:
@@ -52,7 +52,7 @@ function MortgageOptions() {
       eyebrow="Step 4 of 6"
       title="Your personalized mortgage options"
       description="These options are matched to your snapshot. Pick one to move forward, or talk to a broker for guidance."
-      currentPath="/internal/mortgage-options"
+      currentPath="/internal/mortgage-offers"
       prev={{ to: "/internal/account-handoff", label: "Back" }}
       next={{ to: "/internal/borrower-dashboard", label: "Choose & continue" }}
     >
