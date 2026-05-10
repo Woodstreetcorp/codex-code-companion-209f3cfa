@@ -39,7 +39,7 @@ function BorrowerDashboard() {
       title="Welcome to your borrower dashboard"
       description="Track your selected option, complete required tasks, and prepare for your full application."
       currentPath="/internal/borrower-dashboard"
-      prev={{ to: "/internal/mortgage-options", label: "Back to options" }}
+      prev={{ to: "/internal/mortgage-offers", label: "Back to options" }}
       next={{ to: "/internal/full-application", label: "Start full application" }}
     >
       <section className="grid gap-4 sm:grid-cols-3">

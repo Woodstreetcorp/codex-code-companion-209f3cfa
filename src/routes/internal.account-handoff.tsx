@@ -23,7 +23,7 @@ function AccountHandoff() {
       title="Save your snapshot — create your account"
       description="Your snapshot is ready. Create a free approvU account to securely save your numbers and unlock your personalized mortgage options."
       currentPath="/internal/account-handoff"
-      next={{ to: "/internal/mortgage-options", label: "Continue to options" }}
+      next={{ to: "/internal/mortgage-offers", label: "Continue to options" }}
     >
       <div className="grid gap-6 lg:grid-cols-5">
         <section className="lg:col-span-3 rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -74,7 +74,7 @@ function AccountHandoff() {
             <ul className="mt-3 space-y-2 text-sm text-foreground">
               {[
                 "Save and revisit your snapshot anytime",
-                "Unlock your tailored Mortgage Options",
+                "Unlock your tailored Mortgage Offers",
                 "Track documents and lender progress",
                 "Access your Home Life Offer Bundle",
               ].map((b) => (

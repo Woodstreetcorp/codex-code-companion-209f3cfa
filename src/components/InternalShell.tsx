@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 const STEPS = [
   { to: "/internal/account-handoff", label: "Account Handoff", step: 3 },
-  { to: "/internal/mortgage-options", label: "Mortgage Options", step: 4 },
+  { to: "/internal/mortgage-offers", label: "Mortgage Offers", step: 4 },
   { to: "/internal/borrower-dashboard", label: "Borrower Dashboard", step: 5 },
   { to: "/internal/full-application", label: "Full Application", step: 6 },
 ] as const;
