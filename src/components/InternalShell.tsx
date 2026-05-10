@@ -88,7 +88,7 @@ export function InternalShell({
         <nav className="mt-12 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           {prev ? (
             <Link
-              to={prev.to as string}
+              to={prev.to as "/"}
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
             >
               <ArrowLeft className="mr-1 h-4 w-4" /> {prev.label}
@@ -98,7 +98,7 @@ export function InternalShell({
           )}
           {next ? (
             <Link
-              to={next.to as string}
+              to={next.to as "/"}
               className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               {next.label} <ArrowRight className="ml-1 h-4 w-4" />
