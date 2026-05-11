@@ -608,6 +608,7 @@ function BorrowerDashboard() {
 
       {/* Home Life Wallet */}
       <DashSection
+        id="wallet"
         title="Home Life Wallet"
         subtitle="Access your benefits, coupons, and partner offers after your mortgage funds."
       >
@@ -658,7 +659,7 @@ function BorrowerDashboard() {
       </DashSection>
 
       {/* Calculators */}
-      <DashSection id="wallet" title="Home Life Wallet" subtitle="Access your benefits, coupons, and partner offers after your mortgage funds.">
+      <DashSection id="tools" title="Mortgage Tools" subtitle="Plan ahead with quick calculators.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((t) => (
             <button
@@ -678,7 +679,7 @@ function BorrowerDashboard() {
       </DashSection>
 
       {/* Settings link */}
-      <DashSection title="Account Settings" subtitle="Manage profile, contact, security, and preferences.">
+      <DashSection id="settings" title="Account Settings" subtitle="Manage profile, contact, security, and preferences.">
         <Card>
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
@@ -738,24 +739,28 @@ function BorrowerDashboard() {
           </div>
         </Modal>
       )}
+        </div>
+      </div>
     </InternalShell>
   );
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────
 function DashSection({
+  id,
   title,
   subtitle,
   right,
   children,
 }: {
+  id?: string;
   title: string;
   subtitle?: string;
   right?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-10">
+    <section id={id} className="mt-10 scroll-mt-24">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
