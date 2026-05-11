@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, FileText, ShieldCheck } from "lucide-react";
 import { SettingPane, ToggleRow } from "@/components/portal/settings-fields";
@@ -125,7 +125,7 @@ function PrivacyPage() {
   );
 }
 
-function Pill({ children, tone }: { children: React.ReactNode; tone: "ok" | "muted" }) {
+function Pill({ children, tone }: { children: ReactNode; tone: "ok" | "muted" }) {
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${tone === "ok" ? "bg-mint/15 text-mint" : "bg-muted text-muted-foreground"}`}>
       {tone === "ok" && <CheckCircle2 className="h-3 w-3" />}
