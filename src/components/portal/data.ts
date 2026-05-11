@@ -226,7 +226,7 @@ export type SettingsRoutePath =
   | "/portal/settings/security"
   | "/portal/settings/notifications"
   | "/portal/settings/privacy"
-  | "/portal/settings/payments"
+  | "/portal/settings/payment-methods"
   | "/portal/settings/preferences";
 
 export const SETTINGS_NAV: {
@@ -238,7 +238,7 @@ export const SETTINGS_NAV: {
   { to: "/portal/settings/security", label: "Security", icon: KeyRound },
   { to: "/portal/settings/notifications", label: "Notifications", icon: Bell },
   { to: "/portal/settings/privacy", label: "Privacy", icon: Eye },
-  { to: "/portal/settings/payments", label: "Payment Methods", icon: CreditCard },
+  { to: "/portal/settings/payment-methods", label: "Payment Methods", icon: CreditCard },
   { to: "/portal/settings/preferences", label: "Preferences", icon: Settings },
 ];
 
