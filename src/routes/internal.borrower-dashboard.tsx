@@ -434,6 +434,7 @@ function BorrowerDashboard() {
       {/* Submitted Applications */}
       {SUBMITTED.length > 0 && (
         <DashSection
+          id="submitted"
           title="Submitted Applications"
           subtitle="Applications submitted for review, lender matching, or fulfillment."
         >
@@ -447,6 +448,7 @@ function BorrowerDashboard() {
 
       {/* Active Applications */}
       <DashSection
+        id="active"
         title="Active Applications"
         subtitle="Applications you started but have not submitted yet."
         right={
@@ -474,6 +476,7 @@ function BorrowerDashboard() {
       {/* Expired */}
       {EXPIRED.length > 0 && (
         <DashSection
+          id="expired"
           title="Expired Applications"
           subtitle={`Not completed within ${ACTIVE_EXPIRY_DAYS} days. You can reactivate within ${EXPIRED_VISIBILITY_DAYS} days.`}
         >
@@ -488,6 +491,7 @@ function BorrowerDashboard() {
       {/* Completed */}
       {COMPLETED.length > 0 && (
         <DashSection
+          id="completed"
           title="Completed Applications"
           subtitle="Mortgages funded and closed through approvU."
         >
@@ -500,7 +504,7 @@ function BorrowerDashboard() {
       )}
 
       {/* Documents & Conditions */}
-      <DashSection title="Documents & Conditions" subtitle="Pending borrower actions across your applications.">
+      <DashSection id="documents" title="Documents & Conditions" subtitle="Pending borrower actions across your applications.">
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader
@@ -554,6 +558,7 @@ function BorrowerDashboard() {
 
       {/* Mortgage Offers / Snapshot History */}
       <DashSection
+        id="offers"
         title="Mortgage Offers"
         subtitle="Review preliminary offers from your latest mortgage snapshot."
       >
