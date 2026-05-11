@@ -19,6 +19,7 @@ import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mo
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
+import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 
 const RefinanceRoute = RefinanceRouteImport.update({
@@ -72,6 +73,11 @@ const InternalAccountHandoffRoute = InternalAccountHandoffRouteImport.update({
   path: '/internal/account-handoff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalSettingsProfileRoute = PortalSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => PortalSettingsRoute,
+} as any)
 const PortalApplicationsApplicationIdQualificationSummaryRoute =
   PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
     id: '/applications/$applicationId/qualification-summary',
@@ -89,7 +95,8 @@ export interface FileRoutesByFullPath {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
-  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesByTo {
@@ -102,7 +109,8 @@ export interface FileRoutesByTo {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
-  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesById {
@@ -116,7 +124,8 @@ export interface FileRoutesById {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
-  '/portal/settings': typeof PortalSettingsRoute
+  '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRouteTypes {
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/settings/profile'
     | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/settings/profile'
     | '/portal/applications/$applicationId/qualification-summary'
   id:
     | '__root__'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/settings/profile'
     | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesById: FileRoutesById
 }
@@ -245,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalAccountHandoffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/settings/profile': {
+      id: '/portal/settings/profile'
+      path: '/profile'
+      fullPath: '/portal/settings/profile'
+      preLoaderRoute: typeof PortalSettingsProfileRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/portal/applications/$applicationId/qualification-summary': {
       id: '/portal/applications/$applicationId/qualification-summary'
       path: '/applications/$applicationId/qualification-summary'
@@ -255,13 +274,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalSettingsRouteChildren {
+  PortalSettingsProfileRoute: typeof PortalSettingsProfileRoute
+}
+
+const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
+  PortalSettingsProfileRoute: PortalSettingsProfileRoute,
+}
+
+const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
+  PortalSettingsRouteChildren,
+)
+
 interface PortalRouteChildren {
-  PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
-  PortalSettingsRoute: PortalSettingsRoute,
+  PortalSettingsRoute: PortalSettingsRouteWithChildren,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
     PortalApplicationsApplicationIdQualificationSummaryRoute,
 }
