@@ -212,7 +212,6 @@ const SNAPSHOTS = [
   },
 ];
 
-const TOOLS = [
 const TOOLS: { key: ToolKey; name: string; icon: typeof Home; blurb: string }[] = [
   { key: "payment", name: "Mortgage Payment", icon: Calculator, blurb: "Estimate monthly payment for any rate, term, and amortization." },
   { key: "affordability", name: "Affordability", icon: Home, blurb: "See the maximum home price you can afford." },
