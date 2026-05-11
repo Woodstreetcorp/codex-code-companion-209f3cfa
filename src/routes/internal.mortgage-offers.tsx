@@ -1,463 +1,387 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Sparkles,
   CheckCircle2,
   Gift,
-  Filter,
-  ArrowUpDown,
   Shield,
   Lock,
   UserCheck,
   CircleDashed,
-  MessageCircle,
+  ArrowRight,
+  X,
   Info,
+  TrendingDown,
+  Award,
+  Zap,
 } from "lucide-react";
 import { InternalShell } from "@/components/InternalShell";
 
 export const Route = createFileRoute("/internal/mortgage-offers")({
   head: () => ({
     meta: [
-      { title: "approvU — Your Mortgage Options" },
+      { title: "approvU — Your Mortgage Offers" },
       {
         name: "description",
         content:
-          "Compare possible mortgage options with included Home Life Offer Bundle benefits attached to each option.",
+          "Personalized preliminary mortgage offer directions and Home Life benefits based on your initial qualification.",
       },
     ],
   }),
   component: MortgageOffersPage,
 });
 
-type Benefit = { name: string; value?: string; status: "Included" };
-type MortgageOption = {
+type Benefit = { name: string; value: number };
+type Offer = {
   id: string;
-  productName: string;
-  lenderName: string;
-  fit: "Prime Fit" | "Alternative Fit";
-  programLane: "Insured" | "Insurable" | "Uninsurable";
+  title: string;
+  lenderTypeLabel: string;
+  termLabel: string;
   rateType: "Fixed" | "Variable";
-  interestRate: string;
+  termLength: string;
+  estimatedRate: string;
   estimatedMonthlyPayment: string;
-  term: string;
-  amortization: string;
-  estimatedFee?: string;
-  notes?: string;
+  totalBenefitsValue: number;
   recommended?: boolean;
-  offerBundle: {
-    bundleName: string;
-    estimatedValue: string;
-    benefits: Benefit[];
-  };
+  highlight?: { icon: typeof Award; label: string };
+  groupKey: string;
+  representativeProductId: string;
+  offerBundleId: string;
+  benefits: Benefit[];
 };
 
-const OPTIONS: MortgageOption[] = [
+const OFFERS: Offer[] = [
   {
-    id: "opt-1",
-    productName: "5-Year Fixed Advantage",
-    lenderName: "First National Bank",
-    fit: "Prime Fit",
-    programLane: "Insurable",
-    rateType: "Fixed",
-    interestRate: "4.79%",
-    estimatedMonthlyPayment: "$2,341",
-    term: "5 Year",
-    amortization: "30 Year",
-    estimatedFee: "No lender fee",
-    notes: "Estimated. Subject to lender review.",
-    recommended: true,
-    offerBundle: {
-      bundleName: "Stability Plus Bundle",
-      estimatedValue: "Up to $2,350",
-      benefits: [
-        { name: "No Appraisal Fee", value: "$400", status: "Included" },
-        { name: "Legal Fee Rebate", value: "$500", status: "Included" },
-        { name: "Moving Expense Credit", value: "$300", status: "Included" },
-        { name: "Home Inspection Credit", value: "$250", status: "Included" },
-        { name: "First-Time Homeowner Guide", status: "Included" },
-      ],
-    },
-  },
-  {
-    id: "opt-2",
-    productName: "5-Year Fixed Saver",
-    lenderName: "Coastline Credit Union",
-    fit: "Prime Fit",
-    programLane: "Insured",
-    rateType: "Fixed",
-    interestRate: "4.84%",
-    estimatedMonthlyPayment: "$2,358",
-    term: "5 Year",
-    amortization: "25 Year",
-    estimatedFee: "$0 appraisal credit applied",
-    notes: "May change after full application review.",
-    offerBundle: {
-      bundleName: "Essentials Bundle",
-      estimatedValue: "Up to $1,400",
-      benefits: [
-        { name: "Free Legal Review", value: "$500", status: "Included" },
-        { name: "Title Insurance Credit", value: "$300", status: "Included" },
-        { name: "Home Insurance Referral", value: "$250", status: "Included" },
-        { name: "Smart Home Consultation", status: "Included" },
-      ],
-    },
-  },
-  {
-    id: "opt-3",
-    productName: "5-Year Variable Flex",
-    lenderName: "Northpeak Monoline",
-    fit: "Alternative Fit",
-    programLane: "Uninsurable",
+    id: "offer-variable-mb",
+    title: "Lowest Payment Variable Offer",
+    lenderTypeLabel: "Mortgage Bank Path",
+    termLabel: "5-Year Variable",
     rateType: "Variable",
-    interestRate: "5.10%",
+    termLength: "5-Year",
+    estimatedRate: "4.79%",
+    estimatedMonthlyPayment: "$2,341",
+    totalBenefitsValue: 1599,
+    highlight: { icon: TrendingDown, label: "Lowest Payment" },
+    groupKey: "MB_5Y_VAR",
+    representativeProductId: "prod_mb_var_5y_001",
+    offerBundleId: "bundle_flex_living",
+    benefits: [
+      { name: "No Appraisal Fee", value: 400 },
+      { name: "Home Inspection Credit", value: 500 },
+      { name: "Legal Fee Rebate", value: 500 },
+      { name: "First-Time Homeowner Guide", value: 199 },
+    ],
+  },
+  {
+    id: "offer-fixed-mono",
+    title: "Best Value Fixed Offer",
+    lenderTypeLabel: "Monoline Lender Path",
+    termLabel: "5-Year Fixed",
+    rateType: "Fixed",
+    termLength: "5-Year",
+    estimatedRate: "4.89%",
+    estimatedMonthlyPayment: "$2,358",
+    totalBenefitsValue: 2350,
+    recommended: true,
+    highlight: { icon: Award, label: "Best Value — Recommended" },
+    groupKey: "MONO_5Y_FIX",
+    representativeProductId: "prod_mono_fix_5y_001",
+    offerBundleId: "bundle_stability_plus",
+    benefits: [
+      { name: "No Appraisal Fee", value: 400 },
+      { name: "Home Inspection Credit", value: 500 },
+      { name: "Legal Fee Rebate", value: 500 },
+      { name: "Moving Expense Credit", value: 500 },
+      { name: "Home Insurance Credit", value: 450 },
+    ],
+  },
+  {
+    id: "offer-fixed-cu",
+    title: "Flexible Lending Offer",
+    lenderTypeLabel: "Credit Union Path",
+    termLabel: "3-Year Fixed",
+    rateType: "Fixed",
+    termLength: "3-Year",
+    estimatedRate: "5.10%",
     estimatedMonthlyPayment: "$2,432",
-    term: "5 Year",
-    amortization: "30 Year",
-    estimatedFee: "Est. broker fee may apply",
-    notes: "Variable rate. Subject to prime adjustments.",
-    offerBundle: {
-      bundleName: "Flex Living Bundle",
-      estimatedValue: "Up to $1,800",
-      benefits: [
-        { name: "Switch-to-Fixed Credit", value: "$500", status: "Included" },
-        { name: "Skip-a-Payment Privilege", status: "Included" },
-        { name: "Moving Expense Credit", value: "$300", status: "Included" },
-        { name: "Home Inspection Credit", value: "$250", status: "Included" },
-      ],
-    },
+    totalBenefitsValue: 2425,
+    highlight: { icon: Zap, label: "Strong Approval" },
+    groupKey: "CU_3Y_FIX",
+    representativeProductId: "prod_cu_fix_3y_001",
+    offerBundleId: "bundle_essentials",
+    benefits: [
+      { name: "Flexible Review Support", value: 250 },
+      { name: "Financial Planning Session", value: 500 },
+      { name: "Legal Fee Rebate", value: 500 },
+      { name: "Home Inspection Credit", value: 500 },
+      { name: "Moving Support Credit", value: 675 },
+    ],
   },
 ];
 
-const SORT_OPTIONS = [
-  "Best Value",
-  "Lowest Rate",
-  "Lowest Payment",
-  "Lowest Fees",
-] as const;
-const FILTERS = ["Fixed", "Variable", "Prime", "Alternative"] as const;
+function formatCurrency(n: number) {
+  return `$${n.toLocaleString("en-US")}`;
+}
 
 function MortgageOffersPage() {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [sort, setSort] = useState<(typeof SORT_OPTIONS)[number]>("Best Value");
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-
-  const toggleSelect = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : prev.length >= 3
-          ? prev
-          : [...prev, id],
-    );
-  };
-
-  const toggleFilter = (f: string) =>
-    setActiveFilters((prev) =>
-      prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f],
-    );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drawerOffer, setDrawerOffer] = useState<Offer | null>(null);
+  const selected = OFFERS.find((o) => o.id === selectedId) ?? null;
 
   return (
     <InternalShell
       eyebrow="Step 4 of 6"
-      title="Your Mortgage Options"
-      description="Based on your Mortgage Snapshot, here are possible mortgage options and value-added benefits to review."
+      title="Your Mortgage Offers"
+      description="You're one step closer. Based on your initial answers, we found mortgage offers and benefits that may fit your profile."
       currentPath="/internal/mortgage-offers"
       prev={{ to: "/internal/account-handoff", label: "Back" }}
       next={{ to: "/internal/borrower-dashboard", label: "Continue" }}
     >
-      <p className="-mt-6 mb-6 text-xs text-muted-foreground">
-        Options are subject to lender review, supporting documents, and final approval.
+      <p className="-mt-6 mb-10 max-w-2xl text-sm text-muted-foreground">
+        Select one offer to continue. Your final mortgage product will be confirmed after your full
+        application is completed and reviewed.
       </p>
 
-      {/* Sort + Filter bar */}
-      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <ArrowUpDown className="h-3.5 w-3.5" /> Sort
-          </span>
-          {SORT_OPTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSort(s)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                sort === s
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-foreground hover:bg-muted"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <Filter className="h-3.5 w-3.5" /> Filter
-          </span>
-          {FILTERS.map((f) => {
-            const active = activeFilters.includes(f);
-            return (
-              <button
-                key={f}
-                onClick={() => toggleFilter(f)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? "border-secondary bg-secondary/15 text-secondary"
-                    : "border-border bg-background text-foreground hover:bg-muted"
-                }`}
-              >
-                {f}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Cards */}
-      <div className="grid gap-5 lg:grid-cols-3">
-        {OPTIONS.map((o) => (
-          <OptionCard
+      {/* Offer Cards */}
+      <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+        {OFFERS.map((o) => (
+          <OfferCard
             key={o.id}
-            option={o}
-            selected={selected.includes(o.id)}
-            onToggleSelect={() => toggleSelect(o.id)}
+            offer={o}
+            selected={selectedId === o.id}
+            onSelect={() => setSelectedId(o.id)}
+            onViewDetails={() => setDrawerOffer(o)}
           />
         ))}
       </div>
 
-      {/* Compare bar */}
-      <div className="mt-6 flex flex-col items-start justify-between gap-3 rounded-2xl border border-dashed border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
-        <p className="text-sm text-muted-foreground">
-          {selected.length === 0
-            ? "Select up to 3 options to compare side-by-side."
-            : `${selected.length} option${selected.length > 1 ? "s" : ""} selected for comparison.`}
-        </p>
-        <button
-          disabled={selected.length < 2}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Compare Selected Options
-        </button>
-      </div>
+      {/* Selected Confirmation */}
+      {selected && (
+        <section className="mt-8 overflow-hidden rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/5 to-secondary/5 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  You selected
+                </p>
+                <h3 className="mt-0.5 text-lg font-semibold text-foreground">{selected.title}</h3>
+                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                  We'll use this as your preferred mortgage direction when you complete your full
+                  application.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/internal/borrower-dashboard"
+              className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              Continue Application <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+      )}
 
-      {/* Transparency */}
-      <section className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-foreground">How your benefits work</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
+      {/* How Your Offers Work */}
+      <section className="mt-12 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+        <div className="mb-6 text-center">
+          <h2 className="text-xl font-semibold text-foreground">How Your Offers Work</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A simple, transparent path from preview to confirmed offer.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
           <Step
             num="1"
-            title="Initial Matching"
-            body="Your mortgage options and benefits are based on your Mortgage Snapshot information."
+            title="Initial Match"
+            body="These offers are based on your initial qualification answers."
           />
           <Step
             num="2"
-            title="Application Refinement"
-            body="As you complete your full application, your options and benefits may be adjusted based on verified information."
+            title="Full Application Review"
+            body="When you complete your full application, we verify your income, property, credit, and financing details."
           />
           <Step
             num="3"
-            title="Final Verification"
-            body="Your final mortgage package is confirmed after document verification and lender review."
+            title="Final Confirmation"
+            body="Your final mortgage offer and benefits are confirmed after review and lender validation."
           />
         </div>
-        <div className="mt-5 rounded-xl border border-secondary/30 bg-secondary/5 p-4 text-sm text-foreground">
-          <strong className="text-secondary">Our commitment:</strong> approvU will always communicate
-          changes clearly. If your verified information differs from your initial qualification, your
-          options or benefits may change to match your final profile.
+        <div className="mt-6 rounded-xl border border-secondary/30 bg-secondary/5 p-4 text-sm text-foreground">
+          <strong className="text-secondary">Our commitment:</strong> We'll clearly explain any
+          changes if your verified application details affect your final offer.
         </div>
       </section>
 
-      {/* Trust row */}
-      <section className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Trust icon={CircleDashed} label="No impact on credit score at this stage" />
+      {/* Trust */}
+      <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Trust icon={CircleDashed} label="No impact on credit at this stage" />
         <Trust icon={Lock} label="Secure and confidential" />
-        <Trust icon={UserCheck} label="Licensed mortgage broker review" />
+        <Trust icon={UserCheck} label="Reviewed by a licensed broker" />
         <Trust icon={Shield} label="No obligation" />
       </section>
+
+      {/* Drawer */}
+      {drawerOffer && (
+        <BenefitsDrawer offer={drawerOffer} onClose={() => setDrawerOffer(null)} />
+      )}
     </InternalShell>
   );
 }
 
-function OptionCard({
-  option: o,
+function OfferCard({
+  offer: o,
   selected,
-  onToggleSelect,
+  onSelect,
+  onViewDetails,
 }: {
-  option: MortgageOption;
+  offer: Offer;
   selected: boolean;
-  onToggleSelect: () => void;
+  onSelect: () => void;
+  onViewDetails: () => void;
 }) {
+  const HighlightIcon = o.highlight?.icon;
   return (
     <article
-      className={`relative flex flex-col rounded-2xl border bg-card shadow-sm transition-all ${
+      className={`relative flex flex-col rounded-2xl border bg-card transition-all ${
         o.recommended
-          ? "border-primary/60 ring-2 ring-primary/20"
-          : "border-border hover:shadow-md"
-      } ${selected ? "ring-2 ring-secondary/50" : ""}`}
+          ? "border-primary shadow-lg lg:scale-[1.02] lg:-translate-y-1"
+          : "border-border shadow-sm hover:shadow-md"
+      } ${selected ? "ring-2 ring-primary ring-offset-2" : ""}`}
     >
-      {o.recommended && (
-        <div className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow">
-          <Sparkles className="h-3 w-3" /> Best Value + Recommended
+      {o.highlight && (
+        <div
+          className={`absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm ${
+            o.recommended
+              ? "bg-primary text-primary-foreground"
+              : "bg-accent/90 text-accent-foreground"
+          }`}
+        >
+          {HighlightIcon && <HighlightIcon className="h-3 w-3" />}
+          {o.highlight.label}
         </div>
       )}
 
       {/* Header */}
-      <div className="border-b border-border px-5 pb-4 pt-6">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {o.lenderName}
+      <div className="px-6 pb-4 pt-7 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {o.lenderTypeLabel}
         </p>
-        <h3 className="mt-1 text-lg font-semibold text-foreground">{o.productName}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {o.rateType} • {o.term} • {o.amortization} Amortization
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <Tag tone="primary">{o.fit}</Tag>
-          <Tag tone="secondary">{o.programLane}</Tag>
-        </div>
+        <h3 className="mt-2 text-xl font-semibold text-foreground">{o.title}</h3>
+        <p className="mt-1 text-xs text-muted-foreground">{o.termLabel}</p>
       </div>
 
-      {/* Mortgage details */}
-      <div className="px-5 py-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-3xl font-bold text-primary">{o.interestRate}</p>
-            <p className="text-xs text-muted-foreground">Estimated rate</p>
-          </div>
-          <div className="text-right">
-            <p className="text-base font-semibold text-foreground">
-              {o.estimatedMonthlyPayment}
-              <span className="text-xs font-normal text-muted-foreground"> /mo</span>
-            </p>
-            <p className="text-xs text-muted-foreground">Estimated payment</p>
-          </div>
-        </div>
-        <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <Detail label="Term" value={o.term} />
-          <Detail label="Amortization" value={o.amortization} />
-          <Detail label="Type" value={o.rateType} />
-          <Detail label="Fees" value={o.estimatedFee ?? "—"} />
-        </dl>
-        {o.notes && (
-          <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground">
-            <Info className="mt-0.5 h-3 w-3 shrink-0" />
-            {o.notes}
-          </p>
-        )}
+      {/* Benefits hero value */}
+      <div
+        className={`mx-6 rounded-xl px-4 py-5 text-center ${
+          o.recommended
+            ? "bg-gradient-to-br from-primary/10 to-accent/10"
+            : "bg-muted/40"
+        }`}
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Total Benefits Value
+        </p>
+        <p
+          className={`mt-1 text-4xl font-bold tracking-tight ${
+            o.recommended ? "text-primary" : "text-foreground"
+          }`}
+        >
+          {formatCurrency(o.totalBenefitsValue)}
+        </p>
+        <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-mint">
+          <Gift className="h-3 w-3" /> Included with this offer
+        </p>
       </div>
 
-      {/* Offer bundle widget */}
-      <div className="mx-5 mb-4 rounded-xl border border-accent/30 bg-gradient-to-br from-accent/5 to-yellow/10 p-4">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15 text-accent">
-            <Gift className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
-              Your Included Home Life Benefits
-            </p>
-            <p className="text-sm font-semibold text-foreground">{o.offerBundle.bundleName}</p>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-foreground">
-          Estimated bundle value:{" "}
-          <span className="font-semibold text-primary">{o.offerBundle.estimatedValue}</span>
+      {/* Mortgage stats */}
+      <div className="grid grid-cols-2 gap-px bg-border/60 mx-6 mt-5 overflow-hidden rounded-xl border border-border">
+        <Stat label="Estimated Rate" value={o.estimatedRate} />
+        <Stat label="Monthly Payment" value={`${o.estimatedMonthlyPayment}/mo`} />
+        <Stat label="Term" value={o.termLength} />
+        <Stat label="Rate Type" value={o.rateType} />
+      </div>
+
+      {/* Benefits */}
+      <div className="px-6 pt-5">
+        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Your Benefits Include
         </p>
-        <ul className="mt-3 space-y-1.5">
-          {o.offerBundle.benefits.map((b) => (
-            <li
-              key={b.name}
-              className="flex items-center justify-between gap-2 text-xs text-foreground"
-            >
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-mint" />
-                {b.name}
-                {b.value && (
-                  <span className="text-muted-foreground">— {b.value}</span>
-                )}
+        <ul className="space-y-2">
+          {o.benefits.slice(0, 5).map((b) => (
+            <li key={b.name} className="flex items-center justify-between gap-2 text-sm">
+              <span className="flex items-center gap-2 text-foreground">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-mint" />
+                <span className="leading-tight">{b.name}</span>
               </span>
-              <span className="rounded-full bg-mint/20 px-2 py-0.5 text-[10px] font-medium text-foreground">
-                {b.status}
+              <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                {formatCurrency(b.value)}
               </span>
             </li>
           ))}
         </ul>
+        <button
+          onClick={onViewDetails}
+          className="mt-3 text-xs font-medium text-secondary hover:underline"
+        >
+          View benefit details
+        </button>
       </div>
 
       {/* CTA */}
-      <div className="mt-auto space-y-2 px-5 pb-5">
-        <button className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-          Select This Option
+      <div className="mt-auto px-6 pb-6 pt-5">
+        <button
+          onClick={onSelect}
+          className={`w-full rounded-md px-4 py-3 text-sm font-semibold shadow-sm transition-colors ${
+            selected
+              ? "bg-mint text-foreground"
+              : o.recommended
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "bg-foreground text-background hover:bg-foreground/90"
+          }`}
+        >
+          {selected ? (
+            <span className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4" /> Offer Selected
+            </span>
+          ) : o.recommended ? (
+            "Select Recommended Offer"
+          ) : (
+            "Select This Offer"
+          )}
         </button>
-        <div className="flex gap-2">
-          <button
-            onClick={onToggleSelect}
-            className={`flex-1 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-              selected
-                ? "border-secondary bg-secondary/10 text-secondary"
-                : "border-input bg-background hover:bg-muted"
-            }`}
-          >
-            {selected ? "Selected to compare" : "Compare"}
-          </button>
-          <button className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted">
-            <MessageCircle className="h-3.5 w-3.5" /> Talk to a Broker
-          </button>
-        </div>
-        <p className="pt-1 text-[11px] leading-snug text-muted-foreground">
-          Selecting an option does not finalize your mortgage. A licensed broker will review your
-          file before submission.
+        <p className="mt-3 text-center text-[11px] leading-snug text-muted-foreground">
+          Estimated only. Final offer depends on your verified application.
         </p>
       </div>
     </article>
   );
 }
 
-function Tag({
-  tone,
-  children,
-}: {
-  tone: "primary" | "secondary" | "accent";
-  children: React.ReactNode;
-}) {
-  const cls = {
-    primary: "bg-primary/10 text-primary",
-    secondary: "bg-secondary/15 text-secondary",
-    accent: "bg-accent/15 text-accent",
-  }[tone];
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
-      {children}
-    </span>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md bg-muted/40 px-2 py-1.5">
-      <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-xs font-medium text-foreground">{value}</dd>
+    <div className="bg-card px-3 py-2.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
 
 function Step({ num, title, body }: { num: string; title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-4">
-      <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+    <div className="rounded-xl border border-border bg-background p-5">
+      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
         {num}
       </div>
-      <h3 className="mt-2 text-sm font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">{body}</p>
+      <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>
     </div>
   );
 }
 
-function Trust({
-  icon: Icon,
-  label,
-}: {
-  icon: typeof Shield;
-  label: string;
-}) {
+function Trust({ icon: Icon, label }: { icon: typeof Shield; label: string }) {
   return (
     <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5 text-xs text-foreground shadow-sm">
       <Icon className="h-4 w-4 text-secondary" />
@@ -465,3 +389,77 @@ function Trust({
     </div>
   );
 }
+
+function BenefitsDrawer({ offer, onClose }: { offer: Offer; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div
+        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside className="relative ml-auto flex h-full w-full max-w-md flex-col bg-card shadow-2xl">
+        <div className="flex items-start justify-between border-b border-border px-5 py-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {offer.lenderTypeLabel}
+            </p>
+            <h3 className="mt-0.5 text-base font-semibold text-foreground">{offer.title}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Offer Benefits Details</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-5">
+          <div className="mb-5 rounded-xl bg-primary/5 p-4 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Total Benefits Value
+            </p>
+            <p className="mt-0.5 text-2xl font-bold text-primary">
+              {formatCurrency(offer.totalBenefitsValue)}
+            </p>
+          </div>
+          <ul className="space-y-3">
+            {offer.benefits.map((b) => (
+              <li key={b.name} className="rounded-xl border border-border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">{b.name}</p>
+                  <span className="rounded-full bg-mint/20 px-2 py-0.5 text-[10px] font-medium text-foreground">
+                    Included
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Estimated value: <span className="font-medium text-foreground">{formatCurrency(b.value)}</span>
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Eligibility and redemption terms apply. Confirmed after your full application is verified.
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+            <Info className="mt-0.5 h-3 w-3 shrink-0" />
+            Benefit availability and exact value may change based on your verified application
+            details and final offer.
+          </p>
+        </div>
+        <div className="border-t border-border bg-muted/30 px-5 py-4">
+          <button
+            onClick={onClose}
+            className="w-full rounded-md bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90"
+          >
+            Close
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+// Suppressed unused-warning sentinels
+void Sparkles;
