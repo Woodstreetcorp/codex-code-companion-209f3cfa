@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CreditCard, Plus, Wallet } from "lucide-react";
+import { Plus, Wallet } from "lucide-react";
 import { SettingPane } from "@/components/portal/settings-fields";
 
 export const Route = createFileRoute("/portal/settings/payment-methods")({
@@ -160,5 +160,3 @@ function PaymentMethodsPage() {
     </div>
   );
 }
-
-void CreditCard;
