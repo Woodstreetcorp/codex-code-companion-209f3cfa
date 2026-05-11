@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import type { ToolKey } from "./data";
 
 function fmt(n: number, frac = 0) {
@@ -264,7 +264,7 @@ export function ClosingCalc() {
   );
 }
 
-export const TOOL_COMPONENTS: Record<ToolKey, () => JSX.Element> = {
+export const TOOL_COMPONENTS: Record<ToolKey, () => ReactElement> = {
   payment: PaymentCalc,
   affordability: AffordabilityCalc,
   refinance: RefinanceCalc,
