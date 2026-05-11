@@ -19,8 +19,26 @@ import {
   Sparkles,
   Upload,
   Wallet,
+  Bell,
+  ShieldCheck,
+  User,
+  CreditCard,
+  KeyRound,
+  Eye,
+  X,
+  Check,
+  Smartphone,
+  Mail,
+  Globe,
 } from "lucide-react";
-import { InternalShell } from "@/components/InternalShell";
+
+type ToolKey =
+  | "payment"
+  | "affordability"
+  | "refinance"
+  | "renewal"
+  | "equity"
+  | "closing";
 
 export const Route = createFileRoute("/internal/borrower-dashboard")({
   head: () => ({
@@ -195,12 +213,13 @@ const SNAPSHOTS = [
 ];
 
 const TOOLS = [
-  { name: "Mortgage Payment Calculator", icon: Calculator },
-  { name: "Affordability Calculator", icon: Home },
-  { name: "Refinance Savings Calculator", icon: RefreshCw },
-  { name: "Renewal Planner", icon: Clock },
-  { name: "Home Equity Calculator", icon: Wallet },
-  { name: "Closing Cost Calculator", icon: FileText },
+const TOOLS: { key: ToolKey; name: string; icon: typeof Home; blurb: string }[] = [
+  { key: "payment", name: "Mortgage Payment", icon: Calculator, blurb: "Estimate monthly payment for any rate, term, and amortization." },
+  { key: "affordability", name: "Affordability", icon: Home, blurb: "See the maximum home price you can afford." },
+  { key: "refinance", name: "Refinance Savings", icon: RefreshCw, blurb: "Compare your current mortgage to a refinance scenario." },
+  { key: "renewal", name: "Renewal Planner", icon: Clock, blurb: "Plan your renewal payment at a new rate." },
+  { key: "equity", name: "Home Equity", icon: Wallet, blurb: "Estimate how much equity you can access today." },
+  { key: "closing", name: "Closing Costs", icon: FileText, blurb: "Estimate land transfer tax, legal, and closing fees." },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────
