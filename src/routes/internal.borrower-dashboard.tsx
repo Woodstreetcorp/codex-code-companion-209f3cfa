@@ -226,6 +226,7 @@ function BorrowerDashboard() {
   const [reactivateModal, setReactivateModal] = useState<ExpiredApp | null>(null);
   const [maxModal, setMaxModal] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("overview");
+  const [openTool, setOpenTool] = useState<ToolKey | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -289,18 +290,50 @@ function BorrowerDashboard() {
   };
 
   return (
-    <InternalShell
-      eyebrow="Borrower Portal"
-      title="Your Mortgage & Home Portal"
-      description="Track your applications, upload documents, review your mortgage offers, and access your Home Life benefits — all in one place."
-      currentPath="/internal/borrower-dashboard"
-      prev={{ to: "/internal/mortgage-offers", label: "Back to offers" }}
-      next={{ to: "/internal/full-application", label: "Continue full application" }}
-    >
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <Link to="/" className="flex items-center gap-2 text-primary">
+            <ShieldCheck className="h-6 w-6" />
+            <span className="font-semibold tracking-tight">approvU</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Notifications"
+              className="relative rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-coral" />
+            </button>
+            <button
+              onClick={() => scrollTo("settings")}
+              aria-label="Account"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-semibold text-primary-foreground shadow-sm"
+            >
+              AT
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+        <div className="mb-8 flex flex-col gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary">
+            Borrower Portal
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Your Mortgage &amp; Home Portal
+          </h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Track applications, manage documents, review mortgage offers, and access Home Life
+            benefits — all in one calm place.
+          </p>
+        </div>
+
       {/* Mobile section nav */}
       <nav
         aria-label="Dashboard sections"
-        className="sticky top-0 z-30 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 px-4 py-2 backdrop-blur lg:hidden"
+        className="sticky top-[57px] z-30 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 px-4 py-2 backdrop-blur lg:hidden"
       >
         {NAV.map((n) => (
           <button
@@ -757,9 +790,18 @@ function BorrowerDashboard() {
           </div>
         </Modal>
       )}
+
+      {openTool && (
+        <CalculatorModal toolKey={openTool} onClose={() => setOpenTool(null)} />
+      )}
         </div>
       </div>
-    </InternalShell>
+
+        <p className="mt-12 text-center text-xs text-muted-foreground">
+          Internal prototype — illustrative only. Not a mortgage approval.
+        </p>
+      </main>
+    </div>
   );
 }
 
