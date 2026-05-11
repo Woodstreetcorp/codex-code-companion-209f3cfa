@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -207,6 +207,7 @@ const TOOLS = [
 function BorrowerDashboard() {
   const [reactivateModal, setReactivateModal] = useState<ExpiredApp | null>(null);
   const [maxModal, setMaxModal] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("overview");
 
   const counts = useMemo(
     () => ({
@@ -231,6 +232,44 @@ function BorrowerDashboard() {
     }
   };
 
+  const NAV: { id: string; label: string; icon: typeof Home; badge?: string | number }[] = [
+    { id: "overview", label: "Overview", icon: Home },
+    { id: "submitted", label: "Submitted", icon: ArrowRight, badge: counts.submitted || undefined },
+    { id: "active", label: "Active", icon: Inbox, badge: `${counts.active}/${MAX_ACTIVE_APPLICATIONS}` },
+    { id: "expired", label: "Expired", icon: Clock, badge: counts.expired || undefined },
+    { id: "documents", label: "Documents & Conditions", icon: FileText, badge: counts.docsPending + counts.conditions || undefined },
+    { id: "offers", label: "Mortgage Offers", icon: Award, badge: counts.offers || undefined },
+    { id: "wallet", label: "Home Life Wallet", icon: Wallet },
+    { id: "tools", label: "Mortgage Tools", icon: Calculator },
+    { id: "settings", label: "Account Settings", icon: Settings },
+  ];
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    NAV.forEach((n) => {
+      const el = document.getElementById(n.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveSection(id);
+    }
+  };
+
   return (
     <InternalShell
       eyebrow="Borrower Portal"
@@ -240,8 +279,68 @@ function BorrowerDashboard() {
       prev={{ to: "/internal/mortgage-offers", label: "Back to offers" }}
       next={{ to: "/internal/full-application", label: "Continue full application" }}
     >
+      {/* Mobile section nav */}
+      <nav
+        aria-label="Dashboard sections"
+        className="sticky top-0 z-30 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 px-4 py-2 backdrop-blur lg:hidden"
+      >
+        {NAV.map((n) => (
+          <button
+            key={n.id}
+            onClick={() => scrollTo(n.id)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              activeSection === n.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+            }`}
+          >
+            {n.label}
+          </button>
+        ))}
+      </nav>
+
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+        {/* Desktop sticky side menu */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-6">
+            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Sections
+            </p>
+            <ul className="space-y-1">
+              {NAV.map((n) => {
+                const active = activeSection === n.id;
+                return (
+                  <li key={n.id}>
+                    <button
+                      onClick={() => scrollTo(n.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
+                        active
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <n.icon className={`h-4 w-4 ${active ? "text-primary" : ""}`} />
+                      <span className="flex-1 truncate">{n.label}</span>
+                      {n.badge !== undefined && n.badge !== 0 && (
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                            active ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                          }`}
+                        >
+                          {n.badge}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </aside>
+
+        <div className="min-w-0">
       {/* Welcome / Hero */}
-      <section className="rounded-3xl border border-border bg-gradient-to-br from-primary/5 via-card to-secondary/5 p-6 shadow-sm sm:p-8">
+      <section id="overview" className="scroll-mt-24 rounded-3xl border border-border bg-gradient-to-br from-primary/5 via-card to-secondary/5 p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-widest text-secondary">
