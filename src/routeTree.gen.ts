@@ -14,6 +14,7 @@ import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
@@ -44,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalSettingsRoute = PortalSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => PortalRoute,
+} as any)
 const InternalMortgageOffersRoute = InternalMortgageOffersRouteImport.update({
   id: '/internal/mortgage-offers',
   path: '/internal/mortgage-offers',
@@ -68,7 +74,7 @@ const InternalAccountHandoffRoute = InternalAccountHandoffRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/portal': typeof PortalRoute
+  '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
@@ -76,10 +82,11 @@ export interface FileRoutesByFullPath {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/settings': typeof PortalSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/portal': typeof PortalRoute
+  '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
@@ -87,11 +94,12 @@ export interface FileRoutesByTo {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/settings': typeof PortalSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/portal': typeof PortalRoute
+  '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/settings': typeof PortalSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/settings'
   id:
     | '__root__'
     | '/'
@@ -134,11 +145,12 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  PortalRoute: typeof PortalRoute
+  PortalRoute: typeof PortalRouteWithChildren
   PrePurchaseRoute: typeof PrePurchaseRoute
   PurchaseRoute: typeof PurchaseRoute
   RefinanceRoute: typeof RefinanceRoute
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/settings': {
+      id: '/portal/settings'
+      path: '/settings'
+      fullPath: '/portal/settings'
+      preLoaderRoute: typeof PortalSettingsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/internal/mortgage-offers': {
       id: '/internal/mortgage-offers'
       path: '/internal/mortgage-offers'
@@ -216,9 +235,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalRouteChildren {
+  PortalSettingsRoute: typeof PortalSettingsRoute
+}
+
+const PortalRouteChildren: PortalRouteChildren = {
+  PortalSettingsRoute: PortalSettingsRoute,
+}
+
+const PortalRouteWithChildren =
+  PortalRoute._addFileChildren(PortalRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  PortalRoute: PortalRoute,
+  PortalRoute: PortalRouteWithChildren,
   PrePurchaseRoute: PrePurchaseRoute,
   PurchaseRoute: PurchaseRoute,
   RefinanceRoute: RefinanceRoute,
@@ -230,3 +260,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
