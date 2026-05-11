@@ -21,6 +21,7 @@ import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
 import { Route as PortalSettingsSecurityRouteImport } from './routes/portal.settings.security'
 import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
+import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.settings.privacy'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 
@@ -85,6 +86,11 @@ const PortalSettingsProfileRoute = PortalSettingsProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => PortalSettingsRoute,
 } as any)
+const PortalSettingsPrivacyRoute = PortalSettingsPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => PortalSettingsRoute,
+} as any)
 const PortalSettingsNotificationsRoute =
   PortalSettingsNotificationsRouteImport.update({
     id: '/notifications',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
+  '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
+  '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
+  '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/settings/notifications'
+    | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/$applicationId/qualification-summary'
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/settings/notifications'
+    | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/$applicationId/qualification-summary'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/settings/notifications'
+    | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/$applicationId/qualification-summary'
@@ -296,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsProfileRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/settings/privacy': {
+      id: '/portal/settings/privacy'
+      path: '/privacy'
+      fullPath: '/portal/settings/privacy'
+      preLoaderRoute: typeof PortalSettingsPrivacyRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/portal/settings/notifications': {
       id: '/portal/settings/notifications'
       path: '/notifications'
@@ -315,12 +334,14 @@ declare module '@tanstack/react-router' {
 
 interface PortalSettingsRouteChildren {
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
+  PortalSettingsPrivacyRoute: typeof PortalSettingsPrivacyRoute
   PortalSettingsProfileRoute: typeof PortalSettingsProfileRoute
   PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRoute
 }
 
 const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
   PortalSettingsNotificationsRoute: PortalSettingsNotificationsRoute,
+  PortalSettingsPrivacyRoute: PortalSettingsPrivacyRoute,
   PortalSettingsProfileRoute: PortalSettingsProfileRoute,
   PortalSettingsSecurityRoute: PortalSettingsSecurityRoute,
 }
