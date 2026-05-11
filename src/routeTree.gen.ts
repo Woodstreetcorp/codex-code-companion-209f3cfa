@@ -22,6 +22,7 @@ import { Route as InternalAccountHandoffRouteImport } from './routes/internal.ac
 import { Route as PortalSettingsSecurityRouteImport } from './routes/portal.settings.security'
 import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
 import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.settings.privacy'
+import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.settings.preferences'
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
@@ -92,6 +93,12 @@ const PortalSettingsPrivacyRoute = PortalSettingsPrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => PortalSettingsRoute,
 } as any)
+const PortalSettingsPreferencesRoute =
+  PortalSettingsPreferencesRouteImport.update({
+    id: '/preferences',
+    path: '/preferences',
+    getParentRoute: () => PortalSettingsRoute,
+  } as any)
 const PortalSettingsPaymentMethodsRoute =
   PortalSettingsPaymentMethodsRouteImport.update({
     id: '/payment-methods',
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
+  '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
+  '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
+  '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
+    | '/portal/settings/preferences'
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
+    | '/portal/settings/preferences'
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
@@ -217,6 +229,7 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
+    | '/portal/settings/preferences'
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
@@ -328,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsPrivacyRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/settings/preferences': {
+      id: '/portal/settings/preferences'
+      path: '/preferences'
+      fullPath: '/portal/settings/preferences'
+      preLoaderRoute: typeof PortalSettingsPreferencesRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/portal/settings/payment-methods': {
       id: '/portal/settings/payment-methods'
       path: '/payment-methods'
@@ -355,6 +375,7 @@ declare module '@tanstack/react-router' {
 interface PortalSettingsRouteChildren {
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
   PortalSettingsPaymentMethodsRoute: typeof PortalSettingsPaymentMethodsRoute
+  PortalSettingsPreferencesRoute: typeof PortalSettingsPreferencesRoute
   PortalSettingsPrivacyRoute: typeof PortalSettingsPrivacyRoute
   PortalSettingsProfileRoute: typeof PortalSettingsProfileRoute
   PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRoute
@@ -363,6 +384,7 @@ interface PortalSettingsRouteChildren {
 const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
   PortalSettingsNotificationsRoute: PortalSettingsNotificationsRoute,
   PortalSettingsPaymentMethodsRoute: PortalSettingsPaymentMethodsRoute,
+  PortalSettingsPreferencesRoute: PortalSettingsPreferencesRoute,
   PortalSettingsPrivacyRoute: PortalSettingsPrivacyRoute,
   PortalSettingsProfileRoute: PortalSettingsProfileRoute,
   PortalSettingsSecurityRoute: PortalSettingsSecurityRoute,
