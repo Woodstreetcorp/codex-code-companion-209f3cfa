@@ -19,8 +19,26 @@ import {
   Sparkles,
   Upload,
   Wallet,
+  Bell,
+  ShieldCheck,
+  User,
+  CreditCard,
+  KeyRound,
+  Eye,
+  X,
+  Check,
+  Smartphone,
+  Mail,
+  Globe,
 } from "lucide-react";
-import { InternalShell } from "@/components/InternalShell";
+
+type ToolKey =
+  | "payment"
+  | "affordability"
+  | "refinance"
+  | "renewal"
+  | "equity"
+  | "closing";
 
 export const Route = createFileRoute("/internal/borrower-dashboard")({
   head: () => ({
@@ -194,13 +212,13 @@ const SNAPSHOTS = [
   },
 ];
 
-const TOOLS = [
-  { name: "Mortgage Payment Calculator", icon: Calculator },
-  { name: "Affordability Calculator", icon: Home },
-  { name: "Refinance Savings Calculator", icon: RefreshCw },
-  { name: "Renewal Planner", icon: Clock },
-  { name: "Home Equity Calculator", icon: Wallet },
-  { name: "Closing Cost Calculator", icon: FileText },
+const TOOLS: { key: ToolKey; name: string; icon: typeof Home; blurb: string }[] = [
+  { key: "payment", name: "Mortgage Payment", icon: Calculator, blurb: "Estimate monthly payment for any rate, term, and amortization." },
+  { key: "affordability", name: "Affordability", icon: Home, blurb: "See the maximum home price you can afford." },
+  { key: "refinance", name: "Refinance Savings", icon: RefreshCw, blurb: "Compare your current mortgage to a refinance scenario." },
+  { key: "renewal", name: "Renewal Planner", icon: Clock, blurb: "Plan your renewal payment at a new rate." },
+  { key: "equity", name: "Home Equity", icon: Wallet, blurb: "Estimate how much equity you can access today." },
+  { key: "closing", name: "Closing Costs", icon: FileText, blurb: "Estimate land transfer tax, legal, and closing fees." },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────
@@ -208,6 +226,7 @@ function BorrowerDashboard() {
   const [reactivateModal, setReactivateModal] = useState<ExpiredApp | null>(null);
   const [maxModal, setMaxModal] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("overview");
+  const [openTool, setOpenTool] = useState<ToolKey | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -271,18 +290,50 @@ function BorrowerDashboard() {
   };
 
   return (
-    <InternalShell
-      eyebrow="Borrower Portal"
-      title="Your Mortgage & Home Portal"
-      description="Track your applications, upload documents, review your mortgage offers, and access your Home Life benefits — all in one place."
-      currentPath="/internal/borrower-dashboard"
-      prev={{ to: "/internal/mortgage-offers", label: "Back to offers" }}
-      next={{ to: "/internal/full-application", label: "Continue full application" }}
-    >
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <Link to="/" className="flex items-center gap-2 text-primary">
+            <ShieldCheck className="h-6 w-6" />
+            <span className="font-semibold tracking-tight">approvU</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Notifications"
+              className="relative rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-coral" />
+            </button>
+            <button
+              onClick={() => scrollTo("settings")}
+              aria-label="Account"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-semibold text-primary-foreground shadow-sm"
+            >
+              AT
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
+        <div className="mb-8 flex flex-col gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary">
+            Borrower Portal
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Your Mortgage &amp; Home Portal
+          </h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Track applications, manage documents, review mortgage offers, and access Home Life
+            benefits — all in one calm place.
+          </p>
+        </div>
+
       {/* Mobile section nav */}
       <nav
         aria-label="Dashboard sections"
-        className="sticky top-0 z-30 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 px-4 py-2 backdrop-blur lg:hidden"
+        className="sticky top-[57px] z-30 -mx-4 mb-6 flex gap-1.5 overflow-x-auto border-b border-border bg-background/90 px-4 py-2 backdrop-blur lg:hidden"
       >
         {NAV.map((n) => (
           <button
@@ -663,41 +714,28 @@ function BorrowerDashboard() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((t) => (
             <button
-              key={t.name}
-              className="flex items-center justify-between rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:bg-primary/5"
+              key={t.key}
+              onClick={() => setOpenTool(t.key)}
+              className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
             >
-              <span className="flex items-center gap-3">
-                <span className="rounded-xl bg-secondary/15 p-2 text-secondary">
-                  <t.icon className="h-4 w-4" />
+              <div className="flex items-start justify-between">
+                <span className="rounded-xl bg-secondary/15 p-2.5 text-secondary">
+                  <t.icon className="h-5 w-5" />
                 </span>
-                <span className="text-sm font-medium text-foreground">{t.name}</span>
-              </span>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t.blurb}</p>
+              </div>
             </button>
           ))}
         </div>
       </DashSection>
 
-      {/* Settings link */}
-      <DashSection id="settings" title="Account Settings" subtitle="Manage profile, contact, security, and preferences.">
-        <Card>
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3">
-              <span className="rounded-xl bg-muted p-2.5 text-muted-foreground">
-                <Settings className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-foreground">Profile, security & notifications</p>
-                <p className="text-xs text-muted-foreground">
-                  Personal info · Password · Email & SMS preferences · Privacy
-                </p>
-              </div>
-            </div>
-            <button className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium hover:bg-muted">
-              Open Settings
-            </button>
-          </div>
-        </Card>
+      {/* Settings portal */}
+      <DashSection id="settings" title="Account Settings" subtitle="Manage your profile, security, notifications, and preferences.">
+        <SettingsPortal />
       </DashSection>
 
       {reactivateModal && (
@@ -739,9 +777,18 @@ function BorrowerDashboard() {
           </div>
         </Modal>
       )}
+
+      {openTool && (
+        <CalculatorModal toolKey={openTool} onClose={() => setOpenTool(null)} />
+      )}
         </div>
       </div>
-    </InternalShell>
+
+        <p className="mt-12 text-center text-xs text-muted-foreground">
+          Internal prototype — illustrative only. Not a mortgage approval.
+        </p>
+      </main>
+    </div>
   );
 }
 
@@ -1124,6 +1171,543 @@ function Modal({
         <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         <div className="mt-3">{children}</div>
       </div>
+    </div>
+  );
+}
+
+// ─── Settings Portal ─────────────────────────────────────────────────────
+type SettingsTab =
+  | "profile"
+  | "security"
+  | "notifications"
+  | "privacy"
+  | "payments"
+  | "preferences";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string; icon: typeof Home }[] = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "security", label: "Security", icon: KeyRound },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "privacy", label: "Privacy", icon: Eye },
+  { id: "payments", label: "Payment Methods", icon: CreditCard },
+  { id: "preferences", label: "Preferences", icon: Settings },
+];
+
+function SettingsPortal() {
+  const [tab, setTab] = useState<SettingsTab>("profile");
+  const [profile, setProfile] = useState({
+    firstName: "Alex",
+    lastName: "Tremblay",
+    email: "alex.tremblay@example.com",
+    phone: "(416) 555-0142",
+    address: "123 Maple Ave, Toronto, ON",
+  });
+  const [twoFA, setTwoFA] = useState(true);
+  const [biometric, setBiometric] = useState(true);
+  const [notif, setNotif] = useState({
+    emailUpdates: true,
+    smsUpdates: true,
+    marketing: false,
+    rateAlerts: true,
+    docReminders: true,
+  });
+  const [privacy, setPrivacy] = useState({
+    shareWithBroker: true,
+    analytics: false,
+    partnerOffers: true,
+  });
+  const [prefs, setPrefs] = useState({
+    language: "English",
+    currency: "CAD",
+    theme: "System",
+  });
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="grid md:grid-cols-[220px_minmax(0,1fr)]">
+        {/* Tabs */}
+        <nav className="flex flex-row gap-1 overflow-x-auto border-b border-border bg-background/40 p-3 md:flex-col md:border-b-0 md:border-r">
+          {SETTINGS_TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <t.icon className="h-4 w-4" />
+                <span className="whitespace-nowrap">{t.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Panel */}
+        <div className="p-5 sm:p-7">
+          {tab === "profile" && (
+            <SettingPane title="Personal information" desc="This is the information used on your applications.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="First name" value={profile.firstName} onChange={(v) => setProfile({ ...profile, firstName: v })} />
+                <Field label="Last name" value={profile.lastName} onChange={(v) => setProfile({ ...profile, lastName: v })} />
+                <Field label="Email" value={profile.email} onChange={(v) => setProfile({ ...profile, email: v })} icon={Mail} />
+                <Field label="Phone" value={profile.phone} onChange={(v) => setProfile({ ...profile, phone: v })} icon={Smartphone} />
+                <div className="sm:col-span-2">
+                  <Field label="Mailing address" value={profile.address} onChange={(v) => setProfile({ ...profile, address: v })} />
+                </div>
+              </div>
+            </SettingPane>
+          )}
+
+          {tab === "security" && (
+            <SettingPane title="Sign-in & security" desc="Protect your account with extra layers of security.">
+              <div className="space-y-3">
+                <Row
+                  title="Password"
+                  desc="Last changed 2 months ago"
+                  action={<button className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">Change</button>}
+                />
+                <ToggleRow
+                  title="Two-factor authentication"
+                  desc="Use an authenticator app for sign-in codes."
+                  checked={twoFA}
+                  onChange={setTwoFA}
+                />
+                <ToggleRow
+                  title="Biometric sign-in"
+                  desc="Use Face ID / fingerprint on supported devices."
+                  checked={biometric}
+                  onChange={setBiometric}
+                />
+                <Row
+                  title="Active sessions"
+                  desc="3 devices signed in"
+                  action={<button className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">Manage</button>}
+                />
+              </div>
+            </SettingPane>
+          )}
+
+          {tab === "notifications" && (
+            <SettingPane title="Notifications" desc="Choose how we keep you in the loop.">
+              <div className="space-y-3">
+                <ToggleRow title="Application updates · Email" desc="Status changes, conditions, decisions." checked={notif.emailUpdates} onChange={(v) => setNotif({ ...notif, emailUpdates: v })} />
+                <ToggleRow title="Application updates · SMS" desc="Time-sensitive alerts only." checked={notif.smsUpdates} onChange={(v) => setNotif({ ...notif, smsUpdates: v })} />
+                <ToggleRow title="Document reminders" desc="Nudge me when docs are due." checked={notif.docReminders} onChange={(v) => setNotif({ ...notif, docReminders: v })} />
+                <ToggleRow title="Rate-drop alerts" desc="Tell me when rates drop below my offer." checked={notif.rateAlerts} onChange={(v) => setNotif({ ...notif, rateAlerts: v })} />
+                <ToggleRow title="Marketing & tips" desc="Occasional homeownership tips." checked={notif.marketing} onChange={(v) => setNotif({ ...notif, marketing: v })} />
+              </div>
+            </SettingPane>
+          )}
+
+          {tab === "privacy" && (
+            <SettingPane title="Privacy & data" desc="Control how your data is used.">
+              <div className="space-y-3">
+                <ToggleRow title="Share with my broker" desc="Allow my assigned broker to view my full profile." checked={privacy.shareWithBroker} onChange={(v) => setPrivacy({ ...privacy, shareWithBroker: v })} />
+                <ToggleRow title="Partner offers" desc="Receive Home Life Bundle partner promotions." checked={privacy.partnerOffers} onChange={(v) => setPrivacy({ ...privacy, partnerOffers: v })} />
+                <ToggleRow title="Anonymous analytics" desc="Help us improve approvU with usage data." checked={privacy.analytics} onChange={(v) => setPrivacy({ ...privacy, analytics: v })} />
+                <Row title="Download my data" desc="Get a copy of all data we hold." action={<button className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">Request</button>} />
+                <Row title="Delete my account" desc="Permanently remove your account & data." action={<button className="rounded-md border border-coral/40 bg-coral/10 px-3 py-1.5 text-xs font-medium text-coral hover:bg-coral/20">Delete</button>} />
+              </div>
+            </SettingPane>
+          )}
+
+          {tab === "payments" && (
+            <SettingPane title="Payment methods" desc="For appraisals, legal fees, and Home Life Bundle services.">
+              <div className="space-y-3">
+                <Row
+                  title="Visa •••• 4242"
+                  desc="Expires 09/28 · Default"
+                  action={<button className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">Edit</button>}
+                />
+                <Row
+                  title="Pre-authorized debit"
+                  desc="TD Chequing •••• 1187"
+                  action={<button className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted">Edit</button>}
+                />
+                <button className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
+                  <Plus className="h-4 w-4" /> Add payment method
+                </button>
+              </div>
+            </SettingPane>
+          )}
+
+          {tab === "preferences" && (
+            <SettingPane title="Preferences" desc="Personalize your experience.">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <SelectField label="Language" icon={Globe} value={prefs.language} options={["English", "Français"]} onChange={(v) => setPrefs({ ...prefs, language: v })} />
+                <SelectField label="Currency" value={prefs.currency} options={["CAD", "USD"]} onChange={(v) => setPrefs({ ...prefs, currency: v })} />
+                <SelectField label="Theme" value={prefs.theme} options={["System", "Light", "Dark"]} onChange={(v) => setPrefs({ ...prefs, theme: v })} />
+              </div>
+            </SettingPane>
+          )}
+
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-border pt-4">
+            {saved && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-mint">
+                <Check className="h-3.5 w-3.5" /> Saved
+              </span>
+            )}
+            <button onClick={save} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingPane({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <p className="mt-0.5 text-sm text-muted-foreground">{desc}</p>
+      <div className="mt-5">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, icon: Icon }: { label: string; value: string; onChange: (v: string) => void; icon?: typeof Home }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="mt-1 flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 focus-within:border-primary">
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent text-sm text-foreground outline-none"
+        />
+      </div>
+    </label>
+  );
+}
+
+function SelectField({ label, value, options, onChange, icon: Icon }: { label: string; value: string; options: string[]; onChange: (v: string) => void; icon?: typeof Home }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="mt-1 flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 focus-within:border-primary">
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent text-sm text-foreground outline-none"
+        >
+          {options.map((o) => <option key={o}>{o}</option>)}
+        </select>
+      </div>
+    </label>
+  );
+}
+
+function Row({ title, desc, action }: { title: string; desc: string; action: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3.5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function ToggleRow({ title, desc, checked, onChange }: { title: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3.5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+      <button
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative h-6 w-10 shrink-0 rounded-full transition ${checked ? "bg-primary" : "bg-muted"}`}
+      >
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition ${checked ? "left-[18px]" : "left-0.5"}`} />
+      </button>
+    </div>
+  );
+}
+
+// ─── Calculator Modal ────────────────────────────────────────────────────
+function fmt(n: number, frac = 0) {
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: frac, minimumFractionDigits: frac });
+}
+
+function monthlyPayment(principal: number, annualRate: number, years: number) {
+  const r = annualRate / 100 / 12;
+  const n = years * 12;
+  if (r === 0) return principal / n;
+  return (principal * r) / (1 - Math.pow(1 + r, -n));
+}
+
+function CalculatorModal({ toolKey, onClose }: { toolKey: ToolKey; onClose: () => void }) {
+  const tool = TOOLS.find((t) => t.key === toolKey)!;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+      <div
+        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 px-6 py-4 backdrop-blur">
+          <div className="flex items-center gap-3">
+            <span className="rounded-xl bg-secondary/15 p-2 text-secondary">
+              <tool.icon className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-base font-semibold text-foreground">{tool.name} Calculator</h3>
+              <p className="text-xs text-muted-foreground">{tool.blurb}</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          {toolKey === "payment" && <PaymentCalc />}
+          {toolKey === "affordability" && <AffordabilityCalc />}
+          {toolKey === "refinance" && <RefinanceCalc />}
+          {toolKey === "renewal" && <RenewalCalc />}
+          {toolKey === "equity" && <EquityCalc />}
+          {toolKey === "closing" && <ClosingCalc />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NumField({ label, value, onChange, suffix, prefix, step = 1 }: { label: string; value: number; onChange: (n: number) => void; suffix?: string; prefix?: string; step?: number }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <div className="mt-1 flex items-center gap-1 rounded-lg border border-input bg-background px-3 py-2 focus-within:border-primary">
+        {prefix && <span className="text-sm text-muted-foreground">{prefix}</span>}
+        <input
+          type="number"
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          className="w-full bg-transparent text-sm text-foreground outline-none"
+        />
+        {suffix && <span className="text-sm text-muted-foreground">{suffix}</span>}
+      </div>
+    </label>
+  );
+}
+
+function ResultBlock({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-2xl border p-5 ${accent ? "border-primary/30 bg-primary/5" : "border-border bg-background"}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-3xl font-semibold tracking-tight ${accent ? "text-primary" : "text-foreground"}`}>{value}</p>
+    </div>
+  );
+}
+
+function PaymentCalc() {
+  const [price, setPrice] = useState(750000);
+  const [down, setDown] = useState(150000);
+  const [rate, setRate] = useState(5.25);
+  const [amort, setAmort] = useState(25);
+  const principal = Math.max(price - down, 0);
+  const m = monthlyPayment(principal, rate, amort);
+  const total = m * amort * 12;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Home price" value={price} onChange={setPrice} prefix="$" />
+        <NumField label="Down payment" value={down} onChange={setDown} prefix="$" />
+        <NumField label="Interest rate" value={rate} onChange={setRate} suffix="%" step={0.05} />
+        <NumField label="Amortization (years)" value={amort} onChange={setAmort} />
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ResultBlock label="Monthly payment" value={fmt(m, 2)} accent />
+        <ResultBlock label="Mortgage amount" value={fmt(principal)} />
+        <ResultBlock label="Total paid" value={fmt(total)} />
+      </div>
+    </>
+  );
+}
+
+function AffordabilityCalc() {
+  const [income, setIncome] = useState(120000);
+  const [debts, setDebts] = useState(500);
+  const [down, setDown] = useState(80000);
+  const [rate, setRate] = useState(5.25);
+  const [taxes, setTaxes] = useState(450);
+  const [heat, setHeat] = useState(150);
+  // GDS 39%, TDS 44% stress test +2%
+  const stressRate = rate + 2;
+  const monthlyIncome = income / 12;
+  const maxGDS = monthlyIncome * 0.39 - taxes - heat;
+  const maxTDS = monthlyIncome * 0.44 - taxes - heat - debts;
+  const maxPmt = Math.max(0, Math.min(maxGDS, maxTDS));
+  // invert payment to principal
+  const r = stressRate / 100 / 12;
+  const n = 25 * 12;
+  const maxLoan = r === 0 ? maxPmt * n : (maxPmt * (1 - Math.pow(1 + r, -n))) / r;
+  const maxPrice = maxLoan + down;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Annual household income" value={income} onChange={setIncome} prefix="$" />
+        <NumField label="Monthly debt payments" value={debts} onChange={setDebts} prefix="$" />
+        <NumField label="Down payment" value={down} onChange={setDown} prefix="$" />
+        <NumField label="Interest rate" value={rate} onChange={setRate} suffix="%" step={0.05} />
+        <NumField label="Property tax (mo)" value={taxes} onChange={setTaxes} prefix="$" />
+        <NumField label="Heating (mo)" value={heat} onChange={setHeat} prefix="$" />
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <ResultBlock label="Max home price" value={fmt(maxPrice)} accent />
+        <ResultBlock label="Stress-tested at" value={`${stressRate.toFixed(2)}%`} />
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">Uses GDS 39% / TDS 44% with a +2% stress test as a guideline.</p>
+    </>
+  );
+}
+
+function RefinanceCalc() {
+  const [balance, setBalance] = useState(420000);
+  const [currentRate, setCurrentRate] = useState(6.1);
+  const [newRate, setNewRate] = useState(4.95);
+  const [years, setYears] = useState(20);
+  const cur = monthlyPayment(balance, currentRate, years);
+  const next = monthlyPayment(balance, newRate, years);
+  const monthlySave = cur - next;
+  const totalSave = monthlySave * years * 12;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Current balance" value={balance} onChange={setBalance} prefix="$" />
+        <NumField label="Years remaining" value={years} onChange={setYears} />
+        <NumField label="Current rate" value={currentRate} onChange={setCurrentRate} suffix="%" step={0.05} />
+        <NumField label="New rate" value={newRate} onChange={setNewRate} suffix="%" step={0.05} />
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ResultBlock label="Monthly savings" value={fmt(monthlySave, 2)} accent />
+        <ResultBlock label="New payment" value={fmt(next, 2)} />
+        <ResultBlock label="Lifetime savings" value={fmt(totalSave)} />
+      </div>
+    </>
+  );
+}
+
+function RenewalCalc() {
+  const [balance, setBalance] = useState(380000);
+  const [oldRate, setOldRate] = useState(2.49);
+  const [newRate, setNewRate] = useState(5.15);
+  const [years, setYears] = useState(20);
+  const oldP = monthlyPayment(balance, oldRate, years);
+  const newP = monthlyPayment(balance, newRate, years);
+  const diff = newP - oldP;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Balance at renewal" value={balance} onChange={setBalance} prefix="$" />
+        <NumField label="Years remaining" value={years} onChange={setYears} />
+        <NumField label="Old rate" value={oldRate} onChange={setOldRate} suffix="%" step={0.05} />
+        <NumField label="New rate" value={newRate} onChange={setNewRate} suffix="%" step={0.05} />
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ResultBlock label="New payment" value={fmt(newP, 2)} accent />
+        <ResultBlock label="Old payment" value={fmt(oldP, 2)} />
+        <ResultBlock label="Monthly change" value={fmt(diff, 2)} />
+      </div>
+    </>
+  );
+}
+
+function EquityCalc() {
+  const [value, setValue] = useState(900000);
+  const [balance, setBalance] = useState(420000);
+  const equity = Math.max(value - balance, 0);
+  const accessible = Math.max(value * 0.8 - balance, 0); // 80% LTV
+  const ltv = value > 0 ? (balance / value) * 100 : 0;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Estimated home value" value={value} onChange={setValue} prefix="$" />
+        <NumField label="Mortgage balance" value={balance} onChange={setBalance} prefix="$" />
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <ResultBlock label="Total equity" value={fmt(equity)} accent />
+        <ResultBlock label="Accessible (80% LTV)" value={fmt(accessible)} />
+        <ResultBlock label="Current LTV" value={`${ltv.toFixed(1)}%`} />
+      </div>
+    </>
+  );
+}
+
+function ClosingCalc() {
+  const [price, setPrice] = useState(750000);
+  const [firstTime, setFirstTime] = useState(false);
+  // Ontario LTT (simplified)
+  const ontLTT = (p: number) => {
+    let t = 0;
+    const brackets: [number, number][] = [
+      [55000, 0.005], [195000, 0.01], [150000, 0.015], [1600000, 0.02], [Infinity, 0.025],
+    ];
+    let rem = p;
+    for (const [size, rate] of brackets) {
+      const seg = Math.min(rem, size);
+      t += seg * rate;
+      rem -= seg;
+      if (rem <= 0) break;
+    }
+    return t;
+  };
+  const ltt = ontLTT(price);
+  const rebate = firstTime ? Math.min(ltt, 4000) : 0;
+  const legal = 1800;
+  const titleIns = 350;
+  const inspection = 500;
+  const appraisal = 400;
+  const total = ltt - rebate + legal + titleIns + inspection + appraisal;
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumField label="Purchase price" value={price} onChange={setPrice} prefix="$" />
+        <label className="flex items-end gap-2 pb-2">
+          <input type="checkbox" checked={firstTime} onChange={(e) => setFirstTime(e.target.checked)} className="h-4 w-4 rounded border-input" />
+          <span className="text-sm text-foreground">First-time home buyer (ON)</span>
+        </label>
+      </div>
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <ResultBlock label="Total estimated closing" value={fmt(total)} accent />
+        <ResultBlock label="Land transfer tax" value={fmt(ltt - rebate)} />
+      </div>
+      <div className="mt-3 grid gap-2 rounded-2xl border border-border bg-background p-4 text-sm">
+        <CostLine label="Land transfer tax" value={fmt(ltt)} />
+        {rebate > 0 && <CostLine label="First-time buyer rebate" value={`− ${fmt(rebate)}`} />}
+        <CostLine label="Legal fees" value={fmt(legal)} />
+        <CostLine label="Title insurance" value={fmt(titleIns)} />
+        <CostLine label="Home inspection" value={fmt(inspection)} />
+        <CostLine label="Appraisal" value={fmt(appraisal)} />
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">Estimates only. Ontario rates shown — actual closing costs vary by province and property.</p>
+    </>
+  );
+}
+
+function CostLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground">{value}</span>
     </div>
   );
 }
