@@ -19,6 +19,7 @@ import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mo
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
+import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 
 const RefinanceRoute = RefinanceRouteImport.update({
   id: '/refinance',
@@ -71,6 +72,12 @@ const InternalAccountHandoffRoute = InternalAccountHandoffRouteImport.update({
   path: '/internal/account-handoff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalApplicationsApplicationIdQualificationSummaryRoute =
+  PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
+    id: '/applications/$applicationId/qualification-summary',
+    path: '/applications/$applicationId/qualification-summary',
+    getParentRoute: () => PortalRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -108,6 +117,7 @@ export interface FileRoutesById {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRoute
+  '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/applications/$applicationId/qualification-summary'
   id:
     | '__root__'
     | '/'
@@ -146,6 +158,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -232,15 +245,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InternalAccountHandoffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portal/applications/$applicationId/qualification-summary': {
+      id: '/portal/applications/$applicationId/qualification-summary'
+      path: '/applications/$applicationId/qualification-summary'
+      fullPath: '/portal/applications/$applicationId/qualification-summary'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRouteImport
+      parentRoute: typeof PortalRoute
+    }
   }
 }
 
 interface PortalRouteChildren {
   PortalSettingsRoute: typeof PortalSettingsRoute
+  PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalSettingsRoute: PortalSettingsRoute,
+  PortalApplicationsApplicationIdQualificationSummaryRoute:
+    PortalApplicationsApplicationIdQualificationSummaryRoute,
 }
 
 const PortalRouteWithChildren =
