@@ -14,6 +14,7 @@ import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
@@ -43,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InternalMortgageOffersRoute = InternalMortgageOffersRouteImport.update({
+  id: '/internal/mortgage-offers',
+  path: '/internal/mortgage-offers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InternalFullApplicationRoute = InternalFullApplicationRouteImport.update({
   id: '/internal/full-application',
   path: '/internal/full-application',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
+  '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
+  '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
+  '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
+    | '/internal/mortgage-offers'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
+    | '/internal/mortgage-offers'
   id:
     | '__root__'
     | '/'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
+    | '/internal/mortgage-offers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -133,6 +145,7 @@ export interface RootRouteChildren {
   InternalAccountHandoffRoute: typeof InternalAccountHandoffRoute
   InternalBorrowerDashboardRoute: typeof InternalBorrowerDashboardRoute
   InternalFullApplicationRoute: typeof InternalFullApplicationRoute
+  InternalMortgageOffersRoute: typeof InternalMortgageOffersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/internal/mortgage-offers': {
+      id: '/internal/mortgage-offers'
+      path: '/internal/mortgage-offers'
+      fullPath: '/internal/mortgage-offers'
+      preLoaderRoute: typeof InternalMortgageOffersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/internal/full-application': {
       id: '/internal/full-application'
       path: '/internal/full-application'
@@ -205,6 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   InternalAccountHandoffRoute: InternalAccountHandoffRoute,
   InternalBorrowerDashboardRoute: InternalBorrowerDashboardRoute,
   InternalFullApplicationRoute: InternalFullApplicationRoute,
+  InternalMortgageOffersRoute: InternalMortgageOffersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
