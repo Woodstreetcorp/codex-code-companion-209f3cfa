@@ -658,7 +658,7 @@ function BorrowerDashboard() {
       </DashSection>
 
       {/* Calculators */}
-      <DashSection title="Mortgage Tools" subtitle="Plan ahead with quick calculators.">
+      <DashSection id="wallet" title="Home Life Wallet" subtitle="Access your benefits, coupons, and partner offers after your mortgage funds.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {TOOLS.map((t) => (
             <button
