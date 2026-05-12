@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, FileText, Gift, History, ListChecks, MessageSquare, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { AlertCircle, ArrowRight, BadgeCheck, CheckCircle2, FileText, Gift, History, ListChecks, MessageSquare, ShieldCheck, Sparkles, Users } from "lucide-react";
 import {
   ApplicationShell,
   NotFoundApplication,
   getApplicationSummary,
 } from "@/components/portal/application-shell";
+import { getApplicationBundle, rollupReadiness } from "@/lib/disclosures";
 
 export const Route = createFileRoute("/portal/applications/$applicationId/")({
   head: () => ({
@@ -20,6 +21,8 @@ function SnapshotPage() {
   const { applicationId } = Route.useParams();
   const summary = getApplicationSummary(applicationId);
   if (!summary) return <NotFoundApplication id={applicationId} />;
+  const bundle = getApplicationBundle(applicationId);
+  const readiness = rollupReadiness(bundle);
 
   return (
     <ApplicationShell summary={summary} tab="snapshot">
@@ -47,6 +50,39 @@ function SnapshotPage() {
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Tile to="/portal/applications/$applicationId/certificate" applicationId={applicationId} icon={ShieldCheck} title="Pre-Qualified Certificate" body="Download or share your approvU certificate with realtors and sellers." />
         <Tile to="/portal/applications/$applicationId/benefits" applicationId={applicationId} icon={Gift} title="Exclusive Benefits" body="Activate the Home Life Bundle: partner offers unlocked with your mortgage." />
+      </div>
+
+      {/* Disclosures readiness widget */}
+      <div className={`mt-4 rounded-2xl border p-5 ${readiness.ready ? "border-mint/40 bg-mint/10" : "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"}`}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            {readiness.ready ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-mint" />
+            ) : (
+              <AlertCircle className="mt-0.5 h-5 w-5 text-amber-600" />
+            )}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Product Review &amp; Consent</p>
+              <p className="mt-0.5 text-sm font-semibold text-foreground">
+                {readiness.ready
+                  ? "All required application disclosures are complete."
+                  : `${readiness.blockingCount} required disclosure${readiness.blockingCount === 1 ? "" : "s"} outstanding for this application.`}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {readiness.ready
+                  ? "Submission is unlocked once your broker confirms."
+                  : "Application cannot be submitted until all required parties complete their consents."}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/portal/applications/$applicationId/disclosures"
+            params={{ applicationId }}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> Open disclosures
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
