@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, FileText, History, ListChecks, MessageSquare, Sparkles, Users } from "lucide-react";
+import { ArrowRight, BadgeCheck, FileText, Gift, History, ListChecks, MessageSquare, ShieldCheck, Sparkles, Users } from "lucide-react";
 import {
   ApplicationShell,
   NotFoundApplication,
@@ -44,6 +44,11 @@ function SnapshotPage() {
         <Tile to="/portal/applications/$applicationId/conditions" applicationId={applicationId} icon={ListChecks} title="Conditions" body={`${summary.conditionsOutstanding} outstanding · track lender conditions.`} />
       </div>
 
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <Tile to="/portal/applications/$applicationId/certificate" applicationId={applicationId} icon={ShieldCheck} title="Pre-Qualified Certificate" body="Download or share your approvU certificate with realtors and sellers." />
+        <Tile to="/portal/applications/$applicationId/benefits" applicationId={applicationId} icon={Gift} title="Exclusive Benefits" body="Activate the Home Life Bundle: partner offers unlocked with your mortgage." />
+      </div>
+
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Application timeline</p>
@@ -78,7 +83,7 @@ function SnapshotPage() {
   );
 }
 
-function Tile({ to, applicationId, icon: Icon, title, body }: { to: "/portal/applications/$applicationId/offers" | "/portal/applications/$applicationId/documents" | "/portal/applications/$applicationId/conditions"; applicationId: string; icon: typeof BadgeCheck; title: string; body: string }) {
+function Tile({ to, applicationId, icon: Icon, title, body }: { to: "/portal/applications/$applicationId/offers" | "/portal/applications/$applicationId/documents" | "/portal/applications/$applicationId/conditions" | "/portal/applications/$applicationId/certificate" | "/portal/applications/$applicationId/benefits"; applicationId: string; icon: typeof BadgeCheck; title: string; body: string }) {
   return (
     <Link to={to} params={{ applicationId }} className="group rounded-2xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm">
       <Icon className="h-5 w-5 text-secondary" />
