@@ -25,13 +25,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+// Upload UI is rendered as a full-page view (no modal/dialog)
 
 // ─── Types ───────────────────────────────────────────────────────────────
 type DocStatus =
@@ -897,19 +891,33 @@ function UploadDocumentDrawer({
     reset();
   };
 
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-primary">Upload Document</DialogTitle>
-          <DialogDescription>
-            {isSupporting
-              ? "Add a supporting document to your application."
-              : target && typeof target !== "string"
-                ? `Upload "${target.name}" for ${appliesToLabel(target.appliesTo)}.`
-                : ""}
-          </DialogDescription>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-background px-6 py-4 sm:px-10">
+        <div className="mx-auto flex w-full max-w-4xl items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold text-primary sm:text-xl">Upload Document</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {isSupporting
+                ? "Add a supporting document to your application."
+                : target && typeof target !== "string"
+                  ? `Upload "${target.name}" for ${appliesToLabel(target.appliesTo)}.`
+                  : ""}
+            </p>
+          </div>
+          <button
+            onClick={() => close(false)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10">
+        <div className="mx-auto w-full max-w-4xl space-y-4">
 
         {target && typeof target !== "string" && (
           <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
@@ -1050,8 +1058,9 @@ function UploadDocumentDrawer({
             <Upload className="h-4 w-4" /> Upload
           </button>
         </div>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </div>
   );
 }
 
