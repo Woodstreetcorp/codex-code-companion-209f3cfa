@@ -54,6 +54,7 @@ import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.s
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
 import { Route as PortalSettingsConsentsRouteImport } from './routes/portal.settings.consents'
+import { Route as PortalSettingsCommunicationsRouteImport } from './routes/portal.settings.communications'
 import { Route as PortalHomeRenewalRouteImport } from './routes/portal.home.renewal'
 import { Route as PortalHomeEquityRouteImport } from './routes/portal.home.equity'
 import { Route as ApplicationsApplicationIdSubmitRouteImport } from './routes/applications.$applicationId.submit'
@@ -312,6 +313,12 @@ const PortalSettingsConsentsRoute = PortalSettingsConsentsRouteImport.update({
   path: '/consents',
   getParentRoute: () => PortalSettingsRoute,
 } as any)
+const PortalSettingsCommunicationsRoute =
+  PortalSettingsCommunicationsRouteImport.update({
+    id: '/communications',
+    path: '/communications',
+    getParentRoute: () => PortalSettingsRoute,
+  } as any)
 const PortalHomeRenewalRoute = PortalHomeRenewalRouteImport.update({
   id: '/renewal',
   path: '/renewal',
@@ -462,6 +469,7 @@ export interface FileRoutesByFullPath {
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
+  '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
@@ -527,6 +535,7 @@ export interface FileRoutesByTo {
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
+  '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
@@ -595,6 +604,7 @@ export interface FileRoutesById {
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
+  '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
+    | '/portal/settings/communications'
     | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
@@ -729,6 +740,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
+    | '/portal/settings/communications'
     | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
@@ -796,6 +808,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
+    | '/portal/settings/communications'
     | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
@@ -1170,6 +1183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsConsentsRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/settings/communications': {
+      id: '/portal/settings/communications'
+      path: '/communications'
+      fullPath: '/portal/settings/communications'
+      preLoaderRoute: typeof PortalSettingsCommunicationsRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/portal/home/renewal': {
       id: '/portal/home/renewal'
       path: '/renewal'
@@ -1344,6 +1364,7 @@ const PortalSettingsSecurityRouteWithChildren =
   )
 
 interface PortalSettingsRouteChildren {
+  PortalSettingsCommunicationsRoute: typeof PortalSettingsCommunicationsRoute
   PortalSettingsConsentsRoute: typeof PortalSettingsConsentsRoute
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
   PortalSettingsPaymentMethodsRoute: typeof PortalSettingsPaymentMethodsRoute
@@ -1354,6 +1375,7 @@ interface PortalSettingsRouteChildren {
 }
 
 const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
+  PortalSettingsCommunicationsRoute: PortalSettingsCommunicationsRoute,
   PortalSettingsConsentsRoute: PortalSettingsConsentsRoute,
   PortalSettingsNotificationsRoute: PortalSettingsNotificationsRoute,
   PortalSettingsPaymentMethodsRoute: PortalSettingsPaymentMethodsRoute,
