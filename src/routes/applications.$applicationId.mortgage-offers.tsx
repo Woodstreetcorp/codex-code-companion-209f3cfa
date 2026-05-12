@@ -898,3 +898,195 @@ function Row({ k, v }: { k: string; v: string }) {
     </div>
   );
 }
+function ProductControlsBar({
+  sort,
+  setSort,
+  activeQuick,
+  toggleQuick,
+  search,
+  setSearch,
+  onOpenAdvanced,
+  onClear,
+  activeCount,
+}: {
+  sort: SortKey;
+  setSort: (s: SortKey) => void;
+  activeQuick: string[];
+  toggleQuick: (c: string) => void;
+  search: string;
+  setSearch: (s: string) => void;
+  onOpenAdvanced: () => void;
+  onClear: () => void;
+  activeCount: number;
+}) {
+  return (
+    <div className="mb-5 rounded-2xl border border-border bg-card p-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by lender or product"
+            className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+        </div>
+        <label className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Sort:</span>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            {SORT_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={onOpenAdvanced}
+          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" /> Advanced Filters
+          {activeCount > 0 && (
+            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+              {activeCount}
+            </span>
+          )}
+        </button>
+        {activeCount > 0 && (
+          <button onClick={onClear} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {QUICK_FILTERS.map((c) => {
+          const sel = activeQuick.includes(c);
+          return (
+            <button
+              key={c}
+              onClick={() => toggleQuick(c)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                sel
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground hover:border-primary/40"
+              }`}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AdvancedFiltersDrawer({
+  onClose,
+  maxPayment,
+  setMaxPayment,
+  maxClosing,
+  setMaxClosing,
+  classification,
+  setClassification,
+  onClear,
+}: {
+  onClose: () => void;
+  maxPayment: string;
+  setMaxPayment: (v: string) => void;
+  maxClosing: string;
+  setMaxClosing: (v: string) => void;
+  classification: string;
+  setClassification: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-foreground/40" onClick={onClose}>
+      <aside
+        className="h-full w-full max-w-md overflow-auto bg-card p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Advanced Filters</h3>
+            <p className="text-xs text-muted-foreground">Refine the products shown using plain-English filters.</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          <div>
+            <label className="text-xs font-medium text-foreground">Maximum monthly payment</label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+              <input
+                type="number"
+                value={maxPayment}
+                onChange={(e) => setMaxPayment(e.target.value)}
+                placeholder="e.g. 2900"
+                className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-foreground">Maximum closing cost</label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+              <input
+                type="number"
+                value={maxClosing}
+                onChange={(e) => setMaxClosing(e.target.value)}
+                placeholder="e.g. 8500"
+                className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Estimated costs connected to closing — legal, appraisal, or lender-related costs.
+            </p>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-foreground">Product path</label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {[
+                { v: "any", l: "Any" },
+                { v: "Prime", l: "Prime" },
+                { v: "Standard", l: "Standard" },
+                { v: "Alternative", l: "Alternative" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  onClick={() => setClassification(o.v)}
+                  className={`rounded-md border px-3 py-2 text-xs transition ${
+                    classification === o.v ? "border-primary bg-primary/5 text-primary" : "border-border bg-background"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
+            More filters — rate type, term, lender type, lender fee, prepayment, portability, cashback, HELOC,
+            amortization, product status, Home Life Bundle value — coming soon. Use the quick filters above for these.
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-2">
+          <button onClick={onClear} className="text-xs font-medium text-muted-foreground hover:text-foreground">
+            Reset all
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
