@@ -31,11 +31,15 @@ import { Route as InternalAccountHandoffRouteImport } from './routes/internal.ac
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
 import { Route as PortalToolsStressTestRouteImport } from './routes/portal.tools.stress-test'
 import { Route as PortalToolsScenarioCompareRouteImport } from './routes/portal.tools.scenario-compare'
+import { Route as PortalToolsSavedRouteImport } from './routes/portal.tools.saved'
 import { Route as PortalToolsRentVsBuyRouteImport } from './routes/portal.tools.rent-vs-buy'
 import { Route as PortalToolsRenewalComparisonRouteImport } from './routes/portal.tools.renewal-comparison'
 import { Route as PortalToolsRefinanceSavingsRouteImport } from './routes/portal.tools.refinance-savings'
 import { Route as PortalToolsPrepaymentRouteImport } from './routes/portal.tools.prepayment'
+import { Route as PortalToolsPortabilityRouteImport } from './routes/portal.tools.portability'
 import { Route as PortalToolsPaymentCalculatorRouteImport } from './routes/portal.tools.payment-calculator'
+import { Route as PortalToolsLandTransferTaxRouteImport } from './routes/portal.tools.land-transfer-tax'
+import { Route as PortalToolsInsurancePremiumRouteImport } from './routes/portal.tools.insurance-premium'
 import { Route as PortalToolsHomeEquityRouteImport } from './routes/portal.tools.home-equity'
 import { Route as PortalToolsDownPaymentRouteImport } from './routes/portal.tools.down-payment'
 import { Route as PortalToolsDebtConsolidationRouteImport } from './routes/portal.tools.debt-consolidation'
@@ -179,6 +183,11 @@ const PortalToolsScenarioCompareRoute =
     path: '/scenario-compare',
     getParentRoute: () => PortalToolsRoute,
   } as any)
+const PortalToolsSavedRoute = PortalToolsSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
 const PortalToolsRentVsBuyRoute = PortalToolsRentVsBuyRouteImport.update({
   id: '/rent-vs-buy',
   path: '/rent-vs-buy',
@@ -201,10 +210,27 @@ const PortalToolsPrepaymentRoute = PortalToolsPrepaymentRouteImport.update({
   path: '/prepayment',
   getParentRoute: () => PortalToolsRoute,
 } as any)
+const PortalToolsPortabilityRoute = PortalToolsPortabilityRouteImport.update({
+  id: '/portability',
+  path: '/portability',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
 const PortalToolsPaymentCalculatorRoute =
   PortalToolsPaymentCalculatorRouteImport.update({
     id: '/payment-calculator',
     path: '/payment-calculator',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsLandTransferTaxRoute =
+  PortalToolsLandTransferTaxRouteImport.update({
+    id: '/land-transfer-tax',
+    path: '/land-transfer-tax',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsInsurancePremiumRoute =
+  PortalToolsInsurancePremiumRouteImport.update({
+    id: '/insurance-premium',
+    path: '/insurance-premium',
     getParentRoute: () => PortalToolsRoute,
   } as any)
 const PortalToolsHomeEquityRoute = PortalToolsHomeEquityRouteImport.update({
@@ -421,11 +447,15 @@ export interface FileRoutesByFullPath {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
+  '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
@@ -479,11 +509,15 @@ export interface FileRoutesByTo {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
+  '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
@@ -539,11 +573,15 @@ export interface FileRoutesById {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
+  '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
@@ -600,11 +638,15 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
+    | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
@@ -658,11 +700,15 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
+    | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications'
@@ -717,11 +763,15 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
+    | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
@@ -913,6 +963,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalToolsScenarioCompareRouteImport
       parentRoute: typeof PortalToolsRoute
     }
+    '/portal/tools/saved': {
+      id: '/portal/tools/saved'
+      path: '/saved'
+      fullPath: '/portal/tools/saved'
+      preLoaderRoute: typeof PortalToolsSavedRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
     '/portal/tools/rent-vs-buy': {
       id: '/portal/tools/rent-vs-buy'
       path: '/rent-vs-buy'
@@ -941,11 +998,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalToolsPrepaymentRouteImport
       parentRoute: typeof PortalToolsRoute
     }
+    '/portal/tools/portability': {
+      id: '/portal/tools/portability'
+      path: '/portability'
+      fullPath: '/portal/tools/portability'
+      preLoaderRoute: typeof PortalToolsPortabilityRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
     '/portal/tools/payment-calculator': {
       id: '/portal/tools/payment-calculator'
       path: '/payment-calculator'
       fullPath: '/portal/tools/payment-calculator'
       preLoaderRoute: typeof PortalToolsPaymentCalculatorRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/land-transfer-tax': {
+      id: '/portal/tools/land-transfer-tax'
+      path: '/land-transfer-tax'
+      fullPath: '/portal/tools/land-transfer-tax'
+      preLoaderRoute: typeof PortalToolsLandTransferTaxRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/insurance-premium': {
+      id: '/portal/tools/insurance-premium'
+      path: '/insurance-premium'
+      fullPath: '/portal/tools/insurance-premium'
+      preLoaderRoute: typeof PortalToolsInsurancePremiumRouteImport
       parentRoute: typeof PortalToolsRoute
     }
     '/portal/tools/home-equity': {
@@ -1205,11 +1283,15 @@ interface PortalToolsRouteChildren {
   PortalToolsDebtConsolidationRoute: typeof PortalToolsDebtConsolidationRoute
   PortalToolsDownPaymentRoute: typeof PortalToolsDownPaymentRoute
   PortalToolsHomeEquityRoute: typeof PortalToolsHomeEquityRoute
+  PortalToolsInsurancePremiumRoute: typeof PortalToolsInsurancePremiumRoute
+  PortalToolsLandTransferTaxRoute: typeof PortalToolsLandTransferTaxRoute
   PortalToolsPaymentCalculatorRoute: typeof PortalToolsPaymentCalculatorRoute
+  PortalToolsPortabilityRoute: typeof PortalToolsPortabilityRoute
   PortalToolsPrepaymentRoute: typeof PortalToolsPrepaymentRoute
   PortalToolsRefinanceSavingsRoute: typeof PortalToolsRefinanceSavingsRoute
   PortalToolsRenewalComparisonRoute: typeof PortalToolsRenewalComparisonRoute
   PortalToolsRentVsBuyRoute: typeof PortalToolsRentVsBuyRoute
+  PortalToolsSavedRoute: typeof PortalToolsSavedRoute
   PortalToolsScenarioCompareRoute: typeof PortalToolsScenarioCompareRoute
   PortalToolsStressTestRoute: typeof PortalToolsStressTestRoute
 }
@@ -1220,11 +1302,15 @@ const PortalToolsRouteChildren: PortalToolsRouteChildren = {
   PortalToolsDebtConsolidationRoute: PortalToolsDebtConsolidationRoute,
   PortalToolsDownPaymentRoute: PortalToolsDownPaymentRoute,
   PortalToolsHomeEquityRoute: PortalToolsHomeEquityRoute,
+  PortalToolsInsurancePremiumRoute: PortalToolsInsurancePremiumRoute,
+  PortalToolsLandTransferTaxRoute: PortalToolsLandTransferTaxRoute,
   PortalToolsPaymentCalculatorRoute: PortalToolsPaymentCalculatorRoute,
+  PortalToolsPortabilityRoute: PortalToolsPortabilityRoute,
   PortalToolsPrepaymentRoute: PortalToolsPrepaymentRoute,
   PortalToolsRefinanceSavingsRoute: PortalToolsRefinanceSavingsRoute,
   PortalToolsRenewalComparisonRoute: PortalToolsRenewalComparisonRoute,
   PortalToolsRentVsBuyRoute: PortalToolsRentVsBuyRoute,
+  PortalToolsSavedRoute: PortalToolsSavedRoute,
   PortalToolsScenarioCompareRoute: PortalToolsScenarioCompareRoute,
   PortalToolsStressTestRoute: PortalToolsStressTestRoute,
 }

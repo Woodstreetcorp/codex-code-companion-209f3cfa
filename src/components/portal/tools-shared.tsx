@@ -164,6 +164,11 @@ export function deleteScenario(id: string) {
   window.localStorage.setItem(STORE_KEY, JSON.stringify(all));
 }
 
+export function renameScenario(id: string, name: string) {
+  const all = loadScenarios().map((s) => (s.id === id ? { ...s, name } : s));
+  window.localStorage.setItem(STORE_KEY, JSON.stringify(all));
+}
+
 export function useSavedScenarios() {
   const [list, setList] = useState<SavedScenario[]>([]);
   useEffect(() => {
@@ -174,6 +179,10 @@ export function useSavedScenarios() {
     refresh: () => setList(loadScenarios()),
     remove: (id: string) => {
       deleteScenario(id);
+      setList(loadScenarios());
+    },
+    rename: (id: string, name: string) => {
+      renameScenario(id, name);
       setList(loadScenarios());
     },
   };
