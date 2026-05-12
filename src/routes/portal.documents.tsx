@@ -57,6 +57,7 @@ export const Route = createFileRoute("/portal/documents")({
 
 // ─── Mock data specific to this hub ─────────────────────────────
 type RequestStatus = "Outstanding" | "Uploaded" | "Under Review" | "Approved" | "Rejected";
+type RequestSource = "lender" | "advisor" | "compliance";
 type LenderRequest = {
   id: string;
   app: string;
@@ -66,6 +67,11 @@ type LenderRequest = {
   dueIn: number; // days; negative = overdue
   status: RequestStatus;
   required: boolean;
+  source: RequestSource;
+  requestedBy: string;
+  requestedAt: string;
+  conditionId?: string;
+  conditionTitle?: string;
 };
 
 const LENDER_REQUESTS: LenderRequest[] = [
@@ -78,6 +84,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 2,
     status: "Outstanding",
     required: true,
+    source: "advisor",
+    requestedBy: "Sarah Chen — Mortgage Broker",
+    requestedAt: "May 9, 2026",
+    conditionId: "C-101",
+    conditionTitle: "Confirm employment letter & income docs",
   },
   {
     id: "REQ-9002",
@@ -88,6 +99,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 5,
     status: "Outstanding",
     required: true,
+    source: "advisor",
+    requestedBy: "Sarah Chen — Mortgage Broker",
+    requestedAt: "May 9, 2026",
+    conditionId: "C-102",
+    conditionTitle: "Most recent 2 pay stubs",
   },
   {
     id: "REQ-9003",
@@ -98,6 +114,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: -1,
     status: "Outstanding",
     required: true,
+    source: "lender",
+    requestedBy: "Equitable Bank — Underwriting",
+    requestedAt: "May 8, 2026",
+    conditionId: "C-103",
+    conditionTitle: "Void cheque or PAD form",
   },
   {
     id: "REQ-9004",
@@ -108,6 +129,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 7,
     status: "Under Review",
     required: true,
+    source: "lender",
+    requestedBy: "Equitable Bank — Underwriting",
+    requestedAt: "May 8, 2026",
+    conditionId: "C-101",
+    conditionTitle: "Confirm employment letter & income docs",
   },
   {
     id: "REQ-9005",
@@ -118,6 +144,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 12,
     status: "Approved",
     required: true,
+    source: "lender",
+    requestedBy: "Scotiabank — Underwriting",
+    requestedAt: "Apr 18, 2026",
+    conditionId: "C-105",
+    conditionTitle: "Property insurance binder",
   },
 ];
 
