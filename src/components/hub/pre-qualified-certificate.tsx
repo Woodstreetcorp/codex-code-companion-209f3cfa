@@ -12,6 +12,8 @@ import {
   Truck,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import { useState } from "react";
+import { downloadCertificatePdf } from "./certificate-pdf";
 
 const CERT = {
   amount: "$650,000",
@@ -23,6 +25,8 @@ const CERT = {
   lendersCount: 25,
   productsCount: 12438,
 };
+
+const APPLICANT_NAME = "Sarah & Michael Johnson";
 
 const REASSURANCE = [
   { title: "You're a serious buyer.", body: "Show sellers you're ready to make offers confidently." },
@@ -48,6 +52,27 @@ const BENEFITS: Benefit[] = [
 const TOTAL_BUNDLE_VALUE = "$3,250";
 
 export function PreQualifiedCertificateContent() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await downloadCertificatePdf({
+        applicantName: APPLICANT_NAME,
+        amount: CERT.amount,
+        rateRange: CERT.rateRange,
+        monthlyEstimate: "$3,580",
+        certificateNumber: CERT.certificateNumber,
+        issueDate: CERT.issueDate,
+        validUntil: CERT.validUntil,
+        lendersCount: CERT.lendersCount,
+        productsCount: CERT.productsCount,
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -77,8 +102,13 @@ export function PreQualifiedCertificateContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/90">
-              <FileText className="h-3.5 w-3.5" /> Download PDF
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="inline-flex items-center gap-1.5 rounded-md bg-secondary px-3 py-2 text-xs font-medium text-secondary-foreground hover:bg-secondary/90 disabled:opacity-60"
+            >
+              <FileText className="h-3.5 w-3.5" />{" "}
+              {downloading ? "Generating…" : "Download PDF"}
             </button>
             <button className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted">
               Share
