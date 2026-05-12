@@ -21,6 +21,7 @@ import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as R500RouteImport } from './routes/500'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
@@ -151,6 +152,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const CookiesRoute = CookiesRouteImport.update({
   id: '/cookies',
   path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R500Route = R500RouteImport.update({
+  id: '/500',
+  path: '/500',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -552,6 +558,7 @@ const ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -637,6 +644,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -721,6 +729,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
@@ -808,6 +817,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/500'
     | '/cookies'
     | '/forgot-password'
     | '/login'
@@ -893,6 +903,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/500'
     | '/cookies'
     | '/forgot-password'
     | '/login'
@@ -976,6 +987,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/500'
     | '/cookies'
     | '/forgot-password'
     | '/login'
@@ -1062,6 +1074,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  R500Route: typeof R500Route
   CookiesRoute: typeof CookiesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
@@ -1171,6 +1184,13 @@ declare module '@tanstack/react-router' {
       path: '/cookies'
       fullPath: '/cookies'
       preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/500': {
+      id: '/500'
+      path: '/500'
+      fullPath: '/500'
+      preLoaderRoute: typeof R500RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -1873,6 +1893,7 @@ const ApplicationsApplicationIdPropertyFinancingRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  R500Route: R500Route,
   CookiesRoute: CookiesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
