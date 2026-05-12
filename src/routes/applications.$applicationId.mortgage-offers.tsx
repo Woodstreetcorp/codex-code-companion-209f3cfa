@@ -211,9 +211,73 @@ function QualifiedProductsPage() {
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(true);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>("best");
+  const [activeQuick, setActiveQuick] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [maxPaymentFilter, setMaxPaymentFilter] = useState<string>("");
+  const [maxClosingFilter, setMaxClosingFilter] = useState<string>("");
+  const [classFilter, setClassFilter] = useState<string>("any");
 
   const all = useMemo(() => [...TOP, ...ALL_OTHERS], []);
   const byId = (id: string) => all.find((p) => p.id === id)!;
+
+  const matchesQuick = (p: Product, chip: string) => {
+    switch (chip) {
+      case "Fixed": return p.rateType === "Fixed";
+      case "Variable": return p.rateType === "Variable";
+      case "Lower Payment": return p.payment <= 2855;
+      case "Lowest Rate": return p.rate <= 5.34;
+      case "No Lender Fee": return (p.lenderFee ?? 0) === 0;
+      case "Cash Back": return p.features.some((f) => /cash/i.test(f));
+      case "Flexible Prepayment": return p.features.some((f) => /skip|prepay|payment increase/i.test(f));
+      case "Lower Closing Cost": return p.closingCosts <= 8500;
+      case "Prime Products": return p.classification === "Prime";
+      case "Alternative Products": return p.classification === "Alternative";
+      default: return true;
+    }
+  };
+
+  const applyFilters = (list: Product[]) => {
+    let out = list;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      out = out.filter((p) => p.lender.toLowerCase().includes(q) || p.product.toLowerCase().includes(q));
+    }
+    if (activeQuick.length > 0) {
+      out = out.filter((p) => activeQuick.every((c) => matchesQuick(p, c)));
+    }
+    const maxPay = Number(maxPaymentFilter);
+    if (maxPay > 0) out = out.filter((p) => p.payment <= maxPay);
+    const maxClose = Number(maxClosingFilter);
+    if (maxClose > 0) out = out.filter((p) => p.closingCosts <= maxClose);
+    if (classFilter !== "any") out = out.filter((p) => p.classification === classFilter);
+    return out;
+  };
+
+  const sortList = (list: Product[]) => {
+    const arr = [...list];
+    switch (sort) {
+      case "rate": arr.sort((a, b) => a.rate - b.rate); break;
+      case "payment": arr.sort((a, b) => a.payment - b.payment); break;
+      case "closing": arr.sort((a, b) => a.closingCosts - b.closingCosts); break;
+      case "value": arr.sort((a, b) => (b.bundleValue ?? 0) - (a.bundleValue ?? 0)); break;
+      case "flexible": arr.sort((a, b) => b.features.length - a.features.length); break;
+      case "fast": arr.sort((a, b) => b.rateHoldDays - a.rateHoldDays); break;
+      case "bundle": arr.sort((a, b) => (b.bundleValue ?? 0) - (a.bundleValue ?? 0)); break;
+      default: break; // Best Match keeps curated/order
+    }
+    return arr;
+  };
+
+  const topFiltered = useMemo(() => sortList(applyFilters(TOP)), [sort, activeQuick, search, maxPaymentFilter, maxClosingFilter, classFilter]);
+  const otherFiltered = useMemo(() => sortList(applyFilters(ALL_OTHERS)), [sort, activeQuick, search, maxPaymentFilter, maxClosingFilter, classFilter]);
+
+  const toggleQuick = (chip: string) =>
+    setActiveQuick((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
+  const clearAllFilters = () => {
+    setActiveQuick([]); setSearch(""); setMaxPaymentFilter(""); setMaxClosingFilter(""); setClassFilter("any");
+  };
   const isSelected = (id: string) => selected.includes(id);
   const atMax = selected.length >= MAX_SELECT;
 
@@ -224,8 +288,8 @@ function QualifiedProductsPage() {
   };
   const remove = (id: string) => setSelected((prev) => prev.filter((x) => x !== id));
 
-  const canSubmit = selected.length >= 2;
-  const progress = selected.length === 0 ? 0 : selected.length >= 2 ? 100 : 50;
+  const canSubmit = selected.length >= 1;
+  const progress = selected.length === 0 ? 0 : Math.min(100, (selected.length / MAX_SELECT) * 100);
 
   return (
     <PageShell>
