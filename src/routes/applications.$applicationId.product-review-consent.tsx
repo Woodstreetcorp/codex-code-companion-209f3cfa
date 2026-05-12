@@ -16,7 +16,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/product-review-consent",
+  "/applications/$applicationId/product-review-consent",
 )({
   head: () => ({
     meta: [
@@ -303,7 +303,7 @@ function ProductReviewConsentPage() {
 
       <div className="mb-4">
         <Link
-          to="/portal/applications/$applicationId/submit"
+          to="/applications/$applicationId/submit"
           params={{ applicationId }}
           className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
         >
@@ -317,7 +317,7 @@ function ProductReviewConsentPage() {
         nextLabel="Complete Product Review & Consent"
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/submit",
+            to: "/applications/$applicationId/submit",
             params: { applicationId },
           })
         }

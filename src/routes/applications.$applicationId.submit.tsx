@@ -14,7 +14,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/submit",
+  "/applications/$applicationId/submit",
 )({
   head: () => ({
     meta: [
@@ -178,7 +178,7 @@ function SubmitApplicationPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Link
-            to="/portal/applications/$applicationId/product-review-consent"
+            to="/applications/$applicationId/product-review-consent"
             params={{ applicationId }}
             className="rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
           >

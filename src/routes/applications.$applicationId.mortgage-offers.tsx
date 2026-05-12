@@ -22,7 +22,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/mortgage-offers",
+  "/applications/$applicationId/mortgage-offers",
 )({
   head: () => ({
     meta: [
@@ -296,7 +296,7 @@ function QualifiedProductsPage() {
               onClear={() => setSelected([])}
               onSubmit={() =>
                 navigate({
-                  to: "/portal/applications/$applicationId/product-review-consent",
+                  to: "/applications/$applicationId/product-review-consent",
                   params: { applicationId },
                 })
               }
@@ -333,7 +333,7 @@ function QualifiedProductsPage() {
               onSubmit={() => {
                 setCartOpen(false);
                 navigate({
-                  to: "/portal/applications/$applicationId/product-review-consent",
+                  to: "/applications/$applicationId/product-review-consent",
                   params: { applicationId },
                 });
               }}

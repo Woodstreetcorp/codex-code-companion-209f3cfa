@@ -18,7 +18,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/mortgage-request",
+  "/applications/$applicationId/mortgage-request",
 )({
   head: () => ({
     meta: [
@@ -164,14 +164,14 @@ function MortgageRequestPage() {
         </div>
         <div className="mt-2 flex flex-wrap gap-3 text-xs">
           <Link
-            to="/portal/applications/$applicationId/property-financing/property"
+            to="/applications/$applicationId/property-financing/property"
             params={{ applicationId }}
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
           >
             <Pencil className="h-3 w-3" /> Edit Property Details
           </Link>
           <Link
-            to="/portal/applications/$applicationId/property-financing/down-payment"
+            to="/applications/$applicationId/property-financing/down-payment"
             params={{ applicationId }}
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
           >
@@ -284,7 +284,7 @@ function MortgageRequestPage() {
         nextLabel="Save & Continue to Mortgage Offers"
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/mortgage-offers",
+            to: "/applications/$applicationId/mortgage-offers",
             params: { applicationId },
           })
         }

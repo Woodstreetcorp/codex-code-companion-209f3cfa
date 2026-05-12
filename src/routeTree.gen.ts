@@ -28,12 +28,12 @@ import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.setti
 import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.settings.preferences'
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
-import { Route as PortalApplicationsApplicationIdSubmitRouteImport } from './routes/portal.applications.$applicationId.submit'
+import { Route as ApplicationsApplicationIdSubmitRouteImport } from './routes/applications.$applicationId.submit'
+import { Route as ApplicationsApplicationIdProductReviewConsentRouteImport } from './routes/applications.$applicationId.product-review-consent'
+import { Route as ApplicationsApplicationIdMortgageRequestRouteImport } from './routes/applications.$applicationId.mortgage-request'
+import { Route as ApplicationsApplicationIdMortgageOffersRouteImport } from './routes/applications.$applicationId.mortgage-offers'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/portal.applications.$applicationId.property-financing'
-import { Route as PortalApplicationsApplicationIdProductReviewConsentRouteImport } from './routes/portal.applications.$applicationId.product-review-consent'
-import { Route as PortalApplicationsApplicationIdMortgageRequestRouteImport } from './routes/portal.applications.$applicationId.mortgage-request'
-import { Route as PortalApplicationsApplicationIdMortgageOffersRouteImport } from './routes/portal.applications.$applicationId.mortgage-offers'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.target-property'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRouteImport } from './routes/portal.applications.$applicationId.property-financing.renewal-preferences'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRouteImport } from './routes/portal.applications.$applicationId.property-financing.refinance-request'
@@ -141,11 +141,29 @@ const PortalSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => PortalSettingsRoute,
   } as any)
-const PortalApplicationsApplicationIdSubmitRoute =
-  PortalApplicationsApplicationIdSubmitRouteImport.update({
+const ApplicationsApplicationIdSubmitRoute =
+  ApplicationsApplicationIdSubmitRouteImport.update({
     id: '/applications/$applicationId/submit',
     path: '/applications/$applicationId/submit',
-    getParentRoute: () => PortalRoute,
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApplicationsApplicationIdProductReviewConsentRoute =
+  ApplicationsApplicationIdProductReviewConsentRouteImport.update({
+    id: '/applications/$applicationId/product-review-consent',
+    path: '/applications/$applicationId/product-review-consent',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApplicationsApplicationIdMortgageRequestRoute =
+  ApplicationsApplicationIdMortgageRequestRouteImport.update({
+    id: '/applications/$applicationId/mortgage-request',
+    path: '/applications/$applicationId/mortgage-request',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApplicationsApplicationIdMortgageOffersRoute =
+  ApplicationsApplicationIdMortgageOffersRouteImport.update({
+    id: '/applications/$applicationId/mortgage-offers',
+    path: '/applications/$applicationId/mortgage-offers',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const PortalApplicationsApplicationIdQualificationSummaryRoute =
   PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
@@ -157,24 +175,6 @@ const PortalApplicationsApplicationIdPropertyFinancingRoute =
   PortalApplicationsApplicationIdPropertyFinancingRouteImport.update({
     id: '/applications/$applicationId/property-financing',
     path: '/applications/$applicationId/property-financing',
-    getParentRoute: () => PortalRoute,
-  } as any)
-const PortalApplicationsApplicationIdProductReviewConsentRoute =
-  PortalApplicationsApplicationIdProductReviewConsentRouteImport.update({
-    id: '/applications/$applicationId/product-review-consent',
-    path: '/applications/$applicationId/product-review-consent',
-    getParentRoute: () => PortalRoute,
-  } as any)
-const PortalApplicationsApplicationIdMortgageRequestRoute =
-  PortalApplicationsApplicationIdMortgageRequestRouteImport.update({
-    id: '/applications/$applicationId/mortgage-request',
-    path: '/applications/$applicationId/mortgage-request',
-    getParentRoute: () => PortalRoute,
-  } as any)
-const PortalApplicationsApplicationIdMortgageOffersRoute =
-  PortalApplicationsApplicationIdMortgageOffersRouteImport.update({
-    id: '/applications/$applicationId/mortgage-offers',
-    path: '/applications/$applicationId/mortgage-offers',
     getParentRoute: () => PortalRoute,
   } as any)
 const PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute =
@@ -251,6 +251,10 @@ export interface FileRoutesByFullPath {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
+  '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
+  '/applications/$applicationId/mortgage-request': typeof ApplicationsApplicationIdMortgageRequestRoute
+  '/applications/$applicationId/product-review-consent': typeof ApplicationsApplicationIdProductReviewConsentRoute
+  '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -258,12 +262,8 @@ export interface FileRoutesByFullPath {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
-  '/portal/applications/$applicationId/mortgage-offers': typeof PortalApplicationsApplicationIdMortgageOffersRoute
-  '/portal/applications/$applicationId/mortgage-request': typeof PortalApplicationsApplicationIdMortgageRequestRoute
-  '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
-  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -284,6 +284,10 @@ export interface FileRoutesByTo {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal': typeof PortalIndexRoute
+  '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
+  '/applications/$applicationId/mortgage-request': typeof ApplicationsApplicationIdMortgageRequestRoute
+  '/applications/$applicationId/product-review-consent': typeof ApplicationsApplicationIdProductReviewConsentRoute
+  '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -291,12 +295,8 @@ export interface FileRoutesByTo {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
-  '/portal/applications/$applicationId/mortgage-offers': typeof PortalApplicationsApplicationIdMortgageOffersRoute
-  '/portal/applications/$applicationId/mortgage-request': typeof PortalApplicationsApplicationIdMortgageRequestRoute
-  '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
-  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -319,6 +319,10 @@ export interface FileRoutesById {
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
+  '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
+  '/applications/$applicationId/mortgage-request': typeof ApplicationsApplicationIdMortgageRequestRoute
+  '/applications/$applicationId/product-review-consent': typeof ApplicationsApplicationIdProductReviewConsentRoute
+  '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -326,12 +330,8 @@ export interface FileRoutesById {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
-  '/portal/applications/$applicationId/mortgage-offers': typeof PortalApplicationsApplicationIdMortgageOffersRoute
-  '/portal/applications/$applicationId/mortgage-request': typeof PortalApplicationsApplicationIdMortgageRequestRoute
-  '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
-  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -355,6 +355,10 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/wallet'
     | '/portal/'
+    | '/applications/$applicationId/mortgage-offers'
+    | '/applications/$applicationId/mortgage-request'
+    | '/applications/$applicationId/product-review-consent'
+    | '/applications/$applicationId/submit'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -362,12 +366,8 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/'
-    | '/portal/applications/$applicationId/mortgage-offers'
-    | '/portal/applications/$applicationId/mortgage-request'
-    | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
-    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -388,6 +388,10 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/wallet'
     | '/portal'
+    | '/applications/$applicationId/mortgage-offers'
+    | '/applications/$applicationId/mortgage-request'
+    | '/applications/$applicationId/product-review-consent'
+    | '/applications/$applicationId/submit'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -395,12 +399,8 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications'
-    | '/portal/applications/$applicationId/mortgage-offers'
-    | '/portal/applications/$applicationId/mortgage-request'
-    | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
-    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -422,6 +422,10 @@ export interface FileRouteTypes {
     | '/portal/settings'
     | '/portal/wallet'
     | '/portal/'
+    | '/applications/$applicationId/mortgage-offers'
+    | '/applications/$applicationId/mortgage-request'
+    | '/applications/$applicationId/product-review-consent'
+    | '/applications/$applicationId/submit'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -429,12 +433,8 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/'
-    | '/portal/applications/$applicationId/mortgage-offers'
-    | '/portal/applications/$applicationId/mortgage-request'
-    | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
-    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -454,6 +454,10 @@ export interface RootRouteChildren {
   InternalBorrowerDashboardRoute: typeof InternalBorrowerDashboardRoute
   InternalFullApplicationRoute: typeof InternalFullApplicationRoute
   InternalMortgageOffersRoute: typeof InternalMortgageOffersRoute
+  ApplicationsApplicationIdMortgageOffersRoute: typeof ApplicationsApplicationIdMortgageOffersRoute
+  ApplicationsApplicationIdMortgageRequestRoute: typeof ApplicationsApplicationIdMortgageRequestRoute
+  ApplicationsApplicationIdProductReviewConsentRoute: typeof ApplicationsApplicationIdProductReviewConsentRoute
+  ApplicationsApplicationIdSubmitRoute: typeof ApplicationsApplicationIdSubmitRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -591,12 +595,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsNotificationsRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
-    '/portal/applications/$applicationId/submit': {
-      id: '/portal/applications/$applicationId/submit'
+    '/applications/$applicationId/submit': {
+      id: '/applications/$applicationId/submit'
       path: '/applications/$applicationId/submit'
-      fullPath: '/portal/applications/$applicationId/submit'
-      preLoaderRoute: typeof PortalApplicationsApplicationIdSubmitRouteImport
-      parentRoute: typeof PortalRoute
+      fullPath: '/applications/$applicationId/submit'
+      preLoaderRoute: typeof ApplicationsApplicationIdSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applications/$applicationId/product-review-consent': {
+      id: '/applications/$applicationId/product-review-consent'
+      path: '/applications/$applicationId/product-review-consent'
+      fullPath: '/applications/$applicationId/product-review-consent'
+      preLoaderRoute: typeof ApplicationsApplicationIdProductReviewConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applications/$applicationId/mortgage-request': {
+      id: '/applications/$applicationId/mortgage-request'
+      path: '/applications/$applicationId/mortgage-request'
+      fullPath: '/applications/$applicationId/mortgage-request'
+      preLoaderRoute: typeof ApplicationsApplicationIdMortgageRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applications/$applicationId/mortgage-offers': {
+      id: '/applications/$applicationId/mortgage-offers'
+      path: '/applications/$applicationId/mortgage-offers'
+      fullPath: '/applications/$applicationId/mortgage-offers'
+      preLoaderRoute: typeof ApplicationsApplicationIdMortgageOffersRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/portal/applications/$applicationId/qualification-summary': {
       id: '/portal/applications/$applicationId/qualification-summary'
@@ -610,27 +635,6 @@ declare module '@tanstack/react-router' {
       path: '/applications/$applicationId/property-financing'
       fullPath: '/portal/applications/$applicationId/property-financing'
       preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/applications/$applicationId/product-review-consent': {
-      id: '/portal/applications/$applicationId/product-review-consent'
-      path: '/applications/$applicationId/product-review-consent'
-      fullPath: '/portal/applications/$applicationId/product-review-consent'
-      preLoaderRoute: typeof PortalApplicationsApplicationIdProductReviewConsentRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/applications/$applicationId/mortgage-request': {
-      id: '/portal/applications/$applicationId/mortgage-request'
-      path: '/applications/$applicationId/mortgage-request'
-      fullPath: '/portal/applications/$applicationId/mortgage-request'
-      preLoaderRoute: typeof PortalApplicationsApplicationIdMortgageRequestRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/applications/$applicationId/mortgage-offers': {
-      id: '/portal/applications/$applicationId/mortgage-offers'
-      path: '/applications/$applicationId/mortgage-offers'
-      fullPath: '/portal/applications/$applicationId/mortgage-offers'
-      preLoaderRoute: typeof PortalApplicationsApplicationIdMortgageOffersRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/applications/$applicationId/property-financing/target-property': {
@@ -745,12 +749,8 @@ interface PortalRouteChildren {
   PortalWalletRoute: typeof PortalWalletRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
-  PortalApplicationsApplicationIdMortgageOffersRoute: typeof PortalApplicationsApplicationIdMortgageOffersRoute
-  PortalApplicationsApplicationIdMortgageRequestRoute: typeof PortalApplicationsApplicationIdMortgageRequestRoute
-  PortalApplicationsApplicationIdProductReviewConsentRoute: typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   PortalApplicationsApplicationIdPropertyFinancingRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
-  PortalApplicationsApplicationIdSubmitRoute: typeof PortalApplicationsApplicationIdSubmitRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
@@ -758,18 +758,10 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalWalletRoute: PortalWalletRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
-  PortalApplicationsApplicationIdMortgageOffersRoute:
-    PortalApplicationsApplicationIdMortgageOffersRoute,
-  PortalApplicationsApplicationIdMortgageRequestRoute:
-    PortalApplicationsApplicationIdMortgageRequestRoute,
-  PortalApplicationsApplicationIdProductReviewConsentRoute:
-    PortalApplicationsApplicationIdProductReviewConsentRoute,
   PortalApplicationsApplicationIdPropertyFinancingRoute:
     PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
     PortalApplicationsApplicationIdQualificationSummaryRoute,
-  PortalApplicationsApplicationIdSubmitRoute:
-    PortalApplicationsApplicationIdSubmitRoute,
 }
 
 const PortalRouteWithChildren =
@@ -785,7 +777,24 @@ const rootRouteChildren: RootRouteChildren = {
   InternalBorrowerDashboardRoute: InternalBorrowerDashboardRoute,
   InternalFullApplicationRoute: InternalFullApplicationRoute,
   InternalMortgageOffersRoute: InternalMortgageOffersRoute,
+  ApplicationsApplicationIdMortgageOffersRoute:
+    ApplicationsApplicationIdMortgageOffersRoute,
+  ApplicationsApplicationIdMortgageRequestRoute:
+    ApplicationsApplicationIdMortgageRequestRoute,
+  ApplicationsApplicationIdProductReviewConsentRoute:
+    ApplicationsApplicationIdProductReviewConsentRoute,
+  ApplicationsApplicationIdSubmitRoute: ApplicationsApplicationIdSubmitRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
