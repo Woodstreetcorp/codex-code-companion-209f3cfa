@@ -66,6 +66,7 @@ function MyMortgagePage() {
   ];
 
   return (
+    <>
     <div className="space-y-6">
       {/* Hero */}
       <Card className="bg-gradient-to-br from-primary/10 via-card to-secondary/10">
