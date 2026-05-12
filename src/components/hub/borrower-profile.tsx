@@ -109,8 +109,9 @@ type Asset = {
   institution: string;
   value: number;
   forDownPayment: number;
-  liquid: boolean;
-  source: string;
+  // amount = specific dollar amount entered; pct = percent of value
+  dpMode?: "amount" | "pct";
+  dpInput?: string;
 };
 
 type OtherProperty = {
@@ -218,6 +219,20 @@ const CREDIT_SCORE_SOURCES = [
 
 // Co-applicants are now passed in dynamically from the application's applicant list.
 
+const LIQUID_ASSET_TYPES = new Set([
+  "Chequing account",
+  "Savings account",
+  "TFSA",
+  "RRSP",
+  "FHSA",
+  "Investment account",
+  "GIC",
+  "Stocks/bonds",
+  "Crypto",
+  "Gift funds",
+]);
+const isLiquidAsset = (type: string) => LIQUID_ASSET_TYPES.has(type);
+
 const SEED_ASSETS_PRIMARY: Asset[] = [
   {
     id: "ast-1",
@@ -225,8 +240,8 @@ const SEED_ASSETS_PRIMARY: Asset[] = [
     institution: "RBC Royal Bank",
     value: 62500,
     forDownPayment: 50000,
-    liquid: true,
-    source: "Savings",
+    dpMode: "amount",
+    dpInput: "50000",
   },
   {
     id: "ast-2",
@@ -234,8 +249,6 @@ const SEED_ASSETS_PRIMARY: Asset[] = [
     institution: "Wealthsimple",
     value: 21800,
     forDownPayment: 0,
-    liquid: true,
-    source: "Savings",
   },
 ];
 
@@ -258,6 +271,7 @@ function stateBadge(state: SectionState) {
 export function BorrowerProfilePage({
   applicant,
   coApplicants,
+  tx,
   liabilities,
   onUpsertLiability,
   onRemoveLiability,
@@ -266,6 +280,7 @@ export function BorrowerProfilePage({
 }: {
   applicant: BorrowerProfileApplicant;
   coApplicants: BorrowerProfileApplicant[];
+  tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
   liabilities: Liability[];
   onUpsertLiability: (l: Liability) => void;
   onRemoveLiability: (id: string) => void;
@@ -659,9 +674,40 @@ export function BorrowerProfilePage({
       )}
       {drawer === "asset" && (
         <AddAssetDrawer
+          tx={tx}
+          applicantId={applicant.id}
+          applicantName={applicant.name}
           onClose={() => setDrawer(null)}
           onSave={(data) => {
-            setAssets((p) => [...p, { ...data, id: `ast-${Date.now()}` }]);
+            const id = `ast-${Date.now()}`;
+            setAssets((p) => [...p, { ...data, id }]);
+            // Sync down-payment contribution to localStorage so the
+            // Down Payment page can auto-populate the source
+            if (typeof window !== "undefined" && data.forDownPayment > 0) {
+              try {
+                const key = "approvu:dp-contributions";
+                const raw = window.localStorage.getItem(key);
+                const list: Array<{
+                  assetId: string;
+                  ownerId: string;
+                  ownerName: string;
+                  type: string;
+                  institution: string;
+                  amount: number;
+                }> = raw ? JSON.parse(raw) : [];
+                list.push({
+                  assetId: id,
+                  ownerId: applicant.id,
+                  ownerName: applicant.name,
+                  type: data.type,
+                  institution: data.institution,
+                  amount: data.forDownPayment,
+                });
+                window.localStorage.setItem(key, JSON.stringify(list));
+              } catch {
+                // ignore storage failures
+              }
+            }
             setNoneAssets(false);
             setDrawer(null);
           }}
@@ -1359,7 +1405,7 @@ function AssetsSection({
 }) {
   const total = assets.reduce((s, a) => s + a.value, 0);
   const downpayment = assets.reduce((s, a) => s + a.forDownPayment, 0);
-  const liquid = assets.filter((a) => a.liquid).reduce((s, a) => s + a.value, 0);
+  const liquid = assets.filter((a) => isLiquidAsset(a.type)).reduce((s, a) => s + a.value, 0);
 
   return (
     <div className="space-y-5">
@@ -1380,14 +1426,16 @@ function AssetsSection({
               <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
                 {a.type}
               </span>
-              {a.liquid && (
+              {isLiquidAsset(a.type) && (
                 <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
                   Liquid
                 </span>
               )}
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                {a.source}
-              </span>
+              {a.forDownPayment > 0 && (
+                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                  Down payment {fmtMoney(a.forDownPayment)}
+                </span>
+              )}
             </div>
             <p className="mt-1.5 text-sm font-semibold text-foreground">{a.institution}</p>
             <p className="text-xs text-muted-foreground">
@@ -2691,19 +2739,41 @@ function AddLiabilityDrawer({
 }
 
 function AddAssetDrawer({
+  tx,
+  applicantId: _applicantId,
+  applicantName: _applicantName,
   onClose,
   onSave,
 }: {
+  tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
+  applicantId: string;
+  applicantName: string;
   onClose: () => void;
   onSave: (d: Omit<Asset, "id">) => void;
 }) {
   const [type, setType] = useState("Savings account");
   const [institution, setInstitution] = useState("");
   const [value, setValue] = useState("");
-  const [forDownPayment, setForDownPayment] = useState("");
-  const [liquid, setLiquid] = useState(true);
-  const [source, setSource] = useState("Savings");
-  const valid = institution.trim().length > 0 && Number(value) > 0;
+  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">("");
+  const [dpMode, setDpMode] = useState<"amount" | "pct">("amount");
+  const [dpInput, setDpInput] = useState("");
+
+  const valueNum = Number(value) || 0;
+  const dpInputNum = Number(dpInput) || 0;
+  const isLiquid = isLiquidAsset(type);
+  const dpEligible = isLiquid && (tx === "Purchase" || tx === "Pre-Purchase");
+  const computedDP =
+    useForDP === "yes" && dpEligible
+      ? dpMode === "amount"
+        ? Math.min(dpInputNum, valueNum)
+        : Math.round((Math.min(dpInputNum, 100) / 100) * valueNum)
+      : 0;
+
+  const dpAnswered = !dpEligible || useForDP === "no" || (useForDP === "yes" && computedDP > 0);
+  const dpInputInvalid =
+    useForDP === "yes" &&
+    (dpInputNum <= 0 || (dpMode === "amount" && dpInputNum > valueNum) || (dpMode === "pct" && dpInputNum > 100));
+  const valid = institution.trim().length > 0 && valueNum > 0 && dpAnswered && !dpInputInvalid;
 
   return (
     <DrawerShell
@@ -2724,10 +2794,10 @@ function AddAssetDrawer({
               onSave({
                 type,
                 institution,
-                value: Number(value),
-                forDownPayment: Number(forDownPayment) || 0,
-                liquid,
-                source,
+                value: valueNum,
+                forDownPayment: computedDP,
+                dpMode: useForDP === "yes" ? dpMode : undefined,
+                dpInput: useForDP === "yes" ? dpInput : undefined,
               })
             }
             className={`rounded-md px-3.5 py-2 text-xs font-semibold ${
@@ -2770,36 +2840,82 @@ function AddAssetDrawer({
         <Field label="Current value" required>
           <Input value={value} onChange={setValue} placeholder="0" />
         </Field>
-        <Field label="Amount used for down payment">
-          <Input value={forDownPayment} onChange={setForDownPayment} placeholder="0" />
-        </Field>
-        <Field label="Source of funds">
-          <Select
-            value={source}
-            onChange={setSource}
-            options={[
-              "Savings",
-              "RRSP",
-              "FHSA",
-              "Gift",
-              "Sale of property",
-              "Sale of asset",
-              "Borrowed funds",
-              "Business funds",
-              "Funds from outside Canada",
-              "Other",
-            ]}
-          />
-        </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={liquid}
-            onChange={(e) => setLiquid(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          This asset is liquid
-        </label>
+
+        {dpEligible ? (
+          <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
+            <p className="text-sm font-medium text-foreground">
+              Will any portion of this asset be used for the down payment?
+            </p>
+            <div className="flex gap-6 text-sm">
+              {(["yes", "no"] as const).map((opt) => (
+                <label key={opt} className="inline-flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="asset-use-dp"
+                    checked={useForDP === opt}
+                    onChange={() => {
+                      setUseForDP(opt);
+                      if (opt === "no") setDpInput("");
+                    }}
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  {opt === "yes" ? "Yes" : "No"}
+                </label>
+              ))}
+            </div>
+
+            {useForDP === "yes" && (
+              <div className="space-y-3 rounded-lg border border-border bg-background p-3">
+                <p className="text-xs font-medium text-foreground">
+                  How would you like to specify the down payment amount?
+                </p>
+                <div className="flex gap-6 text-sm">
+                  {(["amount", "pct"] as const).map((m) => (
+                    <label key={m} className="inline-flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="asset-dp-mode"
+                        checked={dpMode === m}
+                        onChange={() => setDpMode(m)}
+                        className="h-3.5 w-3.5 accent-primary"
+                      />
+                      {m === "amount" ? "Specific Amount" : "Percentage"}
+                    </label>
+                  ))}
+                </div>
+                <Field
+                  label={dpMode === "amount" ? "Amount (CAD)" : "Percentage of asset value"}
+                  full
+                  required
+                >
+                  <Input
+                    value={dpInput}
+                    onChange={setDpInput}
+                    placeholder={dpMode === "amount" ? "0.00" : "0"}
+                  />
+                </Field>
+                <p className="text-[11px] text-muted-foreground">
+                  Down payment contribution: {fmtMoney(computedDP)}
+                  {dpInputInvalid && (
+                    <span className="ml-2 text-coral">
+                      {dpMode === "amount"
+                        ? "Cannot exceed the asset's current value."
+                        : "Must be between 1 and 100."}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  This amount will auto-populate in the Down Payment page of your application.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : isLiquid ? null : (
+          <p className="text-[11px] text-muted-foreground">
+            Down payment use is only available for liquid assets on Purchase or Pre-Purchase
+            applications.
+          </p>
+        )}
       </div>
     </DrawerShell>
   );

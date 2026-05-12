@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   ChoiceGrid,
@@ -56,6 +56,8 @@ type Source = {
   notes: string;
   // dynamic
   extra: Record<string, string>;
+  // when the source row was auto-populated from a declared asset in a borrower's profile
+  fromAsset?: { assetId: string; ownerName: string; assetType: string; institution: string };
 };
 
 function DownPaymentPage() {
@@ -72,6 +74,50 @@ function DownPaymentPage() {
 
   const [selectedTypes, setSelectedTypes] = useState<SourceType[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
+
+  // Auto-populate sources from declared liquid assets marked for the down payment
+  // in the borrower profile (Assets section). The borrower-profile component
+  // writes these contributions into localStorage.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("approvu:dp-contributions");
+      if (!raw) return;
+      const list: Array<{
+        assetId: string;
+        ownerId: string;
+        ownerName: string;
+        type: string;
+        institution: string;
+        amount: number;
+      }> = JSON.parse(raw);
+      if (!Array.isArray(list) || list.length === 0) return;
+      const sourceType: SourceType = "Personal savings / investments / RRSP / FHSA";
+      setSelectedTypes((prev) => (prev.includes(sourceType) ? prev : [...prev, sourceType]));
+      setSources((prev) => {
+        const existing = new Set(prev.map((s) => s.fromAsset?.assetId).filter(Boolean));
+        const additions: Source[] = list
+          .filter((c) => !existing.has(c.assetId) && c.amount > 0)
+          .map((c) => ({
+            id: `auto-${c.assetId}`,
+            type: sourceType,
+            amount: String(c.amount),
+            borrower: c.ownerName,
+            notes: `Auto-filled from declared ${c.type} at ${c.institution} (${c.ownerName}'s profile).`,
+            extra: {},
+            fromAsset: {
+              assetId: c.assetId,
+              ownerName: c.ownerName,
+              assetType: c.type,
+              institution: c.institution,
+            },
+          }));
+        return additions.length > 0 ? [...prev, ...additions] : prev;
+      });
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
 
   const toggleType = (t: SourceType) => {
     if (selectedTypes.includes(t)) {
