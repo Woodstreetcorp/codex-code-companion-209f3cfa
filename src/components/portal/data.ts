@@ -18,6 +18,7 @@ import {
   User,
   ScrollText,
   ShieldCheck,
+  House,
 } from "lucide-react";
 
 // ─── Business rules ──────────────────────────────────────────────────────
@@ -383,6 +384,7 @@ export type PortalRoutePath =
   | "/portal/notifications"
   | "/portal/appointments"
   | "/portal/help"
+  | "/portal/home"
   | "/portal/wallet"
   | "/portal/tools"
   | "/portal/disclosures"
@@ -401,6 +403,7 @@ export const PORTAL_NAV: {
   { to: "/portal/notifications", label: "Notifications", icon: Bell },
   { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/portal/help", label: "Help Center", icon: HelpCircle },
+  { to: "/portal/home", label: "Homeowner Hub", icon: House },
   { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
   { to: "/portal/disclosures", label: "Disclosures", icon: ScrollText },
