@@ -127,3 +127,11 @@ The entire admin surface (see `frontend-inventory.md` § Admin Frontend) is
 and should not flag their absence as a bug. The admin shell, partner directory,
 offer builder, application command centre, etc. are being built in a separate
 Lovable project and will be merged in before backend wiring on the admin side.
+## Disclosures & consents (added)
+
+Profile-level disclosures (`/portal/disclosures`) are NOT sufficient to
+submit a mortgage application. Application-level disclosures and
+per-applicant consents must be tied to `application_id` and `applicant_id`
+and live at `/portal/applications/:applicationId/disclosures`. Codex must
+not treat `/portal/disclosures` as the only consent source. Full model and
+submission gating in `docs/application-consent-disclosure-model.md`.

@@ -83,6 +83,7 @@ import { Route as PortalApplicationsApplicationIdOffersRouteImport } from './rou
 import { Route as PortalApplicationsApplicationIdManageRouteImport } from './routes/portal.applications.$applicationId.manage'
 import { Route as PortalApplicationsApplicationIdLenderRouteImport } from './routes/portal.applications.$applicationId.lender'
 import { Route as PortalApplicationsApplicationIdFundingRouteImport } from './routes/portal.applications.$applicationId.funding'
+import { Route as PortalApplicationsApplicationIdDisclosuresRouteImport } from './routes/portal.applications.$applicationId.disclosures'
 import { Route as PortalApplicationsApplicationIdConditionsRouteImport } from './routes/portal.applications.$applicationId.conditions'
 import { Route as PortalApplicationsApplicationIdCertificateRouteImport } from './routes/portal.applications.$applicationId.certificate'
 import { Route as PortalApplicationsApplicationIdBenefitsRouteImport } from './routes/portal.applications.$applicationId.benefits'
@@ -493,6 +494,12 @@ const PortalApplicationsApplicationIdFundingRoute =
     path: '/applications/$applicationId/funding',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalApplicationsApplicationIdDisclosuresRoute =
+  PortalApplicationsApplicationIdDisclosuresRouteImport.update({
+    id: '/applications/$applicationId/disclosures',
+    path: '/applications/$applicationId/disclosures',
+    getParentRoute: () => PortalRoute,
+  } as any)
 const PortalApplicationsApplicationIdConditionsRoute =
   PortalApplicationsApplicationIdConditionsRouteImport.update({
     id: '/applications/$applicationId/conditions',
@@ -633,6 +640,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
   '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
+  '/portal/applications/$applicationId/disclosures': typeof PortalApplicationsApplicationIdDisclosuresRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
   '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
@@ -717,6 +725,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
   '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
+  '/portal/applications/$applicationId/disclosures': typeof PortalApplicationsApplicationIdDisclosuresRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
   '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
@@ -804,6 +813,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
   '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
+  '/portal/applications/$applicationId/disclosures': typeof PortalApplicationsApplicationIdDisclosuresRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
   '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
@@ -892,6 +902,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/benefits'
     | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
+    | '/portal/applications/$applicationId/disclosures'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
     | '/portal/applications/$applicationId/manage'
@@ -976,6 +987,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/benefits'
     | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
+    | '/portal/applications/$applicationId/disclosures'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
     | '/portal/applications/$applicationId/manage'
@@ -1062,6 +1074,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/benefits'
     | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
+    | '/portal/applications/$applicationId/disclosures'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
     | '/portal/applications/$applicationId/manage'
@@ -1620,6 +1633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdFundingRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/applications/$applicationId/disclosures': {
+      id: '/portal/applications/$applicationId/disclosures'
+      path: '/applications/$applicationId/disclosures'
+      fullPath: '/portal/applications/$applicationId/disclosures'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdDisclosuresRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/applications/$applicationId/conditions': {
       id: '/portal/applications/$applicationId/conditions'
       path: '/applications/$applicationId/conditions'
@@ -1811,6 +1831,7 @@ interface PortalRouteChildren {
   PortalApplicationsApplicationIdBenefitsRoute: typeof PortalApplicationsApplicationIdBenefitsRoute
   PortalApplicationsApplicationIdCertificateRoute: typeof PortalApplicationsApplicationIdCertificateRoute
   PortalApplicationsApplicationIdConditionsRoute: typeof PortalApplicationsApplicationIdConditionsRoute
+  PortalApplicationsApplicationIdDisclosuresRoute: typeof PortalApplicationsApplicationIdDisclosuresRoute
   PortalApplicationsApplicationIdFundingRoute: typeof PortalApplicationsApplicationIdFundingRoute
   PortalApplicationsApplicationIdLenderRoute: typeof PortalApplicationsApplicationIdLenderRoute
   PortalApplicationsApplicationIdManageRoute: typeof PortalApplicationsApplicationIdManageRoute
@@ -1839,6 +1860,8 @@ const PortalRouteChildren: PortalRouteChildren = {
     PortalApplicationsApplicationIdCertificateRoute,
   PortalApplicationsApplicationIdConditionsRoute:
     PortalApplicationsApplicationIdConditionsRoute,
+  PortalApplicationsApplicationIdDisclosuresRoute:
+    PortalApplicationsApplicationIdDisclosuresRoute,
   PortalApplicationsApplicationIdFundingRoute:
     PortalApplicationsApplicationIdFundingRoute,
   PortalApplicationsApplicationIdLenderRoute:

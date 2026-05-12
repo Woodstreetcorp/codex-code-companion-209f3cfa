@@ -14,6 +14,7 @@ import {
   Settings2,
   BadgeCheck,
   Gift,
+  ShieldCheck,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import {
@@ -111,7 +112,7 @@ function stageIndexFor(summary: AppSummary): number {
 }
 
 export type AppTabKey =
-  | "snapshot" | "timeline" | "certificate" | "offers" | "benefits" | "lender" | "documents" | "conditions" | "funding" | "messages" | "manage";
+  | "snapshot" | "timeline" | "certificate" | "offers" | "benefits" | "lender" | "documents" | "disclosures" | "conditions" | "funding" | "messages" | "manage";
 
 const TABS = [
   { key: "snapshot",   label: "Snapshot",   to: "/portal/applications/$applicationId",            icon: LayoutDashboard },
@@ -121,6 +122,7 @@ const TABS = [
   { key: "benefits",   label: "Benefits",   to: "/portal/applications/$applicationId/benefits",   icon: Gift },
   { key: "lender",     label: "Lender",     to: "/portal/applications/$applicationId/lender",     icon: Building2 },
   { key: "documents",  label: "Documents",  to: "/portal/applications/$applicationId/documents",  icon: FileText },
+  { key: "disclosures", label: "Disclosures", to: "/portal/applications/$applicationId/disclosures", icon: ShieldCheck },
   { key: "conditions", label: "Conditions", to: "/portal/applications/$applicationId/conditions", icon: ListChecks },
   { key: "funding",    label: "Funding",    to: "/portal/applications/$applicationId/funding",    icon: Clock },
   { key: "messages",   label: "Messages",   to: "/portal/applications/$applicationId/messages",   icon: MessageSquare },
