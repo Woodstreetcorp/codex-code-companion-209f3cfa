@@ -339,6 +339,8 @@ function ProductCard({
   disabled,
   onSelect,
   onDetails,
+  onCompare,
+  canCompare,
   compact,
 }: {
   p: Product;
@@ -346,6 +348,8 @@ function ProductCard({
   disabled: boolean;
   onSelect: () => void;
   onDetails: () => void;
+  onCompare: () => void;
+  canCompare: boolean;
   compact?: boolean;
 }) {
   return (
@@ -425,7 +429,7 @@ function ProductCard({
           )}
         </div>
 
-        <div className="flex shrink-0 flex-row gap-2 md:w-32 md:flex-col">
+        <div className="flex shrink-0 flex-row flex-wrap gap-2 md:w-36 md:flex-col">
           <button
             onClick={onSelect}
             disabled={disabled}
@@ -451,104 +455,200 @@ function ProductCard({
           >
             <Info className="h-3.5 w-3.5" /> Details
           </button>
+          <button
+            onClick={onCompare}
+            disabled={!canCompare}
+            title={canCompare ? "Compare selected products" : "Select at least 2 products to compare"}
+            className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Columns3 className="h-3.5 w-3.5" /> Compare
+          </button>
         </div>
       </div>
     </article>
   );
 }
 
-function CartPanel({
+function CartBar({
   selected,
   byId,
+  open,
+  onToggle,
   onRemove,
   onClear,
+  onCompare,
   onSubmit,
   canSubmit,
-  embedded,
 }: {
   selected: string[];
   byId: (id: string) => Product;
+  open: boolean;
+  onToggle: () => void;
   onRemove: (id: string) => void;
   onClear: () => void;
+  onCompare: () => void;
   onSubmit: () => void;
   canSubmit: boolean;
-  embedded?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border border-border bg-card shadow-sm ${embedded ? "" : "p-4"}`}>
-      {!embedded && (
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Selected Products</h3>
-          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
-            {selected.length}/{MAX_SELECT}
-          </span>
-        </div>
-      )}
-
-      <div className={embedded ? "p-3 pt-0" : ""}>
-        {selected.length === 0 ? (
-          <div className="rounded-xl bg-muted/40 p-4 text-center">
-            <ShoppingCart className="mx-auto h-6 w-6 text-muted-foreground" />
-            <p className="mt-2 text-xs font-medium text-foreground">No products selected yet.</p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Select products to compare and apply.
-            </p>
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-2xl backdrop-blur">
+      <div className="mx-auto max-w-7xl px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={onToggle}
+            className="flex items-center gap-2 text-sm font-semibold text-foreground"
+          >
+            <ShoppingCart className="h-4 w-4 text-primary" />
+            Selected Products
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+              {selected.length}/{MAX_SELECT}
+            </span>
+            {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronUp className="h-4 w-4 text-muted-foreground" />}
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCompare}
+              disabled={selected.length < 2}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Columns3 className="h-3.5 w-3.5" /> Compare
+            </button>
+            {selected.length > 0 && (
+              <button
+                onClick={onClear}
+                className="hidden sm:inline-flex items-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+              >
+                <X className="h-3.5 w-3.5" /> Clear
+              </button>
+            )}
+            <button
+              onClick={onSubmit}
+              disabled={!canSubmit}
+              className="rounded-md bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wide text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+            >
+              Begin Submission
+            </button>
           </div>
-        ) : (
-          <ul className="space-y-2">
-            {selected.map((id) => {
-              const p = byId(id);
-              return (
-                <li key={id} className="rounded-xl border border-border bg-muted/30 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground">
+        </div>
+
+        {open && (
+          <div className="mt-3 border-t border-border pt-3">
+            {selected.length === 0 ? (
+              <p className="py-3 text-center text-xs text-muted-foreground">
+                No products selected yet. Pick up to 3 products to compare and submit.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {selected.map((id) => {
+                  const p = byId(id);
+                  return (
+                    <li key={id} className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 p-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground">
                         {p.initials}
                       </div>
-                      <p className="truncate text-xs font-semibold">{p.lender}</p>
-                    </div>
-                    <button onClick={() => onRemove(id)} className="text-coral hover:opacity-70">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <dl className="mt-2 space-y-0.5 text-[11px]">
-                    <div className="flex justify-between text-muted-foreground">
-                      <dt>Mortgage:</dt><dd className="font-medium text-foreground">{fmtMoney(p.loanAmount)}</dd>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <dt>Rate:</dt><dd className="font-medium text-primary">{p.rate.toFixed(2)}%</dd>
-                    </div>
-                    <div className="flex justify-between text-muted-foreground">
-                      <dt>Payment:</dt><dd className="font-medium text-foreground">{fmtMoney(p.payment)}</dd>
-                    </div>
-                  </dl>
-                </li>
-              );
-            })}
-          </ul>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold">{p.lender}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          <span className="font-semibold text-primary">{p.rate.toFixed(2)}%</span> · {fmtMoney(p.payment)}/mo
+                        </p>
+                      </div>
+                      <button onClick={() => onRemove(id)} className="text-coral hover:opacity-70">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {!canSubmit && selected.length > 0 && (
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">
+                Select at least two products to begin submission.
+              </p>
+            )}
+          </div>
         )}
+      </div>
+    </div>
+  );
+}
 
-        <div className="mt-3 space-y-2">
-          {!canSubmit && selected.length > 0 && (
-            <p className="text-center text-[11px] text-muted-foreground">
-              Select at least two products to begin submission.
-            </p>
-          )}
-          <button
-            onClick={onSubmit}
-            disabled={!canSubmit}
-            className="w-full rounded-md bg-primary px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-          >
-            Begin Submission
+function CompareModal({
+  products,
+  onClose,
+  onRemove,
+}: {
+  products: Product[];
+  onClose: () => void;
+  onRemove: (id: string) => void;
+}) {
+  const rows: { label: string; get: (p: Product) => string }[] = [
+    { label: "Product", get: (p) => p.product },
+    { label: "Mortgage Rate", get: (p) => `${p.rate.toFixed(2)}%` },
+    { label: "APR", get: (p) => `${p.apr.toFixed(2)}%` },
+    { label: "Monthly Payment", get: (p) => fmtMoney(p.payment) },
+    { label: "Est. Closing Costs", get: (p) => fmtMoney(p.closingCosts) },
+    { label: "Loan Amount", get: (p) => fmtMoney(p.loanAmount) },
+    { label: "Term", get: (p) => `${p.termYears} Years` },
+    { label: "Rate Type", get: (p) => p.rateType },
+    { label: "Status", get: (p) => p.status },
+    { label: "Rate Hold", get: (p) => `${p.rateHoldDays} Days` },
+    { label: "Max Amortization", get: (p) => `${p.amortYears} Years` },
+    { label: "Features", get: (p) => p.features.join(", ") },
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-auto rounded-2xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">Compare Selected Products</h3>
+            <p className="text-xs text-muted-foreground">Side-by-side view of your selected mortgage products.</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-5 w-5" />
           </button>
-          {selected.length > 0 && (
-            <button
-              onClick={onClear}
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
-            >
-              <X className="h-3.5 w-3.5" /> Clear Cart
-            </button>
-          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-card p-2 text-left text-[10px] font-semibold uppercase text-muted-foreground"></th>
+                {products.map((p) => (
+                  <th key={p.id} className="min-w-[180px] p-2 text-left align-top">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-bold text-primary-foreground">
+                          {p.initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">{p.lender}</p>
+                          {p.badge && (
+                            <span className="text-[10px] font-semibold text-primary">{p.badge}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button onClick={() => onRemove(p.id)} className="text-coral hover:opacity-70" title="Remove">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={row.label} className={i % 2 === 0 ? "bg-muted/30" : ""}>
+                  <td className="sticky left-0 z-10 whitespace-nowrap bg-inherit p-2 text-[11px] font-semibold uppercase text-muted-foreground">
+                    {row.label}
+                  </td>
+                  {products.map((p) => (
+                    <td key={p.id} className="p-2 align-top text-foreground">
+                      {row.get(p)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
