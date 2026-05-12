@@ -542,7 +542,6 @@ export function BorrowerProfilePage({
           onSave={(data) => {
             setIncome((p) => [...p, { ...data, id: `inc-${Date.now()}` }]);
             setNoneIncome(false);
-            setDrawer(null);
           }}
         />
       )}
