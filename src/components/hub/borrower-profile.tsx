@@ -695,7 +695,7 @@ function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) =
   const [years, setYears] = useState("3");
   const [housing, setHousing] = useState("Own");
   const [mailingSame, setMailingSame] = useState(true);
-  const needsPrev = parseInt(years || "0", 10) < 2;
+  const needsPrev = parseInt(years || "0", 10) < 3;
 
   return (
     <div className="space-y-6">
@@ -749,13 +749,14 @@ function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) =
       </label>
 
       {needsPrev && (
-        <div className="rounded-xl border border-yellow/40 bg-yellow/15 p-4 text-sm">
-          <div className="flex items-center gap-2 font-semibold">
-            <AlertCircle className="h-4 w-4" /> Previous address required
+        <div className="rounded-xl border border-coral/40 bg-coral/10 p-4 text-sm">
+          <div className="flex items-center gap-2 font-semibold text-coral">
+            <AlertCircle className="h-4 w-4" /> Previous address required to continue
           </div>
           <p className="mt-1 text-xs text-foreground/80">
-            Lenders require at least 2 years of address history. Add your previous address to
-            continue.
+            A minimum of <span className="font-semibold">3 years</span> of address history is
+            required before proceeding. Add previous addresses until your combined history covers
+            at least 3 years.
           </p>
           <button className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
             <Plus className="h-3.5 w-3.5" /> Add Previous Address
