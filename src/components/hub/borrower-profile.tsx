@@ -77,14 +77,15 @@ type IncomeSource = {
   include: boolean;
 };
 
-type Liability = {
+export type Liability = {
   id: string;
+  ownerId: string; // applicant.id who entered the debt
   creditor: string; // Name of lender
   type: string; // Type of debt
   balance: number;
   monthlyPayment: number;
   shared: boolean;
-  sharedWith: string[];
+  sharedWith: string[]; // applicant IDs the debt is shared with
   paymentHistory:
     | ""
     | "R1"
@@ -152,9 +153,10 @@ const SEED_INCOME_PRIMARY: IncomeSource[] = [
   },
 ];
 
-const SEED_LIABILITIES_PRIMARY: Liability[] = [
+export const buildSeedLiabilities = (primaryId: string): Liability[] => [
   {
     id: "lia-1",
+    ownerId: primaryId,
     creditor: "TD Visa",
     type: "Credit Card",
     balance: 2480,
@@ -166,6 +168,7 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
   },
   {
     id: "lia-2",
+    ownerId: primaryId,
     creditor: "Honda Finance",
     type: "Auto Loan",
     balance: 14900,
@@ -213,11 +216,7 @@ const CREDIT_SCORE_SOURCES = [
   "Other",
 ];
 
-const MOCK_CO_APPLICANTS = [
-  "John Smith (Co-applicant)",
-  "Jane Doe (Co-applicant)",
-  "Robert Johnson (Co-applicant)",
-];
+// Co-applicants are now passed in dynamically from the application's applicant list.
 
 const SEED_ASSETS_PRIMARY: Asset[] = [
   {
