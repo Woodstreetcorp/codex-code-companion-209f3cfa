@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, Star } from "lucide-react";
+import { ArrowRight, BadgeCheck, Printer, Share2, Star } from "lucide-react";
 import {
   ApplicationShell, NotFoundApplication, getApplicationSummary,
 } from "@/components/portal/application-shell";
@@ -21,9 +21,28 @@ function OffersPage() {
   if (!summary) return <NotFoundApplication id={applicationId} />;
   return (
     <ApplicationShell summary={summary} tab="offers">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Mortgage offers tied to this application</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Compare and select an offer to move forward with the lender review.</p>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Mortgage offers tied to this application</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Compare and select an offer to move forward with the lender review.</p>
+        </div>
+        <div className="flex gap-2 print:hidden" data-no-print>
+          <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted">
+            <Printer className="h-3.5 w-3.5" /> Print / Save PDF
+          </button>
+          <button
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: "approvU mortgage offers", url: window.location.href }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(window.location.href);
+              }
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share with spouse
+          </button>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {OFFERS.map((o) => (
