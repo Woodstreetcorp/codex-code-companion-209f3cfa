@@ -386,7 +386,7 @@ export const PORTAL_NAV: {
 }[] = [
   { to: "/portal", label: "Overview", icon: Home, exact: true },
   { to: "/portal/applications", label: "Applications", icon: Inbox },
-  { to: "/portal/documents", label: "Documents", icon: FileText },
+  { to: "/portal/documents", label: "Document Vault", icon: FileText },
   { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
   { to: "/portal/settings", label: "Settings", icon: Settings },
