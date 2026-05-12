@@ -351,6 +351,7 @@ export function BorrowerProfilePage({
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
   const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
   const [editingProperty, setEditingProperty] = useState<OtherProperty | null>(null);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
   // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
   const visibleLiabilities = useMemo(
