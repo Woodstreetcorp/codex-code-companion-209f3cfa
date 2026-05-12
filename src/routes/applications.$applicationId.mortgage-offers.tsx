@@ -297,7 +297,7 @@ function QualifiedProductsPage() {
         applicationId={applicationId}
         tx={tx}
         title="Qualified Products"
-        subtitle="Select up to 3 mortgage products to submit with your application."
+        subtitle="Select up to 3 mortgage products to include in your submission priority."
         progress={progress}
         saveStatus="saved"
       />
@@ -321,18 +321,35 @@ function QualifiedProductsPage() {
 
       <div className="pb-32">
         <div className="min-w-0">
+          <ProductControlsBar
+            sort={sort}
+            setSort={setSort}
+            activeQuick={activeQuick}
+            toggleQuick={toggleQuick}
+            search={search}
+            setSearch={setSearch}
+            onOpenAdvanced={() => setAdvancedOpen(true)}
+            onClear={clearAllFilters}
+            activeCount={activeQuick.length + (maxPaymentFilter ? 1 : 0) + (maxClosingFilter ? 1 : 0) + (classFilter !== "any" ? 1 : 0)}
+          />
+
           <div className="mb-4">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-secondary" />
-              <h2 className="text-lg font-semibold text-foreground">Top 5 Matches — Curated For You</h2>
+              <h2 className="text-lg font-semibold text-foreground">Top Recommended Matches</h2>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              These products best align with your financial goals and lifestyle needs.
+              We ranked these products based on your application, preferences, and product eligibility.
             </p>
           </div>
 
           <div className="space-y-3">
-            {TOP.map((p) => (
+            {topFiltered.length === 0 && (
+              <p className="rounded-xl border border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">
+                No top matches with the current filters. Try clearing filters to see all qualified products.
+              </p>
+            )}
+            {topFiltered.map((p) => (
               <ProductCard
                 key={p.id}
                 p={p}
@@ -352,7 +369,7 @@ function QualifiedProductsPage() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">All Qualified Products</h2>
                 <p className="text-xs text-muted-foreground">
-                  {ALL_OTHERS.length} more products match your profile
+                  {otherFiltered.length} more products match your profile
                 </p>
               </div>
             </div>
@@ -360,14 +377,14 @@ function QualifiedProductsPage() {
               onClick={() => setShowAll((v) => !v)}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
             >
-              {showAll ? "Hide" : `View All (${ALL_OTHERS.length})`}
+              {showAll ? "Hide" : `View All (${otherFiltered.length})`}
               <ChevronDown className={`h-3.5 w-3.5 transition ${showAll ? "rotate-180" : ""}`} />
             </button>
           </div>
 
           {showAll ? (
             <div className="space-y-3">
-              {ALL_OTHERS.map((p) => (
+              {otherFiltered.map((p) => (
                 <ProductCard
                   key={p.id}
                   p={p}
@@ -391,7 +408,7 @@ function QualifiedProductsPage() {
               </div>
               <p className="text-sm font-semibold text-foreground">Explore More Options</p>
               <p className="text-xs text-muted-foreground">
-                Click to view {ALL_OTHERS.length} additional qualified products
+                Click to view {otherFiltered.length} additional qualified products
               </p>
               <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
                 View All Products <ArrowRight className="h-3.5 w-3.5" />
@@ -438,6 +455,19 @@ function QualifiedProductsPage() {
           disabled={!isSelected(detailsId) && atMax}
           onClose={() => setDetailsId(null)}
           onToggle={() => toggle(detailsId)}
+        />
+      )}
+
+      {advancedOpen && (
+        <AdvancedFiltersDrawer
+          onClose={() => setAdvancedOpen(false)}
+          maxPayment={maxPaymentFilter}
+          setMaxPayment={setMaxPaymentFilter}
+          maxClosing={maxClosingFilter}
+          setMaxClosing={setMaxClosingFilter}
+          classification={classFilter}
+          setClassification={setClassFilter}
+          onClear={clearAllFilters}
         />
       )}
     </PageShell>
