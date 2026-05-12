@@ -552,6 +552,7 @@ export function MortgageApplicationContent() {
               onResend={() => handleResend(a.id)}
               onManageAccess={() => setAccessFor(a)}
               onRemove={() => handleRemove(a.id)}
+              onOpen={() => setProfileFor(a)}
             />
           ))}
         </div>
