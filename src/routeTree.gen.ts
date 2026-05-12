@@ -71,6 +71,7 @@ import { Route as PortalSettingsSecurityActivityRouteImport } from './routes/por
 import { Route as PortalApplicationsApplicationIdTimelineRouteImport } from './routes/portal.applications.$applicationId.timeline'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdOffersRouteImport } from './routes/portal.applications.$applicationId.offers'
+import { Route as PortalApplicationsApplicationIdManageRouteImport } from './routes/portal.applications.$applicationId.manage'
 import { Route as PortalApplicationsApplicationIdLenderRouteImport } from './routes/portal.applications.$applicationId.lender'
 import { Route as PortalApplicationsApplicationIdConditionsRouteImport } from './routes/portal.applications.$applicationId.conditions'
 import { Route as ApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport } from './routes/applications.$applicationId.property-financing.target-property'
@@ -417,6 +418,12 @@ const PortalApplicationsApplicationIdOffersRoute =
     path: '/applications/$applicationId/offers',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalApplicationsApplicationIdManageRoute =
+  PortalApplicationsApplicationIdManageRouteImport.update({
+    id: '/applications/$applicationId/manage',
+    path: '/applications/$applicationId/manage',
+    getParentRoute: () => PortalRoute,
+  } as any)
 const PortalApplicationsApplicationIdLenderRoute =
   PortalApplicationsApplicationIdLenderRouteImport.update({
     id: '/applications/$applicationId/lender',
@@ -541,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
+  '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
   '/portal/applications/$applicationId/timeline': typeof PortalApplicationsApplicationIdTimelineRoute
@@ -612,6 +620,7 @@ export interface FileRoutesByTo {
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
+  '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
   '/portal/applications/$applicationId/timeline': typeof PortalApplicationsApplicationIdTimelineRoute
@@ -686,6 +695,7 @@ export interface FileRoutesById {
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
+  '/portal/applications/$applicationId/manage': typeof PortalApplicationsApplicationIdManageRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
   '/portal/applications/$applicationId/timeline': typeof PortalApplicationsApplicationIdTimelineRoute
@@ -761,6 +771,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/target-property'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/lender'
+    | '/portal/applications/$applicationId/manage'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
     | '/portal/applications/$applicationId/timeline'
@@ -832,6 +843,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/target-property'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/lender'
+    | '/portal/applications/$applicationId/manage'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
     | '/portal/applications/$applicationId/timeline'
@@ -905,6 +917,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/target-property'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/lender'
+    | '/portal/applications/$applicationId/manage'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
     | '/portal/applications/$applicationId/timeline'
@@ -1367,6 +1380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdOffersRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/applications/$applicationId/manage': {
+      id: '/portal/applications/$applicationId/manage'
+      path: '/applications/$applicationId/manage'
+      fullPath: '/portal/applications/$applicationId/manage'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdManageRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/applications/$applicationId/lender': {
       id: '/portal/applications/$applicationId/lender'
       path: '/applications/$applicationId/lender'
@@ -1550,6 +1570,7 @@ interface PortalRouteChildren {
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
   PortalApplicationsApplicationIdConditionsRoute: typeof PortalApplicationsApplicationIdConditionsRoute
   PortalApplicationsApplicationIdLenderRoute: typeof PortalApplicationsApplicationIdLenderRoute
+  PortalApplicationsApplicationIdManageRoute: typeof PortalApplicationsApplicationIdManageRoute
   PortalApplicationsApplicationIdOffersRoute: typeof PortalApplicationsApplicationIdOffersRoute
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
   PortalApplicationsApplicationIdTimelineRoute: typeof PortalApplicationsApplicationIdTimelineRoute
@@ -1573,6 +1594,8 @@ const PortalRouteChildren: PortalRouteChildren = {
     PortalApplicationsApplicationIdConditionsRoute,
   PortalApplicationsApplicationIdLenderRoute:
     PortalApplicationsApplicationIdLenderRoute,
+  PortalApplicationsApplicationIdManageRoute:
+    PortalApplicationsApplicationIdManageRoute,
   PortalApplicationsApplicationIdOffersRoute:
     PortalApplicationsApplicationIdOffersRoute,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
