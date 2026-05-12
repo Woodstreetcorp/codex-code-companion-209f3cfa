@@ -35,8 +35,10 @@ import { Route as PortalToolsRentVsBuyRouteImport } from './routes/portal.tools.
 import { Route as PortalToolsRenewalComparisonRouteImport } from './routes/portal.tools.renewal-comparison'
 import { Route as PortalToolsRefinanceSavingsRouteImport } from './routes/portal.tools.refinance-savings'
 import { Route as PortalToolsPrepaymentRouteImport } from './routes/portal.tools.prepayment'
+import { Route as PortalToolsPortabilityRouteImport } from './routes/portal.tools.portability'
 import { Route as PortalToolsPaymentCalculatorRouteImport } from './routes/portal.tools.payment-calculator'
 import { Route as PortalToolsLandTransferTaxRouteImport } from './routes/portal.tools.land-transfer-tax'
+import { Route as PortalToolsInsurancePremiumRouteImport } from './routes/portal.tools.insurance-premium'
 import { Route as PortalToolsHomeEquityRouteImport } from './routes/portal.tools.home-equity'
 import { Route as PortalToolsDownPaymentRouteImport } from './routes/portal.tools.down-payment'
 import { Route as PortalToolsDebtConsolidationRouteImport } from './routes/portal.tools.debt-consolidation'
@@ -202,6 +204,11 @@ const PortalToolsPrepaymentRoute = PortalToolsPrepaymentRouteImport.update({
   path: '/prepayment',
   getParentRoute: () => PortalToolsRoute,
 } as any)
+const PortalToolsPortabilityRoute = PortalToolsPortabilityRouteImport.update({
+  id: '/portability',
+  path: '/portability',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
 const PortalToolsPaymentCalculatorRoute =
   PortalToolsPaymentCalculatorRouteImport.update({
     id: '/payment-calculator',
@@ -212,6 +219,12 @@ const PortalToolsLandTransferTaxRoute =
   PortalToolsLandTransferTaxRouteImport.update({
     id: '/land-transfer-tax',
     path: '/land-transfer-tax',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsInsurancePremiumRoute =
+  PortalToolsInsurancePremiumRouteImport.update({
+    id: '/insurance-premium',
+    path: '/insurance-premium',
     getParentRoute: () => PortalToolsRoute,
   } as any)
 const PortalToolsHomeEquityRoute = PortalToolsHomeEquityRouteImport.update({
@@ -428,8 +441,10 @@ export interface FileRoutesByFullPath {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
   '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
@@ -487,8 +502,10 @@ export interface FileRoutesByTo {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
   '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
@@ -548,8 +565,10 @@ export interface FileRoutesById {
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
   '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
   '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/insurance-premium': typeof PortalToolsInsurancePremiumRoute
   '/portal/tools/land-transfer-tax': typeof PortalToolsLandTransferTaxRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/portability': typeof PortalToolsPortabilityRoute
   '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
@@ -610,8 +629,10 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
     | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
@@ -669,8 +690,10 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
     | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
@@ -729,8 +752,10 @@ export interface FileRouteTypes {
     | '/portal/tools/debt-consolidation'
     | '/portal/tools/down-payment'
     | '/portal/tools/home-equity'
+    | '/portal/tools/insurance-premium'
     | '/portal/tools/land-transfer-tax'
     | '/portal/tools/payment-calculator'
+    | '/portal/tools/portability'
     | '/portal/tools/prepayment'
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
@@ -954,6 +979,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalToolsPrepaymentRouteImport
       parentRoute: typeof PortalToolsRoute
     }
+    '/portal/tools/portability': {
+      id: '/portal/tools/portability'
+      path: '/portability'
+      fullPath: '/portal/tools/portability'
+      preLoaderRoute: typeof PortalToolsPortabilityRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
     '/portal/tools/payment-calculator': {
       id: '/portal/tools/payment-calculator'
       path: '/payment-calculator'
@@ -966,6 +998,13 @@ declare module '@tanstack/react-router' {
       path: '/land-transfer-tax'
       fullPath: '/portal/tools/land-transfer-tax'
       preLoaderRoute: typeof PortalToolsLandTransferTaxRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/insurance-premium': {
+      id: '/portal/tools/insurance-premium'
+      path: '/insurance-premium'
+      fullPath: '/portal/tools/insurance-premium'
+      preLoaderRoute: typeof PortalToolsInsurancePremiumRouteImport
       parentRoute: typeof PortalToolsRoute
     }
     '/portal/tools/home-equity': {
@@ -1225,8 +1264,10 @@ interface PortalToolsRouteChildren {
   PortalToolsDebtConsolidationRoute: typeof PortalToolsDebtConsolidationRoute
   PortalToolsDownPaymentRoute: typeof PortalToolsDownPaymentRoute
   PortalToolsHomeEquityRoute: typeof PortalToolsHomeEquityRoute
+  PortalToolsInsurancePremiumRoute: typeof PortalToolsInsurancePremiumRoute
   PortalToolsLandTransferTaxRoute: typeof PortalToolsLandTransferTaxRoute
   PortalToolsPaymentCalculatorRoute: typeof PortalToolsPaymentCalculatorRoute
+  PortalToolsPortabilityRoute: typeof PortalToolsPortabilityRoute
   PortalToolsPrepaymentRoute: typeof PortalToolsPrepaymentRoute
   PortalToolsRefinanceSavingsRoute: typeof PortalToolsRefinanceSavingsRoute
   PortalToolsRenewalComparisonRoute: typeof PortalToolsRenewalComparisonRoute
@@ -1241,8 +1282,10 @@ const PortalToolsRouteChildren: PortalToolsRouteChildren = {
   PortalToolsDebtConsolidationRoute: PortalToolsDebtConsolidationRoute,
   PortalToolsDownPaymentRoute: PortalToolsDownPaymentRoute,
   PortalToolsHomeEquityRoute: PortalToolsHomeEquityRoute,
+  PortalToolsInsurancePremiumRoute: PortalToolsInsurancePremiumRoute,
   PortalToolsLandTransferTaxRoute: PortalToolsLandTransferTaxRoute,
   PortalToolsPaymentCalculatorRoute: PortalToolsPaymentCalculatorRoute,
+  PortalToolsPortabilityRoute: PortalToolsPortabilityRoute,
   PortalToolsPrepaymentRoute: PortalToolsPrepaymentRoute,
   PortalToolsRefinanceSavingsRoute: PortalToolsRefinanceSavingsRoute,
   PortalToolsRenewalComparisonRoute: PortalToolsRenewalComparisonRoute,
@@ -1356,3 +1399,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
