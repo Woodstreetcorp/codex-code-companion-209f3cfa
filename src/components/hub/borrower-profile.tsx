@@ -1914,6 +1914,33 @@ function Select({
   );
 }
 
+function AddressAutocompleteInput({ placeholder }: { placeholder?: string }) {
+  const [v, setV] = useState("");
+  return (
+    <div className="space-y-1.5">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          placeholder={placeholder}
+          autoComplete="street-address"
+          className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-28 text-sm text-foreground outline-none focus:border-secondary"
+        />
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+          <MapPin className="h-3 w-3" /> Autofill
+        </span>
+      </div>
+      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Info className="h-3 w-3" />
+        Start typing and select your address — Google Maps autofill will populate city, province,
+        postal code, and country once enabled.
+      </p>
+    </div>
+  );
+}
+
 function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
   const [v, setV] = useState<"yes" | "no" | undefined>();
   return (
