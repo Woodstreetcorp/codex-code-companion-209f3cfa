@@ -23,6 +23,8 @@ import { Route as InternalFullApplicationRouteImport } from './routes/internal.f
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
+import { Route as PortalToolsPaymentCalculatorRouteImport } from './routes/portal.tools.payment-calculator'
+import { Route as PortalToolsAffordabilityRouteImport } from './routes/portal.tools.affordability'
 import { Route as PortalSettingsSecurityRouteImport } from './routes/portal.settings.security'
 import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
 import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.settings.privacy'
@@ -115,6 +117,18 @@ const PortalApplicationsIndexRoute = PortalApplicationsIndexRouteImport.update({
   path: '/applications/',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalToolsPaymentCalculatorRoute =
+  PortalToolsPaymentCalculatorRouteImport.update({
+    id: '/payment-calculator',
+    path: '/payment-calculator',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsAffordabilityRoute =
+  PortalToolsAffordabilityRouteImport.update({
+    id: '/affordability',
+    path: '/affordability',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
 const PortalSettingsSecurityRoute = PortalSettingsSecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -246,7 +260,7 @@ export interface FileRoutesByFullPath {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
-  '/portal/tools': typeof PortalToolsRoute
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -261,6 +275,8 @@ export interface FileRoutesByFullPath {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -281,7 +297,7 @@ export interface FileRoutesByTo {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
-  '/portal/tools': typeof PortalToolsRoute
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -296,6 +312,8 @@ export interface FileRoutesByTo {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -318,7 +336,7 @@ export interface FileRoutesById {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
-  '/portal/tools': typeof PortalToolsRoute
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -333,6 +351,8 @@ export interface FileRoutesById {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -371,6 +391,8 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/payment-calculator'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -406,6 +428,8 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/payment-calculator'
     | '/portal/applications'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -442,6 +466,8 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/payment-calculator'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -570,6 +596,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/applications/'
       preLoaderRoute: typeof PortalApplicationsIndexRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/portal/tools/payment-calculator': {
+      id: '/portal/tools/payment-calculator'
+      path: '/payment-calculator'
+      fullPath: '/portal/tools/payment-calculator'
+      preLoaderRoute: typeof PortalToolsPaymentCalculatorRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/affordability': {
+      id: '/portal/tools/affordability'
+      path: '/affordability'
+      fullPath: '/portal/tools/affordability'
+      preLoaderRoute: typeof PortalToolsAffordabilityRouteImport
+      parentRoute: typeof PortalToolsRoute
     }
     '/portal/settings/security': {
       id: '/portal/settings/security'
@@ -736,9 +776,23 @@ const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
   PortalSettingsRouteChildren,
 )
 
+interface PortalToolsRouteChildren {
+  PortalToolsAffordabilityRoute: typeof PortalToolsAffordabilityRoute
+  PortalToolsPaymentCalculatorRoute: typeof PortalToolsPaymentCalculatorRoute
+}
+
+const PortalToolsRouteChildren: PortalToolsRouteChildren = {
+  PortalToolsAffordabilityRoute: PortalToolsAffordabilityRoute,
+  PortalToolsPaymentCalculatorRoute: PortalToolsPaymentCalculatorRoute,
+}
+
+const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
+  PortalToolsRouteChildren,
+)
+
 interface PortalRouteChildren {
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
-  PortalToolsRoute: typeof PortalToolsRoute
+  PortalToolsRoute: typeof PortalToolsRouteWithChildren
   PortalWalletRoute: typeof PortalWalletRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
@@ -747,7 +801,7 @@ interface PortalRouteChildren {
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
-  PortalToolsRoute: PortalToolsRoute,
+  PortalToolsRoute: PortalToolsRouteWithChildren,
   PortalWalletRoute: PortalWalletRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
@@ -816,3 +870,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
