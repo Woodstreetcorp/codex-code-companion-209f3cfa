@@ -305,7 +305,7 @@ function QualifiedProductsPage() {
         onCompare={() => setCompareOpen(true)}
         onSubmit={() =>
           navigate({
-            to: "/applications/$applicationId/product-review-consent",
+            to: "/portal/applications/$applicationId/product-priority",
             params: { applicationId },
           })
         }
