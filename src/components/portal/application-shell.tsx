@@ -109,21 +109,20 @@ function stageIndexFor(summary: AppSummary): number {
 export type AppTabKey =
   | "snapshot" | "offers" | "documents" | "conditions" | "funding" | "messages";
 
-const TABS: { key: AppTabKey; label: string; to: string; icon: typeof Inbox }[] = [
-  { key: "snapshot",   label: "Snapshot",   to: "",            icon: LayoutDashboard },
-  { key: "offers",     label: "Offers",     to: "offers",      icon: HandCoins },
-  { key: "documents",  label: "Documents",  to: "documents",   icon: FileText },
-  { key: "conditions", label: "Conditions", to: "conditions",  icon: ListChecks },
-  { key: "funding",    label: "Funding",    to: "funding",     icon: Clock },
-  { key: "messages",   label: "Messages",   to: "messages",    icon: MessageSquare },
-];
+const TABS = [
+  { key: "snapshot",   label: "Snapshot",   to: "/portal/applications/$applicationId",            icon: LayoutDashboard },
+  { key: "offers",     label: "Offers",     to: "/portal/applications/$applicationId/offers",     icon: HandCoins },
+  { key: "documents",  label: "Documents",  to: "/portal/applications/$applicationId/documents",  icon: FileText },
+  { key: "conditions", label: "Conditions", to: "/portal/applications/$applicationId/conditions", icon: ListChecks },
+  { key: "funding",    label: "Funding",    to: "/portal/applications/$applicationId/funding",    icon: Clock },
+  { key: "messages",   label: "Messages",   to: "/portal/applications/$applicationId/messages",   icon: MessageSquare },
+] as const;
 
 export function ApplicationShell({
   summary, tab, children,
 }: { summary: AppSummary; tab: AppTabKey; children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const stageIdx = stageIndexFor(summary);
-
   const base = `/portal/applications/${summary.id}`;
   const bucketTone =
     summary.bucket === "Submitted" ? "bg-secondary/15 text-secondary border-secondary/40"
@@ -216,13 +215,13 @@ export function ApplicationShell({
       {/* Tabs */}
       <nav className="mt-6 flex gap-1 overflow-x-auto border-b border-border" aria-label="Application sections">
         {TABS.map((t) => {
-          const href = t.to ? `${base}/${t.to}` : base;
           const isActive = t.key === tab || (t.key === "snapshot" && (pathname === base || pathname === `${base}/`));
           const Icon = t.icon;
           return (
             <Link
               key={t.key}
-              to={href}
+              to={t.to}
+              params={{ applicationId: summary.id }}
               className={`inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition ${
                 isActive
                   ? "border-primary text-primary"
