@@ -1915,6 +1915,7 @@ function Select({
 }
 
 function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
+  // see below
   const [v, setV] = useState<"yes" | "no" | undefined>();
   return (
     <div className="sm:col-span-2 space-y-2">
