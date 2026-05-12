@@ -157,12 +157,11 @@ function PortalDashboard() {
 
       {/* Summary cards */}
       <section aria-label="Summary">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <SummaryCard icon={Inbox} label="Active" value={`${counts.active} of ${MAX_ACTIVE_APPLICATIONS}`} tone="primary" />
           <SummaryCard icon={CheckCircle2} label="Submitted" value={String(counts.submitted)} tone="secondary" />
           <SummaryCard icon={FileText} label="Documents" value={`${counts.docsPending} pending`} tone="yellow" />
           <SummaryCard icon={Clock} label="Conditions" value={`${counts.conditions} outstanding`} tone="coral" />
-          <SummaryCard icon={Award} label="Offers" value={String(counts.offers)} tone="mint" />
           <SummaryCard icon={Wallet} label="Wallet" value={hasFunded ? `${counts.walletAvailable} available` : "Locked"} tone="secondary" />
         </div>
       </section>
