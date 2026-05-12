@@ -53,6 +53,7 @@ import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.setti
 import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.settings.preferences'
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
+import { Route as PortalSettingsEmergencyRouteImport } from './routes/portal.settings.emergency'
 import { Route as PortalSettingsConsentsRouteImport } from './routes/portal.settings.consents'
 import { Route as PortalSettingsConnectionsRouteImport } from './routes/portal.settings.connections'
 import { Route as PortalSettingsCommunicationsRouteImport } from './routes/portal.settings.communications'
@@ -309,6 +310,11 @@ const PortalSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => PortalSettingsRoute,
   } as any)
+const PortalSettingsEmergencyRoute = PortalSettingsEmergencyRouteImport.update({
+  id: '/emergency',
+  path: '/emergency',
+  getParentRoute: () => PortalSettingsRoute,
+} as any)
 const PortalSettingsConsentsRoute = PortalSettingsConsentsRouteImport.update({
   id: '/consents',
   path: '/consents',
@@ -479,6 +485,7 @@ export interface FileRoutesByFullPath {
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/connections': typeof PortalSettingsConnectionsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
+  '/portal/settings/emergency': typeof PortalSettingsEmergencyRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -546,6 +553,7 @@ export interface FileRoutesByTo {
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/connections': typeof PortalSettingsConnectionsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
+  '/portal/settings/emergency': typeof PortalSettingsEmergencyRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -616,6 +624,7 @@ export interface FileRoutesById {
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
   '/portal/settings/connections': typeof PortalSettingsConnectionsRoute
   '/portal/settings/consents': typeof PortalSettingsConsentsRoute
+  '/portal/settings/emergency': typeof PortalSettingsEmergencyRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -687,6 +696,7 @@ export interface FileRouteTypes {
     | '/portal/settings/communications'
     | '/portal/settings/connections'
     | '/portal/settings/consents'
+    | '/portal/settings/emergency'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -754,6 +764,7 @@ export interface FileRouteTypes {
     | '/portal/settings/communications'
     | '/portal/settings/connections'
     | '/portal/settings/consents'
+    | '/portal/settings/emergency'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -823,6 +834,7 @@ export interface FileRouteTypes {
     | '/portal/settings/communications'
     | '/portal/settings/connections'
     | '/portal/settings/consents'
+    | '/portal/settings/emergency'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -1189,6 +1201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsNotificationsRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/settings/emergency': {
+      id: '/portal/settings/emergency'
+      path: '/emergency'
+      fullPath: '/portal/settings/emergency'
+      preLoaderRoute: typeof PortalSettingsEmergencyRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/portal/settings/consents': {
       id: '/portal/settings/consents'
       path: '/consents'
@@ -1387,6 +1406,7 @@ interface PortalSettingsRouteChildren {
   PortalSettingsCommunicationsRoute: typeof PortalSettingsCommunicationsRoute
   PortalSettingsConnectionsRoute: typeof PortalSettingsConnectionsRoute
   PortalSettingsConsentsRoute: typeof PortalSettingsConsentsRoute
+  PortalSettingsEmergencyRoute: typeof PortalSettingsEmergencyRoute
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
   PortalSettingsPaymentMethodsRoute: typeof PortalSettingsPaymentMethodsRoute
   PortalSettingsPreferencesRoute: typeof PortalSettingsPreferencesRoute
@@ -1399,6 +1419,7 @@ const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
   PortalSettingsCommunicationsRoute: PortalSettingsCommunicationsRoute,
   PortalSettingsConnectionsRoute: PortalSettingsConnectionsRoute,
   PortalSettingsConsentsRoute: PortalSettingsConsentsRoute,
+  PortalSettingsEmergencyRoute: PortalSettingsEmergencyRoute,
   PortalSettingsNotificationsRoute: PortalSettingsNotificationsRoute,
   PortalSettingsPaymentMethodsRoute: PortalSettingsPaymentMethodsRoute,
   PortalSettingsPreferencesRoute: PortalSettingsPreferencesRoute,
