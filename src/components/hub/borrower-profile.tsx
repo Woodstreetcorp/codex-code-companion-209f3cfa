@@ -1781,7 +1781,9 @@ function AddIncomeDrawer({
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {category === "self_employed" && (
           <>
             <SubGroup
               icon={Briefcase}
@@ -1961,6 +1963,91 @@ function AddIncomeDrawer({
                   value={accountantContact}
                   onChange={setAccountantContact}
                   placeholder="Optional"
+                />
+              </Field>
+            </SubGroup>
+          </>
+        )}
+
+        {category === "other" && (
+          <>
+            <SubGroup
+              icon={Wallet}
+              title="Other Income Details"
+              subtitle="Government benefits, rental, investment, support, and similar income"
+            >
+              <Field label="Other income type" required full>
+                <Select
+                  value={otherType || OTHER_INCOME_TYPES[0]}
+                  onChange={setOtherType}
+                  options={[...OTHER_INCOME_TYPES]}
+                />
+              </Field>
+              <Field label="Source / payer name" full>
+                <Input
+                  value={otherSource}
+                  onChange={setOtherSource}
+                  placeholder="e.g. Service Canada, Sun Life, Tenant name"
+                />
+              </Field>
+              <Field label="Amount" required>
+                <Input value={otherAmount} onChange={setOtherAmount} placeholder="$0" />
+              </Field>
+              <Field label="Frequency">
+                <Select
+                  value={otherFrequency}
+                  onChange={(v) => setOtherFrequency(v as IncomeSource["frequency"])}
+                  options={["Annual", "Monthly", "Bi-Weekly", "Weekly", "Hourly"]}
+                />
+              </Field>
+              <Field label="Receiving since">
+                <Input type="date" value={otherStart} onChange={setOtherStart} />
+              </Field>
+              <Field label="How long have you received this income?">
+                <Select
+                  value={otherDuration}
+                  onChange={(v) => setOtherDuration(v as typeof otherDuration)}
+                  options={["<1y", "1-2y", "2-3y", "3+y"]}
+                />
+              </Field>
+              <Field label="Will this income continue for 3+ years?" full>
+                <div className="flex flex-wrap items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {(
+                    [
+                      { v: "yes", l: "Yes" },
+                      { v: "no", l: "No" },
+                      { v: "unknown", l: "Unknown" },
+                    ] as const
+                  ).map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        checked={otherContinuance === o.v}
+                        onChange={() => setOtherContinuance(o.v)}
+                      />
+                      {o.l}
+                    </label>
+                  ))}
+                  <span className="ml-auto text-[11px] text-muted-foreground">
+                    Lenders typically require continuance for qualifying income
+                  </span>
+                </div>
+              </Field>
+              <Field label="Verification document" full>
+                <Select
+                  value={otherVerification}
+                  onChange={setOtherVerification}
+                  options={[
+                    "Government Award Letter",
+                    "Pension/Benefit Statement",
+                    "Bank Statement Verified",
+                    "T1 General + NOA",
+                    "Lease Agreement (Rental)",
+                    "T5 / Investment Statement",
+                    "Court Order / Separation Agreement",
+                    "Stated Income",
+                    "Other",
+                  ]}
                 />
               </Field>
             </SubGroup>
