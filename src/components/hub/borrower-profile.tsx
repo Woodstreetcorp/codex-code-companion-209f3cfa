@@ -271,6 +271,7 @@ function stateBadge(state: SectionState) {
 export function BorrowerProfilePage({
   applicant,
   coApplicants,
+  tx,
   liabilities,
   onUpsertLiability,
   onRemoveLiability,
@@ -279,6 +280,7 @@ export function BorrowerProfilePage({
 }: {
   applicant: BorrowerProfileApplicant;
   coApplicants: BorrowerProfileApplicant[];
+  tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
   liabilities: Liability[];
   onUpsertLiability: (l: Liability) => void;
   onRemoveLiability: (id: string) => void;
@@ -672,9 +674,40 @@ export function BorrowerProfilePage({
       )}
       {drawer === "asset" && (
         <AddAssetDrawer
+          tx={tx}
+          applicantId={applicant.id}
+          applicantName={applicant.name}
           onClose={() => setDrawer(null)}
           onSave={(data) => {
-            setAssets((p) => [...p, { ...data, id: `ast-${Date.now()}` }]);
+            const id = `ast-${Date.now()}`;
+            setAssets((p) => [...p, { ...data, id }]);
+            // Sync down-payment contribution to localStorage so the
+            // Down Payment page can auto-populate the source
+            if (typeof window !== "undefined" && data.forDownPayment > 0) {
+              try {
+                const key = "approvu:dp-contributions";
+                const raw = window.localStorage.getItem(key);
+                const list: Array<{
+                  assetId: string;
+                  ownerId: string;
+                  ownerName: string;
+                  type: string;
+                  institution: string;
+                  amount: number;
+                }> = raw ? JSON.parse(raw) : [];
+                list.push({
+                  assetId: id,
+                  ownerId: applicant.id,
+                  ownerName: applicant.name,
+                  type: data.type,
+                  institution: data.institution,
+                  amount: data.forDownPayment,
+                });
+                window.localStorage.setItem(key, JSON.stringify(list));
+              } catch {
+                // ignore storage failures
+              }
+            }
             setNoneAssets(false);
             setDrawer(null);
           }}
