@@ -1536,73 +1536,146 @@ function AssetsSection({
 
 function PropertiesSection({
   properties,
+  applicants,
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
   onMark,
 }: {
   properties: OtherProperty[];
+  applicants: { id: string; name: string }[];
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (p: OtherProperty) => void;
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
+  const sumMortgages = (p: OtherProperty) =>
+    p.mortgageFree ? 0 : p.mortgages.reduce((s, m) => s + (m.balance || 0), 0);
+  const sumPayments = (p: OtherProperty) =>
+    p.mortgageFree ? 0 : p.mortgages.reduce((s, m) => s + (m.payment || 0), 0);
   const totalValue = properties.reduce((s, p) => s + p.value, 0);
-  const totalMort = properties.reduce((s, p) => s + p.mortgageBalance, 0);
+  const totalMort = properties.reduce((s, p) => s + sumMortgages(p), 0);
   const equity = totalValue - totalMort;
   const rental = properties.reduce((s, p) => s + p.monthlyRental, 0);
+  const carrying = properties.reduce(
+    (s, p) => s + (p.monthlyCosts || 0) + (p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0) + sumPayments(p),
+    0,
+  );
+  const includedCount = properties.filter((p) => p.include).length;
+  const ltv = totalValue > 0 ? Math.round((totalMort / totalValue) * 100) : 0;
+  const applicantNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    applicants.forEach((a) => (m[a.id] = a.name));
+    return m;
+  }, [applicants]);
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Properties" value={`${properties.length}`} />
+        <Stat label="Included in qual." value={`${includedCount}`} tone="secondary" />
         <Stat label="Total value" value={fmtMoney(totalValue)} />
-        <Stat label="Mortgage balance" value={fmtMoney(totalMort)} />
+        <Stat label="Total mortgages" value={fmtMoney(totalMort)} />
         <Stat label="Estimated equity" value={fmtMoney(equity)} tone="mint" />
+        <Stat label="Portfolio LTV" value={`${ltv}%`} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label="Monthly rental income" value={`${fmtMoney(rental)}/mo`} tone="mint" />
+        <Stat label="Monthly carrying costs" value={`${fmtMoney(carrying)}/mo`} />
+        <Stat label="Net cash flow" value={`${fmtMoney(rental - carrying)}/mo`} />
       </div>
 
-      {properties.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-border bg-background p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                  {p.usage}
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {p.type}
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {p.ownership}% owned
-                </span>
-                {p.include && (
-                  <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Included
+      {properties.map((p) => {
+        const pMort = sumMortgages(p);
+        const pEquity = p.value - pMort;
+        const pLtv = p.value > 0 ? Math.round((pMort / p.value) * 100) : 0;
+        return (
+          <div key={p.id} className="rounded-2xl border border-border bg-background p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                    {p.usage}
                   </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {p.type}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {p.ownership}% owned
+                  </span>
+                  {p.mortgageFree && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Mortgage free
+                    </span>
+                  )}
+                  {p.plansToSell === "yes" && (
+                    <span className="rounded-full bg-yellow/30 px-2 py-0.5 text-[10px] font-semibold text-yellow-foreground">
+                      Selling soon
+                    </span>
+                  )}
+                  {p.include && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Included
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm font-semibold text-foreground">{p.address}</p>
+                <p className="text-xs text-muted-foreground">
+                  {p.city}, {p.province} {p.postalCode ?? ""}
+                </p>
+                {p.currentOwners.length > 0 && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Owners: {p.currentOwners.map((id) => applicantNameById[id] ?? id).join(", ")}
+                  </p>
                 )}
               </div>
-              <p className="mt-1.5 text-sm font-semibold text-foreground">{p.address}</p>
-              <p className="text-xs text-muted-foreground">
-                {p.city}, {p.province}
-              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onEdit(p)}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onRemove(p.id)}
+                  className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => onRemove(p.id)}
-              className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              <Tiny label="Value" value={fmtMoney(p.value)} />
+              <Tiny label="Mortgages" value={fmtMoney(pMort)} />
+              <Tiny label="Equity" value={fmtMoney(pEquity)} />
+              <Tiny label="LTV" value={`${pLtv}%`} />
+              <Tiny label="Rental" value={`${fmtMoney(p.monthlyRental)}/mo`} />
+              <Tiny label="Tax + condo + heat" value={`${fmtMoney((p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0))}/mo`} />
+            </dl>
+            {!p.mortgageFree && p.mortgages.length > 0 && (
+              <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Mortgages on this property
+                </p>
+                {p.mortgages.map((m, i) => (
+                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="font-medium text-foreground">
+                      #{i + 1} · {m.position || "Mortgage"} · {m.lender || "—"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {fmtMoney(m.balance || 0)} @ {m.rate || 0}% {m.rateType ? `· ${m.rateType}` : ""} · {fmtMoney(m.payment || 0)}/{m.paymentFrequency || "mo"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Tiny label="Value" value={fmtMoney(p.value)} />
-            <Tiny label="Mortgage" value={fmtMoney(p.mortgageBalance)} />
-            <Tiny label="Rental" value={`${fmtMoney(p.monthlyRental)}/mo`} />
-            <Tiny label="Costs" value={`${fmtMoney(p.monthlyCosts)}/mo`} />
-          </dl>
-        </div>
-      ))}
+        );
+      })}
 
       {properties.length === 0 && !none && (
         <EmptyState
