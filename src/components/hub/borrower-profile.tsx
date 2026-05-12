@@ -119,14 +119,40 @@ type OtherProperty = {
   address: string;
   city: string;
   province: string;
+  postalCode?: string;
+  currentOwners: string[]; // applicant ids who co-own this property
+  plansToSell: "yes" | "no" | "";
   usage: string;
   type: string;
   ownership: number;
+  ownershipTimeframe: string; // e.g. "<1 year", "1-3 years"
   value: number;
-  mortgageBalance: number;
   monthlyRental: number;
+  rentalFrequency: string;
+  numberOfUnits: string;
+  heating: number;
+  heatingIncludedInCondo: "yes" | "no" | "";
+  propertyTax: number;
+  propertyTaxFrequency: string;
+  condoFee: number;
+  condoFeeFrequency: string;
   monthlyCosts: number;
+  mortgageFree: boolean;
+  mortgages: PropertyMortgage[];
   include: boolean;
+};
+
+type PropertyMortgage = {
+  id: string;
+  position: string; // First, Second, HELOC, Private
+  lender: string;
+  balance: number;
+  rate: number;
+  rateType: string;
+  termType: string;
+  maturityDate: string;
+  payment: number;
+  paymentFrequency: string;
 };
 
 // ─── Mock seeds ────────────────────────────────────────────────────
@@ -324,6 +350,7 @@ export function BorrowerProfilePage({
   // Drawers
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
   const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
+  const [editingProperty, setEditingProperty] = useState<OtherProperty | null>(null);
 
   // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
   const visibleLiabilities = useMemo(
@@ -583,9 +610,20 @@ export function BorrowerProfilePage({
               {active === "properties" && (
                 <PropertiesSection
                   properties={properties}
+                  applicants={[
+                    { id: applicant.id, name: applicant.name },
+                    ...coApplicants.map((c) => ({ id: c.id, name: c.name })),
+                  ]}
                   none={noneProps}
                   setNone={setNoneProps}
-                  onAdd={() => setDrawer("property")}
+                  onAdd={() => {
+                    setEditingProperty(null);
+                    setDrawer("property");
+                  }}
+                  onEdit={(p) => {
+                    setEditingProperty(p);
+                    setDrawer("property");
+                  }}
                   onRemove={(id) => setProperties((p) => p.filter((x) => x.id !== id))}
                   onMark={markSection}
                 />
@@ -715,11 +753,24 @@ export function BorrowerProfilePage({
       )}
       {drawer === "property" && (
         <AddOtherPropertyDrawer
-          onClose={() => setDrawer(null)}
+          initial={editingProperty}
+          applicants={[
+            { id: applicant.id, name: applicant.name },
+            ...coApplicants.map((c) => ({ id: c.id, name: c.name })),
+          ]}
+          onClose={() => {
+            setDrawer(null);
+            setEditingProperty(null);
+          }}
           onSave={(data) => {
-            setProperties((p) => [...p, { ...data, id: `prop-${Date.now()}` }]);
+            setProperties((prev) =>
+              editingProperty
+                ? prev.map((x) => (x.id === editingProperty.id ? { ...data, id: editingProperty.id } : x))
+                : [...prev, { ...data, id: `prop-${Date.now()}` }],
+            );
             setNoneProps(false);
             setDrawer(null);
+            setEditingProperty(null);
           }}
         />
       )}
@@ -1485,73 +1536,146 @@ function AssetsSection({
 
 function PropertiesSection({
   properties,
+  applicants,
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
   onMark,
 }: {
   properties: OtherProperty[];
+  applicants: { id: string; name: string }[];
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (p: OtherProperty) => void;
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
+  const sumMortgages = (p: OtherProperty) =>
+    p.mortgageFree ? 0 : p.mortgages.reduce((s, m) => s + (m.balance || 0), 0);
+  const sumPayments = (p: OtherProperty) =>
+    p.mortgageFree ? 0 : p.mortgages.reduce((s, m) => s + (m.payment || 0), 0);
   const totalValue = properties.reduce((s, p) => s + p.value, 0);
-  const totalMort = properties.reduce((s, p) => s + p.mortgageBalance, 0);
+  const totalMort = properties.reduce((s, p) => s + sumMortgages(p), 0);
   const equity = totalValue - totalMort;
   const rental = properties.reduce((s, p) => s + p.monthlyRental, 0);
+  const carrying = properties.reduce(
+    (s, p) => s + (p.monthlyCosts || 0) + (p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0) + sumPayments(p),
+    0,
+  );
+  const includedCount = properties.filter((p) => p.include).length;
+  const ltv = totalValue > 0 ? Math.round((totalMort / totalValue) * 100) : 0;
+  const applicantNameById = useMemo(() => {
+    const m: Record<string, string> = {};
+    applicants.forEach((a) => (m[a.id] = a.name));
+    return m;
+  }, [applicants]);
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Properties" value={`${properties.length}`} />
+        <Stat label="Included in qual." value={`${includedCount}`} tone="secondary" />
         <Stat label="Total value" value={fmtMoney(totalValue)} />
-        <Stat label="Mortgage balance" value={fmtMoney(totalMort)} />
+        <Stat label="Total mortgages" value={fmtMoney(totalMort)} />
         <Stat label="Estimated equity" value={fmtMoney(equity)} tone="mint" />
+        <Stat label="Portfolio LTV" value={`${ltv}%`} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label="Monthly rental income" value={`${fmtMoney(rental)}/mo`} tone="mint" />
+        <Stat label="Monthly carrying costs" value={`${fmtMoney(carrying)}/mo`} />
+        <Stat label="Net cash flow" value={`${fmtMoney(rental - carrying)}/mo`} />
       </div>
 
-      {properties.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-border bg-background p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                  {p.usage}
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {p.type}
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {p.ownership}% owned
-                </span>
-                {p.include && (
-                  <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Included
+      {properties.map((p) => {
+        const pMort = sumMortgages(p);
+        const pEquity = p.value - pMort;
+        const pLtv = p.value > 0 ? Math.round((pMort / p.value) * 100) : 0;
+        return (
+          <div key={p.id} className="rounded-2xl border border-border bg-background p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                    {p.usage}
                   </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {p.type}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {p.ownership}% owned
+                  </span>
+                  {p.mortgageFree && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Mortgage free
+                    </span>
+                  )}
+                  {p.plansToSell === "yes" && (
+                    <span className="rounded-full bg-yellow/30 px-2 py-0.5 text-[10px] font-semibold text-yellow-foreground">
+                      Selling soon
+                    </span>
+                  )}
+                  {p.include && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Included
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm font-semibold text-foreground">{p.address}</p>
+                <p className="text-xs text-muted-foreground">
+                  {p.city}, {p.province} {p.postalCode ?? ""}
+                </p>
+                {p.currentOwners.length > 0 && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Owners: {p.currentOwners.map((id) => applicantNameById[id] ?? id).join(", ")}
+                  </p>
                 )}
               </div>
-              <p className="mt-1.5 text-sm font-semibold text-foreground">{p.address}</p>
-              <p className="text-xs text-muted-foreground">
-                {p.city}, {p.province}
-              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onEdit(p)}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => onRemove(p.id)}
+                  className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => onRemove(p.id)}
-              className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
+            <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              <Tiny label="Value" value={fmtMoney(p.value)} />
+              <Tiny label="Mortgages" value={fmtMoney(pMort)} />
+              <Tiny label="Equity" value={fmtMoney(pEquity)} />
+              <Tiny label="LTV" value={`${pLtv}%`} />
+              <Tiny label="Rental" value={`${fmtMoney(p.monthlyRental)}/mo`} />
+              <Tiny label="Tax + condo + heat" value={`${fmtMoney((p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0))}/mo`} />
+            </dl>
+            {!p.mortgageFree && p.mortgages.length > 0 && (
+              <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Mortgages on this property
+                </p>
+                {p.mortgages.map((m, i) => (
+                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="font-medium text-foreground">
+                      #{i + 1} · {m.position || "Mortgage"} · {m.lender || "—"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {fmtMoney(m.balance || 0)} @ {m.rate || 0}% {m.rateType ? `· ${m.rateType}` : ""} · {fmtMoney(m.payment || 0)}/{m.paymentFrequency || "mo"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Tiny label="Value" value={fmtMoney(p.value)} />
-            <Tiny label="Mortgage" value={fmtMoney(p.mortgageBalance)} />
-            <Tiny label="Rental" value={`${fmtMoney(p.monthlyRental)}/mo`} />
-            <Tiny label="Costs" value={`${fmtMoney(p.monthlyCosts)}/mo`} />
-          </dl>
-        </div>
-      ))}
+        );
+      })}
 
       {properties.length === 0 && !none && (
         <EmptyState
@@ -2922,28 +3046,96 @@ function AddAssetDrawer({
 }
 
 function AddOtherPropertyDrawer({
+  initial,
+  applicants,
   onClose,
   onSave,
 }: {
+  initial: OtherProperty | null;
+  applicants: { id: string; name: string }[];
   onClose: () => void;
   onSave: (d: Omit<OtherProperty, "id">) => void;
 }) {
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [province, setProvince] = useState("ON");
-  const [usage, setUsage] = useState("Rental");
-  const [type, setType] = useState("Detached");
-  const [ownership, setOwnership] = useState("100");
-  const [value, setValue] = useState("");
-  const [mortgageBalance, setMortgageBalance] = useState("");
-  const [monthlyRental, setMonthlyRental] = useState("");
-  const [monthlyCosts, setMonthlyCosts] = useState("");
-  const [include, setInclude] = useState(true);
-  const valid = address.trim().length > 0 && city.trim().length > 0 && Number(value) > 0;
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
+  const [province, setProvince] = useState(initial?.province ?? "ON");
+  const [postalCode, setPostalCode] = useState(initial?.postalCode ?? "");
+  const [currentOwners, setCurrentOwners] = useState<string[]>(
+    initial?.currentOwners ?? (applicants[0] ? [applicants[0].id] : []),
+  );
+  const [plansToSell, setPlansToSell] = useState<"yes" | "no" | "">(initial?.plansToSell ?? "");
+  const [usage, setUsage] = useState(initial?.usage ?? "Rental");
+  const [type, setType] = useState(initial?.type ?? "Detached");
+  const [ownership, setOwnership] = useState(String(initial?.ownership ?? "100"));
+  const [ownershipTimeframe, setOwnershipTimeframe] = useState(initial?.ownershipTimeframe ?? "1-3 years");
+  const [value, setValue] = useState(initial ? String(initial.value) : "");
+  const [numberOfUnits, setNumberOfUnits] = useState(initial?.numberOfUnits ?? "1");
+  const [monthlyRental, setMonthlyRental] = useState(initial ? String(initial.monthlyRental) : "");
+  const [rentalFrequency, setRentalFrequency] = useState(initial?.rentalFrequency ?? "Monthly");
+  const [heating, setHeating] = useState(initial ? String(initial.heating) : "");
+  const [heatingIncludedInCondo, setHeatingIncludedInCondo] = useState<"yes" | "no" | "">(
+    initial?.heatingIncludedInCondo ?? "",
+  );
+  const [propertyTax, setPropertyTax] = useState(initial ? String(initial.propertyTax) : "");
+  const [propertyTaxFrequency, setPropertyTaxFrequency] = useState(initial?.propertyTaxFrequency ?? "Annual");
+  const [condoFee, setCondoFee] = useState(initial ? String(initial.condoFee) : "");
+  const [condoFeeFrequency, setCondoFeeFrequency] = useState(initial?.condoFeeFrequency ?? "Monthly");
+  const [monthlyCosts, setMonthlyCosts] = useState(initial ? String(initial.monthlyCosts) : "");
+  const [mortgageFree, setMortgageFree] = useState(initial?.mortgageFree ?? false);
+  const [mortgages, setMortgages] = useState<PropertyMortgage[]>(
+    initial?.mortgages && initial.mortgages.length > 0
+      ? initial.mortgages
+      : [
+          {
+            id: `pm-${Date.now()}`,
+            position: "First mortgage",
+            lender: "",
+            balance: 0,
+            rate: 0,
+            rateType: "Fixed",
+            termType: "Closed",
+            maturityDate: "",
+            payment: 0,
+            paymentFrequency: "Monthly",
+          },
+        ],
+  );
+  const [include, setInclude] = useState(initial?.include ?? true);
+
+  const valid =
+    address.trim().length > 0 &&
+    city.trim().length > 0 &&
+    Number(value) > 0 &&
+    currentOwners.length > 0 &&
+    (mortgageFree ||
+      mortgages.every((m) => m.lender.trim().length > 0 && (m.balance || 0) >= 0));
+
+  const updateMortgage = (id: string, p: Partial<PropertyMortgage>) =>
+    setMortgages((prev) => prev.map((m) => (m.id === id ? { ...m, ...p } : m)));
+  const removeMortgage = (id: string) =>
+    setMortgages((prev) => prev.filter((m) => m.id !== id));
+  const addMortgage = () =>
+    setMortgages((prev) => [
+      ...prev,
+      {
+        id: `pm-${Date.now()}-${Math.random()}`,
+        position: prev.length === 0 ? "First mortgage" : "Second mortgage",
+        lender: "",
+        balance: 0,
+        rate: 0,
+        rateType: "Fixed",
+        termType: "Closed",
+        maturityDate: "",
+        payment: 0,
+        paymentFrequency: "Monthly",
+      },
+    ]);
+  const toggleOwner = (id: string) =>
+    setCurrentOwners((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
     <DrawerShell
-      title="Add Other Property"
+      title={initial ? "Edit Other Property" : "Add Other Property"}
       subtitle="Add a property this borrower owns or co-owns outside the subject property."
       onClose={onClose}
       footer={
@@ -2961,13 +3153,26 @@ function AddOtherPropertyDrawer({
                 address,
                 city,
                 province,
+                postalCode,
+                currentOwners,
+                plansToSell,
                 usage,
                 type,
                 ownership: Number(ownership) || 100,
+                ownershipTimeframe,
                 value: Number(value),
-                mortgageBalance: Number(mortgageBalance) || 0,
                 monthlyRental: Number(monthlyRental) || 0,
+                rentalFrequency,
+                numberOfUnits,
+                heating: Number(heating) || 0,
+                heatingIncludedInCondo,
+                propertyTax: Number(propertyTax) || 0,
+                propertyTaxFrequency,
+                condoFee: Number(condoFee) || 0,
+                condoFeeFrequency,
                 monthlyCosts: Number(monthlyCosts) || 0,
+                mortgageFree,
+                mortgages: mortgageFree ? [] : mortgages,
                 include,
               })
             }
@@ -2977,71 +3182,273 @@ function AddOtherPropertyDrawer({
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
           >
-            Save Property
+            {initial ? "Save Changes" : "Save Property"}
           </button>
         </div>
       }
     >
-      <div className="space-y-4">
-        <Field label="Street address" full required>
-          <Input value={address} onChange={setAddress} />
-        </Field>
-        <Field label="City" required>
-          <Input value={city} onChange={setCity} />
-        </Field>
-        <Field label="Province">
-          <Select
-            value={province}
-            onChange={setProvince}
-            options={["AB", "BC", "MB", "NB", "NL", "NS", "ON", "PE", "QC", "SK", "NT", "NU", "YT"]}
-          />
-        </Field>
-        <Field label="Property usage">
-          <Select
-            value={usage}
-            onChange={setUsage}
-            options={[
-              "Rental",
-              "Owner-Occupied Family",
-              "Vacation / Second Home",
-              "Commercial",
-              "Mixed Use",
-              "Other",
-            ]}
-          />
-        </Field>
-        <Field label="Property type">
-          <Select
-            value={type}
-            onChange={setType}
-            options={[
-              "Detached",
-              "Semi-Detached",
-              "Townhouse",
-              "Condo",
-              "Duplex",
-              "Triplex",
-              "Fourplex",
-              "Multi-unit",
-              "Other",
-            ]}
-          />
-        </Field>
-        <Field label="Ownership %">
-          <Input value={ownership} onChange={setOwnership} />
-        </Field>
-        <Field label="Property value" required>
-          <Input value={value} onChange={setValue} placeholder="0" />
-        </Field>
-        <Field label="Mortgage balance">
-          <Input value={mortgageBalance} onChange={setMortgageBalance} placeholder="0" />
-        </Field>
-        <Field label="Monthly rental income">
-          <Input value={monthlyRental} onChange={setMonthlyRental} placeholder="0" />
-        </Field>
-        <Field label="Monthly carrying costs">
-          <Input value={monthlyCosts} onChange={setMonthlyCosts} placeholder="0" />
-        </Field>
+      <div className="space-y-6">
+        <Group title="Property Address">
+          <Field label="Street address" full required>
+            <Input value={address} onChange={setAddress} />
+          </Field>
+          <Field label="City" required>
+            <Input value={city} onChange={setCity} />
+          </Field>
+          <Field label="Province">
+            <Select
+              value={province}
+              onChange={setProvince}
+              options={["AB", "BC", "MB", "NB", "NL", "NS", "ON", "PE", "QC", "SK", "NT", "NU", "YT"]}
+            />
+          </Field>
+          <Field label="Postal code">
+            <Input value={postalCode} onChange={setPostalCode} placeholder="A1A 1A1" />
+          </Field>
+        </Group>
+
+        <Group title="Ownership Details">
+          <div className="sm:col-span-2">
+            <p className="mb-1 text-xs font-medium text-foreground">
+              Who are the current owners of this property?<span className="ml-0.5 text-coral">*</span>
+            </p>
+            <p className="mb-2 text-[11px] text-muted-foreground">
+              Select all owners who are also on this application.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {applicants.map((a) => {
+                const on = currentOwners.includes(a.id);
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => toggleOwner(a.id)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      on
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-input bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <Field label="Plans to sell within next 4 months?">
+            <Select
+              value={plansToSell || ""}
+              onChange={(v) => setPlansToSell(v as "yes" | "no" | "")}
+              options={["", "no", "yes"]}
+            />
+          </Field>
+          <Field label="Ownership timeframe">
+            <Select
+              value={ownershipTimeframe}
+              onChange={setOwnershipTimeframe}
+              options={["<1 year", "1-3 years", "3-5 years", "5-10 years", "10+ years"]}
+            />
+          </Field>
+          <Field label="Property usage">
+            <Select
+              value={usage}
+              onChange={setUsage}
+              options={[
+                "Rental",
+                "Owner-Occupied Family",
+                "Vacation / Second Home",
+                "Commercial",
+                "Mixed Use",
+                "Other",
+              ]}
+            />
+          </Field>
+          <Field label="Property type">
+            <Select
+              value={type}
+              onChange={setType}
+              options={[
+                "Detached",
+                "Semi-Detached",
+                "Townhouse",
+                "Condo",
+                "Duplex",
+                "Triplex",
+                "Fourplex",
+                "Multi-unit",
+                "Other",
+              ]}
+            />
+          </Field>
+          <Field label="Ownership %">
+            <Input value={ownership} onChange={setOwnership} />
+          </Field>
+          <Field label="Number of units">
+            <Select
+              value={numberOfUnits}
+              onChange={setNumberOfUnits}
+              options={["1", "2", "3", "4", "5+"]}
+            />
+          </Field>
+          <Field label="Property value" required>
+            <Input value={value} onChange={setValue} placeholder="0" />
+          </Field>
+        </Group>
+
+        <Group title="Income & Carrying Costs">
+          <Field label="Rental income">
+            <Input value={monthlyRental} onChange={setMonthlyRental} placeholder="0" />
+          </Field>
+          <Field label="Rental frequency">
+            <Select
+              value={rentalFrequency}
+              onChange={setRentalFrequency}
+              options={["Monthly", "Annual"]}
+            />
+          </Field>
+          <Field label="Heating">
+            <Input value={heating} onChange={setHeating} placeholder="0" />
+          </Field>
+          <Field label="Heating included in condo fee?">
+            <Select
+              value={heatingIncludedInCondo || ""}
+              onChange={(v) => setHeatingIncludedInCondo(v as "yes" | "no" | "")}
+              options={["", "no", "yes"]}
+            />
+          </Field>
+          <Field label="Property tax">
+            <Input value={propertyTax} onChange={setPropertyTax} placeholder="0" />
+          </Field>
+          <Field label="Property tax frequency">
+            <Select
+              value={propertyTaxFrequency}
+              onChange={setPropertyTaxFrequency}
+              options={["Annual", "Monthly"]}
+            />
+          </Field>
+          <Field label="Condo fee (if applicable)">
+            <Input value={condoFee} onChange={setCondoFee} placeholder="0" />
+          </Field>
+          <Field label="Condo fee frequency">
+            <Select
+              value={condoFeeFrequency}
+              onChange={setCondoFeeFrequency}
+              options={["Monthly", "Annual"]}
+            />
+          </Field>
+          <Field label="Other monthly carrying costs">
+            <Input value={monthlyCosts} onChange={setMonthlyCosts} placeholder="0" />
+          </Field>
+        </Group>
+
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Mortgage Details
+            </h3>
+            <label className="flex items-center gap-2 text-xs text-foreground">
+              <input
+                type="checkbox"
+                checked={mortgageFree}
+                onChange={(e) => setMortgageFree(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              This property has no mortgage
+            </label>
+          </div>
+
+          {!mortgageFree && (
+            <div className="space-y-3">
+              {mortgages.map((m, i) => (
+                <div key={m.id} className="rounded-xl border border-border bg-muted/20 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">Mortgage #{i + 1}</p>
+                    {mortgages.length > 1 && (
+                      <button
+                        onClick={() => removeMortgage(m.id)}
+                        className="inline-flex items-center gap-1 text-[11px] text-coral hover:underline"
+                      >
+                        <Trash2 className="h-3 w-3" /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Mortgage position">
+                      <Select
+                        value={m.position}
+                        onChange={(v) => updateMortgage(m.id, { position: v })}
+                        options={["First mortgage", "Second mortgage", "HELOC", "Private mortgage", "Other"]}
+                      />
+                    </Field>
+                    <Field label="Lender">
+                      <Input
+                        value={m.lender}
+                        onChange={(v) => updateMortgage(m.id, { lender: v })}
+                        placeholder="Enter lender name"
+                      />
+                    </Field>
+                    <Field label="Outstanding balance">
+                      <Input
+                        value={m.balance ? String(m.balance) : ""}
+                        onChange={(v) => updateMortgage(m.id, { balance: Number(v) || 0 })}
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field label="Interest rate (%)">
+                      <Input
+                        value={m.rate ? String(m.rate) : ""}
+                        onChange={(v) => updateMortgage(m.id, { rate: Number(v) || 0 })}
+                        placeholder="0.00"
+                      />
+                    </Field>
+                    <Field label="Rate type">
+                      <Select
+                        value={m.rateType}
+                        onChange={(v) => updateMortgage(m.id, { rateType: v })}
+                        options={["Fixed", "Variable", "Adjustable"]}
+                      />
+                    </Field>
+                    <Field label="Term type">
+                      <Select
+                        value={m.termType}
+                        onChange={(v) => updateMortgage(m.id, { termType: v })}
+                        options={["Closed", "Open"]}
+                      />
+                    </Field>
+                    <Field label="Maturity date">
+                      <Input
+                        type="date"
+                        value={m.maturityDate}
+                        onChange={(v) => updateMortgage(m.id, { maturityDate: v })}
+                      />
+                    </Field>
+                    <Field label="P&I payment">
+                      <Input
+                        value={m.payment ? String(m.payment) : ""}
+                        onChange={(v) => updateMortgage(m.id, { payment: Number(v) || 0 })}
+                        placeholder="0"
+                      />
+                    </Field>
+                    <Field label="Payment frequency">
+                      <Select
+                        value={m.paymentFrequency}
+                        onChange={(v) => updateMortgage(m.id, { paymentFrequency: v })}
+                        options={["Monthly", "Semi-monthly", "Bi-weekly", "Accelerated bi-weekly", "Weekly"]}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={addMortgage}
+                className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Mortgage
+              </button>
+            </div>
+          )}
+        </div>
+
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
