@@ -541,11 +541,6 @@ function SummaryStat({
   );
 }
 
-function BenefitCard({ benefit, onView }: { benefit: Benefit; onView: () => void }) {
-
-  return _BenefitCardImpl({ benefit, onView });
-}
-
 function UnlockCta({ fundingStage }: { fundingStage: ApplicationFundingStage }) {
   if (fundingStage === "submitted") {
     return (
@@ -576,7 +571,7 @@ function UnlockCta({ fundingStage }: { fundingStage: ApplicationFundingStage }) 
   );
 }
 
-function _BenefitCardImpl({ benefit, onView }: { benefit: Benefit; onView: () => void }) {
+function BenefitCard({ benefit, onView }: { benefit: Benefit; onView: () => void }) {
   const Icon = benefit.icon;
   const isLocked = benefit.status === "Locked";
   return (
