@@ -31,6 +31,7 @@ import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/portal.applications.$applicationId.property-financing'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.target-property'
+import { Route as PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRouteImport } from './routes/portal.applications.$applicationId.property-financing.renewal-preferences'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRouteImport } from './routes/portal.applications.$applicationId.property-financing.refinance-request'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRouteImport } from './routes/portal.applications.$applicationId.property-financing.purchase-plan'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.property'
@@ -157,6 +158,15 @@ const PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute =
         PortalApplicationsApplicationIdPropertyFinancingRoute,
     } as any,
   )
+const PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute =
+  PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRouteImport.update(
+    {
+      id: '/renewal-preferences',
+      path: '/renewal-preferences',
+      getParentRoute: () =>
+        PortalApplicationsApplicationIdPropertyFinancingRoute,
+    } as any,
+  )
 const PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute =
   PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRouteImport.update(
     {
@@ -227,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
   '/portal/applications/$applicationId/property-financing/refinance-request': typeof PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
+  '/portal/applications/$applicationId/property-financing/renewal-preferences': typeof PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRoutesByTo {
@@ -255,6 +266,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
   '/portal/applications/$applicationId/property-financing/refinance-request': typeof PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
+  '/portal/applications/$applicationId/property-financing/renewal-preferences': typeof PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRoutesById {
@@ -285,6 +297,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
   '/portal/applications/$applicationId/property-financing/refinance-request': typeof PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
+  '/portal/applications/$applicationId/property-financing/renewal-preferences': typeof PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRouteTypes {
@@ -316,6 +329,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
     | '/portal/applications/$applicationId/property-financing/refinance-request'
+    | '/portal/applications/$applicationId/property-financing/renewal-preferences'
     | '/portal/applications/$applicationId/property-financing/target-property'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -344,6 +358,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
     | '/portal/applications/$applicationId/property-financing/refinance-request'
+    | '/portal/applications/$applicationId/property-financing/renewal-preferences'
     | '/portal/applications/$applicationId/property-financing/target-property'
   id:
     | '__root__'
@@ -373,6 +388,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
     | '/portal/applications/$applicationId/property-financing/refinance-request'
+    | '/portal/applications/$applicationId/property-financing/renewal-preferences'
     | '/portal/applications/$applicationId/property-financing/target-property'
   fileRoutesById: FileRoutesById
 }
@@ -544,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport
       parentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
     }
+    '/portal/applications/$applicationId/property-financing/renewal-preferences': {
+      id: '/portal/applications/$applicationId/property-financing/renewal-preferences'
+      path: '/renewal-preferences'
+      fullPath: '/portal/applications/$applicationId/property-financing/renewal-preferences'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRouteImport
+      parentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
+    }
     '/portal/applications/$applicationId/property-financing/refinance-request': {
       id: '/portal/applications/$applicationId/property-financing/refinance-request'
       path: '/refinance-request'
@@ -610,6 +633,7 @@ interface PortalApplicationsApplicationIdPropertyFinancingRouteChildren {
   PortalApplicationsApplicationIdPropertyFinancingPropertyRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
   PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
+  PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute: typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 
@@ -625,6 +649,8 @@ const PortalApplicationsApplicationIdPropertyFinancingRouteChildren: PortalAppli
       PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute,
     PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute:
       PortalApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute,
+    PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute:
+      PortalApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute,
     PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute:
       PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute,
   }
