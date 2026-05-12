@@ -76,7 +76,7 @@ type Applicant = {
   invitedAgo?: string;
 };
 
-type WidgetStatus =
+export type WidgetStatus =
   | "Complete"
   | "In Progress"
   | "Not Started"
@@ -84,7 +84,7 @@ type WidgetStatus =
   | "Locked"
   | "Needs Review";
 
-type Widget = {
+export type Widget = {
   id: string;
   group: "Property & Financing" | "Mortgage & Submission";
   icon: ComponentType<{ className?: string }>;
