@@ -1211,56 +1211,101 @@ function CreditSection({
           <Stat label="Pay off before closing" value={fmtMoney(payoff)} tone="mint" />
         </div>
 
-        {liabilities.map((l, i) => (
-          <div
-            key={l.id}
-            className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                  Debt #{i + 1}
-                </span>
-                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                  {l.type}
-                </span>
-                {l.shared && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                    Shared
+        {liabilities.map((l, i) => {
+          const isOwn = l.ownerId === currentApplicantId;
+          const ownerName = applicantNameById[l.ownerId] ?? "another applicant";
+          const sharedNames = l.sharedWith
+            .map((id) => applicantNameById[id])
+            .filter(Boolean);
+          return (
+            <div
+              key={l.id}
+              className={`mt-2 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+                isOwn ? "border-border bg-background" : "border-secondary/30 bg-secondary/5"
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    Debt #{i + 1}
                   </span>
-                )}
-                {l.paymentHistory && (
-                  <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
-                    {l.paymentHistory}
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                    {l.type}
                   </span>
-                )}
-                {l.payoffPlan === "payoff_before_closing" && (
-                  <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Pay off before closing
-                  </span>
-                )}
-                {l.payoffPlan === "include_in_loan" && (
-                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
-                    Include in loan
-                  </span>
+                  {!isOwn && (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                      Auto-filled · Shared from {ownerName}
+                    </span>
+                  )}
+                  {isOwn && l.shared && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                      Shared
+                    </span>
+                  )}
+                  {l.paymentHistory && (
+                    <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                      {l.paymentHistory}
+                    </span>
+                  )}
+                  {l.payoffPlan === "payoff_before_closing" && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Pay off before closing
+                    </span>
+                  )}
+                  {l.payoffPlan === "include_in_loan" && (
+                    <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                      Include in loan
+                    </span>
+                  )}
+                  {!isOwn && (
+                    <span className="rounded-full bg-mint/20 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Counted on {ownerName}'s profile
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
+                <p className="text-xs text-muted-foreground">
+                  Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
+                  {isOwn && l.shared && sharedNames.length > 0 && (
+                    <> · Shared with {sharedNames.join(", ")}</>
+                  )}
+                </p>
+                {!isOwn && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Edits are made on {ownerName}'s profile to keep both records in sync. This debt
+                    is only counted once in the qualification ratios.
+                  </p>
                 )}
               </div>
-              <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
-              <p className="text-xs text-muted-foreground">
-                Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
-                {l.shared && l.sharedWith.length > 0 && (
-                  <> · Shared with {l.sharedWith.join(", ")}</>
+              <div className="flex items-center gap-2 self-start sm:self-center">
+                {isOwn ? (
+                  <>
+                    <button
+                      onClick={() => onEdit(l)}
+                      className="rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onRemove(l.id)}
+                      className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+                      aria-label="Remove debt"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => onLeaveShared(l.id)}
+                    className="rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                  >
+                    Not mine
+                  </button>
                 )}
-              </p>
+              </div>
             </div>
-            <button
-              onClick={() => onRemove(l.id)}
-              className="self-start rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10 sm:self-center"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
+          );
+        })}
 
         {liabilities.length === 0 && !none && (
           <EmptyState
