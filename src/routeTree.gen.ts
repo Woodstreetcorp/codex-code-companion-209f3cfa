@@ -14,6 +14,7 @@ import { Route as PurchaseRouteImport } from './routes/purchase'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PortalIndexRoute = PortalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortalRoute,
 } as any)
 const PortalWalletRoute = PortalWalletRouteImport.update({
   id: '/wallet',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
+  '/portal/': typeof PortalIndexRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -153,7 +160,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
@@ -163,6 +169,7 @@ export interface FileRoutesByTo {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
+  '/portal': typeof PortalIndexRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -185,6 +192,7 @@ export interface FileRoutesById {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
+  '/portal/': typeof PortalIndexRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
@@ -208,6 +216,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/wallet'
+    | '/portal/'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -219,7 +228,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/portal'
     | '/pre-purchase'
     | '/purchase'
     | '/refinance'
@@ -229,6 +237,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/wallet'
+    | '/portal'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/settings'
     | '/portal/wallet'
+    | '/portal/'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -308,6 +318,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/portal/': {
+      id: '/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof PortalIndexRouteImport
+      parentRoute: typeof PortalRoute
     }
     '/portal/wallet': {
       id: '/portal/wallet'
@@ -435,6 +452,7 @@ const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
 interface PortalRouteChildren {
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
   PortalWalletRoute: typeof PortalWalletRoute
+  PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
@@ -442,6 +460,7 @@ interface PortalRouteChildren {
 const PortalRouteChildren: PortalRouteChildren = {
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
   PortalWalletRoute: PortalWalletRoute,
+  PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
     PortalApplicationsApplicationIdQualificationSummaryRoute,
