@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   CheckCircle2,
@@ -11,8 +11,10 @@ import {
   Settings2,
   Sparkles,
   Wallet,
+  ShieldCheck,
 } from "lucide-react";
 import { PageHeader } from "@/components/portal/ui";
+import { getActivity, markActivityRead, subscribeActivity, type ActivityEntry } from "@/components/portal/activity";
 
 export const Route = createFileRoute("/portal/notifications")({
   head: () => ({
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/portal/notifications")({
   component: NotificationsPage,
 });
 
-type Category = "Application" | "Document" | "Offer" | "Condition" | "Message" | "Wallet" | "System";
+type Category = "Application" | "Document" | "Offer" | "Condition" | "Message" | "Wallet" | "System" | "Security";
 type Notif = {
   id: string;
   category: Category;
@@ -48,7 +50,7 @@ const SEED: Notif[] = [
 
 const ICONS: Record<Category, typeof Bell> = {
   Application: Sparkles, Document: FileText, Offer: HandCoins,
-  Condition: ListChecks, Message: MessageSquare, Wallet: Wallet, System: Bell,
+  Condition: ListChecks, Message: MessageSquare, Wallet: Wallet, System: Bell, Security: ShieldCheck,
 };
 const TONES: Record<Category, string> = {
   Application: "bg-primary/10 text-primary",
@@ -58,10 +60,27 @@ const TONES: Record<Category, string> = {
   Message: "bg-muted text-foreground",
   Wallet: "bg-coral/15 text-coral",
   System: "bg-muted text-muted-foreground",
+  Security: "bg-secondary/15 text-secondary",
 };
 
 function NotificationsPage() {
-  const [items, setItems] = useState(SEED);
+  const [seed, setSeed] = useState(SEED);
+  const [feed, setFeed] = useState<ActivityEntry[]>(() => getActivity());
+  useEffect(() => subscribeActivity(() => setFeed(getActivity())), []);
+
+  const items: Notif[] = useMemo(() => {
+    const live: Notif[] = feed.map((e) => ({
+      id: e.id,
+      category: (e.category as Category),
+      title: e.title,
+      body: e.body ?? "",
+      at: relativeTime(e.at),
+      read: e.read,
+      href: e.href,
+    }));
+    return [...live, ...seed];
+  }, [feed, seed]);
+
   const [filter, setFilter] = useState<"all" | "unread" | Category>("all");
 
   const filtered = useMemo(() => {
@@ -81,7 +100,10 @@ function NotificationsPage() {
         right={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setItems((prev) => prev.map((n) => ({ ...n, read: true })))}
+              onClick={() => {
+                markActivityRead();
+                setSeed((prev) => prev.map((n) => ({ ...n, read: true })));
+              }}
               className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               <CheckCircle2 className="h-4 w-4" /> Mark all read
@@ -97,7 +119,7 @@ function NotificationsPage() {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        {(["all", "unread", "Application", "Document", "Offer", "Condition", "Message", "Wallet", "System"] as const).map((f) => (
+        {(["all", "unread", "Application", "Document", "Offer", "Condition", "Message", "Wallet", "Security", "System"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -144,7 +166,10 @@ function NotificationsPage() {
           return (
             <li key={n.id}>
               <button
-                onClick={() => setItems((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)))}
+                onClick={() => {
+                  markActivityRead(n.id);
+                  setSeed((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+                }}
                 className="block w-full text-left hover:bg-muted/30"
               >
                 {n.applicationId && !n.href ? (
@@ -167,4 +192,12 @@ function NotificationsPage() {
       </ul>
     </>
   );
+}
+
+function relativeTime(iso: string) {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  return new Date(iso).toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 }
