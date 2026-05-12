@@ -1350,21 +1350,89 @@ function AddIncomeDrawer({
   onClose: () => void;
   onSave: (d: Omit<IncomeSource, "id">) => void;
 }) {
-  const [type, setType] = useState("Salaried Employee");
-  const [source, setSource] = useState("");
+  // Top-level employment category
+  const [category, setCategory] = useState<"employed" | "self_employed">("employed");
+
+  // Shared
+  const [employerName, setEmployerName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
+  const [industry, setIndustry] = useState("Select your industry");
   const [startDate, setStartDate] = useState("");
-  const [grossIncome, setGrossIncome] = useState("");
-  const [frequency, setFrequency] = useState<IncomeSource["frequency"]>("Annual");
-  const [verification, setVerification] = useState("Fully Verifiable");
   const [include, setInclude] = useState(true);
 
-  const valid = source.trim().length > 0 && Number(grossIncome) > 0;
+  // Employed specifics
+  const [employmentType, setEmploymentType] = useState<
+    "Full-Time Employee" | "Part-Time Employee" | "Contract Employee" | "Seasonal Employee"
+  >("Full-Time Employee");
+  const [employmentStatus, setEmploymentStatus] = useState<"Current" | "Previous">("Current");
+  const [onLeave, setOnLeave] = useState<"yes" | "no">("no");
+
+  const [components, setComponents] = useState<{
+    base: boolean;
+    overtime: boolean;
+    bonus: boolean;
+    commission: boolean;
+  }>({ base: true, overtime: false, bonus: false, commission: false });
+
+  const [baseSalary, setBaseSalary] = useState("");
+  const [overtimeIncluded, setOvertimeIncluded] = useState<"yes" | "no">("no");
+  const [overtimeAmount, setOvertimeAmount] = useState("");
+  const [bonusIncluded, setBonusIncluded] = useState<"yes" | "no">("no");
+  const [bonusAmount, setBonusAmount] = useState("");
+  const [commissionIncluded, setCommissionIncluded] = useState<"yes" | "no">("no");
+  const [commissionAmount, setCommissionAmount] = useState("");
+  const [commissionTenure, setCommissionTenure] = useState<"<1y" | "1-2y" | "2+y">("2+y");
+
+  // Self-employed specifics
+  const [seType, setSeType] = useState<
+    "Sole Proprietor" | "Incorporated Business Owner" | "Partnership" | "Freelancer / Contractor"
+  >("Sole Proprietor");
+  const [ownershipPct, setOwnershipPct] = useState("100");
+  const [grossBusiness, setGrossBusiness] = useState("");
+  const [netIncome, setNetIncome] = useState("");
+  const [seVerification, setSeVerification] = useState("T1 General + NOA (2 years)");
+  const [gstRegistered, setGstRegistered] = useState<"yes" | "no">("no");
+
+  const computedEmployedTotal =
+    Number(baseSalary || 0) +
+    (overtimeIncluded === "no" ? Number(overtimeAmount || 0) : 0) +
+    (bonusIncluded === "no" ? Number(bonusAmount || 0) : 0) +
+    (commissionIncluded === "no" ? Number(commissionAmount || 0) : 0);
+
+  const valid =
+    employerName.trim().length > 0 &&
+    (category === "employed" ? computedEmployedTotal > 0 : Number(netIncome) > 0);
+
+  const handleSave = () => {
+    if (category === "employed") {
+      onSave({
+        type: employmentType,
+        source: employerName,
+        jobTitle,
+        startDate,
+        grossIncome: computedEmployedTotal,
+        frequency: "Annual",
+        verification: employmentStatus === "Previous" ? "Previous Employment" : "Fully Verifiable",
+        include,
+      });
+    } else {
+      onSave({
+        type: seType,
+        source: employerName,
+        jobTitle,
+        startDate,
+        grossIncome: Number(netIncome),
+        frequency: "Annual",
+        verification: seVerification,
+        include,
+      });
+    }
+  };
 
   return (
     <DrawerShell
       title="Add Income Source"
-      subtitle="Add an employment, business, or other income source for this borrower."
+      subtitle="Tell us about this borrower's employment or self-employment income."
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -1376,18 +1444,7 @@ function AddIncomeDrawer({
           </button>
           <button
             disabled={!valid}
-            onClick={() =>
-              onSave({
-                type,
-                source,
-                jobTitle,
-                startDate,
-                grossIncome: Number(grossIncome),
-                frequency,
-                verification,
-                include,
-              })
-            }
+            onClick={handleSave}
             className={`rounded-md px-3.5 py-2 text-xs font-semibold ${
               valid
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -1399,62 +1456,382 @@ function AddIncomeDrawer({
         </div>
       }
     >
-      <div className="space-y-4">
-        <Field label="Income type" full>
-          <Select
-            value={type}
-            onChange={setType}
-            options={[
-              "Salaried Employee",
-              "Hourly Employee",
-              "Part-Time Employee",
-              "Contract Employee",
-              "Self-Employed",
-              "Incorporated Business Owner",
-              "Pension",
-              "CPP/OAS",
-              "Canada Child Benefit",
-              "Rental Income",
-              "Investment Income",
-              "Support Income",
-              "Other",
-            ]}
-          />
-        </Field>
-        <Field label="Employer / business / source name" full required>
-          <Input value={source} onChange={setSource} />
-        </Field>
-        <Field label="Role / title" full>
-          <Input value={jobTitle} onChange={setJobTitle} placeholder="Optional" />
-        </Field>
-        <Field label="Start date">
-          <Input type="date" value={startDate} onChange={setStartDate} />
-        </Field>
-        <Field label="Gross income" required>
-          <Input value={grossIncome} onChange={setGrossIncome} placeholder="0" />
-        </Field>
-        <Field label="Frequency">
-          <Select
-            value={frequency}
-            onChange={(v) => setFrequency(v as IncomeSource["frequency"])}
-            options={["Annual", "Monthly", "Bi-Weekly", "Weekly", "Hourly"]}
-          />
-        </Field>
-        <Field label="Verification">
-          <Select
-            value={verification}
-            onChange={setVerification}
-            options={[
-              "Fully Verifiable",
-              "Non-Verifiable",
-              "Bank Statement Verified",
-              "Stated Income",
-              "Pension/Benefit Verified",
-              "Rental Offset",
-              "Other",
-            ]}
-          />
-        </Field>
+      <div className="space-y-5">
+        {/* Category toggle */}
+        <div>
+          <p className="mb-2 text-xs font-semibold text-foreground">How is this borrower paid?</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(
+              [
+                { key: "employed", label: "Employed", hint: "T4 employee paid by an employer" },
+                {
+                  key: "self_employed",
+                  label: "Self-Employed",
+                  hint: "Owns a business or works as a contractor",
+                },
+              ] as const
+            ).map((opt) => {
+              const active = category === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setCategory(opt.key)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    active
+                      ? "border-secondary bg-secondary/10"
+                      : "border-border bg-background hover:bg-muted"
+                  }`}
+                >
+                  <p
+                    className={`text-sm font-semibold ${
+                      active ? "text-secondary" : "text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{opt.hint}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {category === "employed" ? (
+          <>
+            {/* Employment overview */}
+            <SubGroup
+              icon={Briefcase}
+              title="Employment Overview"
+              subtitle="Basic details about this position"
+            >
+              <Field label="How are you employed?" full>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      "Full-Time Employee",
+                      "Part-Time Employee",
+                      "Contract Employee",
+                      "Seasonal Employee",
+                    ] as const
+                  ).map((t) => {
+                    const a = employmentType === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setEmploymentType(t)}
+                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                          a
+                            ? "border-secondary bg-secondary/10 text-secondary"
+                            : "border-border bg-background text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {t.replace(" Employee", "")}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field label="Employer name" required full>
+                <Input value={employerName} onChange={setEmployerName} placeholder="Enter employer name" />
+              </Field>
+              <Field label="Job title">
+                <Input value={jobTitle} onChange={setJobTitle} placeholder="Enter your job title" />
+              </Field>
+              <Field label="Industry">
+                <Select
+                  value={industry}
+                  onChange={setIndustry}
+                  options={[
+                    "Select your industry",
+                    "Technology",
+                    "Healthcare",
+                    "Finance & Insurance",
+                    "Education",
+                    "Construction & Trades",
+                    "Retail & Hospitality",
+                    "Manufacturing",
+                    "Government / Public Sector",
+                    "Transportation",
+                    "Professional Services",
+                    "Other",
+                  ]}
+                />
+              </Field>
+              <Field label="Employment status">
+                <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2">
+                  {(["Current", "Previous"] as const).map((s) => (
+                    <label key={s} className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="radio"
+                        checked={employmentStatus === s}
+                        onChange={() => setEmploymentStatus(s)}
+                      />
+                      {s}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Start date with this employer">
+                <Input type="date" value={startDate} onChange={setStartDate} />
+              </Field>
+              <Field label="Currently on short-term leave?" full>
+                <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2">
+                  {(["yes", "no"] as const).map((v) => (
+                    <label key={v} className="flex items-center gap-1.5 text-sm">
+                      <input
+                        type="radio"
+                        checked={onLeave === v}
+                        onChange={() => setOnLeave(v)}
+                      />
+                      {v === "yes" ? "Yes" : "No"}
+                    </label>
+                  ))}
+                  <span className="ml-auto text-[11px] text-muted-foreground">
+                    Parental, medical, or disability leave
+                  </span>
+                </div>
+              </Field>
+            </SubGroup>
+
+            {/* Income type chips */}
+            <SubGroup
+              icon={Wallet}
+              title="How is this employment income paid?"
+              subtitle="Select all income types received from this employer"
+            >
+              <div className="grid grid-cols-2 gap-2 sm:col-span-2 sm:grid-cols-4">
+                {(
+                  [
+                    { key: "base", label: "Base Salary" },
+                    { key: "overtime", label: "Overtime" },
+                    { key: "bonus", label: "Bonus" },
+                    { key: "commission", label: "Commission" },
+                  ] as const
+                ).map((c) => {
+                  const a = components[c.key];
+                  return (
+                    <button
+                      key={c.key}
+                      type="button"
+                      onClick={() => setComponents((p) => ({ ...p, [c.key]: !p[c.key] }))}
+                      className={`rounded-lg border px-3 py-2.5 text-xs font-medium transition ${
+                        a
+                          ? "border-secondary bg-secondary/10 text-secondary"
+                          : "border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </SubGroup>
+
+            {/* Income breakdown */}
+            <div className="space-y-3">
+              <p className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Info className="h-3.5 w-3.5 text-secondary" /> Income Breakdown
+              </p>
+
+              {components.base && (
+                <BreakdownCard title="Base Salary">
+                  <Field label="Annual base salary" required full>
+                    <Input value={baseSalary} onChange={setBaseSalary} placeholder="$75,000" />
+                  </Field>
+                </BreakdownCard>
+              )}
+
+              {components.overtime && (
+                <BreakdownCard title="Overtime">
+                  <IncludedToggle
+                    label="Is overtime included in your base salary?"
+                    value={overtimeIncluded}
+                    onChange={setOvertimeIncluded}
+                  />
+                  {overtimeIncluded === "no" && (
+                    <Field label="Average annual overtime income" full>
+                      <Input value={overtimeAmount} onChange={setOvertimeAmount} placeholder="$10,000" />
+                    </Field>
+                  )}
+                </BreakdownCard>
+              )}
+
+              {components.bonus && (
+                <BreakdownCard title="Bonus">
+                  <IncludedToggle
+                    label="Is bonus included in your base salary?"
+                    value={bonusIncluded}
+                    onChange={setBonusIncluded}
+                  />
+                  {bonusIncluded === "no" && (
+                    <Field label="Average annual bonus received" full>
+                      <Input value={bonusAmount} onChange={setBonusAmount} placeholder="$5,000" />
+                    </Field>
+                  )}
+                </BreakdownCard>
+              )}
+
+              {components.commission && (
+                <BreakdownCard title="Commission">
+                  <IncludedToggle
+                    label="Is commission included in your base salary?"
+                    value={commissionIncluded}
+                    onChange={setCommissionIncluded}
+                  />
+                  {commissionIncluded === "no" && (
+                    <Field label="Average annual commission income" full>
+                      <Input
+                        value={commissionAmount}
+                        onChange={setCommissionAmount}
+                        placeholder="$20,000"
+                      />
+                    </Field>
+                  )}
+                  <Field label="How long have you earned commission income?" full>
+                    <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      {(
+                        [
+                          { v: "<1y", l: "Less than 1 year" },
+                          { v: "1-2y", l: "1–2 years" },
+                          { v: "2+y", l: "2+ years" },
+                        ] as const
+                      ).map((o) => (
+                        <label key={o.v} className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            checked={commissionTenure === o.v}
+                            onChange={() => setCommissionTenure(o.v)}
+                          />
+                          {o.l}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      We use this to understand income stability.
+                    </p>
+                  </Field>
+                </BreakdownCard>
+              )}
+
+              <div className="rounded-xl border border-secondary/30 bg-secondary/10 px-3 py-2 text-xs">
+                <span className="font-semibold text-secondary">
+                  Estimated qualifying annual income:
+                </span>{" "}
+                ${computedEmployedTotal.toLocaleString()}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <SubGroup
+              icon={Briefcase}
+              title="Self-Employment Overview"
+              subtitle="Tell us about your business or self-employment"
+            >
+              <Field label="Business structure" full>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      "Sole Proprietor",
+                      "Incorporated Business Owner",
+                      "Partnership",
+                      "Freelancer / Contractor",
+                    ] as const
+                  ).map((t) => {
+                    const a = seType === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setSeType(t)}
+                        className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
+                          a
+                            ? "border-secondary bg-secondary/10 text-secondary"
+                            : "border-border bg-background text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field label="Business / operating name" required full>
+                <Input value={employerName} onChange={setEmployerName} placeholder="Enter business name" />
+              </Field>
+              <Field label="Your role / title">
+                <Input value={jobTitle} onChange={setJobTitle} placeholder="e.g. Owner, Director" />
+              </Field>
+              <Field label="Industry">
+                <Select
+                  value={industry}
+                  onChange={setIndustry}
+                  options={[
+                    "Select your industry",
+                    "Technology",
+                    "Healthcare",
+                    "Finance & Insurance",
+                    "Construction & Trades",
+                    "Retail & Hospitality",
+                    "Professional Services",
+                    "Real Estate",
+                    "Transportation",
+                    "Other",
+                  ]}
+                />
+              </Field>
+              <Field label="Business start date">
+                <Input type="date" value={startDate} onChange={setStartDate} />
+              </Field>
+              <Field label="Ownership %">
+                <Input value={ownershipPct} onChange={setOwnershipPct} placeholder="100" />
+              </Field>
+              <Field label="GST/HST registered?" full>
+                <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {(["yes", "no"] as const).map((v) => (
+                    <label key={v} className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        checked={gstRegistered === v}
+                        onChange={() => setGstRegistered(v)}
+                      />
+                      {v === "yes" ? "Yes" : "No"}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+            </SubGroup>
+
+            <SubGroup
+              icon={Wallet}
+              title="Business Income"
+              subtitle="Use figures consistent with your filed tax returns"
+            >
+              <Field label="Gross business revenue (annual)">
+                <Input value={grossBusiness} onChange={setGrossBusiness} placeholder="$0" />
+              </Field>
+              <Field label="Net income after expenses (annual)" required>
+                <Input value={netIncome} onChange={setNetIncome} placeholder="$0" />
+              </Field>
+              <Field label="Verification" full>
+                <Select
+                  value={seVerification}
+                  onChange={setSeVerification}
+                  options={[
+                    "T1 General + NOA (2 years)",
+                    "T2 Corporate Returns + Financial Statements",
+                    "Bank Statement Verified",
+                    "Stated Income",
+                    "Other",
+                  ]}
+                />
+              </Field>
+            </SubGroup>
+          </>
+        )}
+
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -1466,6 +1843,65 @@ function AddIncomeDrawer({
         </label>
       </div>
     </DrawerShell>
+  );
+}
+
+function SubGroup({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2.5">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
+    </div>
+  );
+}
+
+function BreakdownCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <p className="mb-2 text-xs font-semibold text-foreground">{title}</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
+    </div>
+  );
+}
+
+function IncludedToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: "yes" | "no";
+  onChange: (v: "yes" | "no") => void;
+}) {
+  return (
+    <Field label={label} full>
+      <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+        {(["yes", "no"] as const).map((v) => (
+          <label key={v} className="flex items-center gap-1.5">
+            <input type="radio" checked={value === v} onChange={() => onChange(v)} />
+            {v === "yes" ? "Yes" : "No"}
+          </label>
+        ))}
+      </div>
+    </Field>
   );
 }
 
