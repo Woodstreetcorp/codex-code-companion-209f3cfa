@@ -16,6 +16,8 @@ import {
   Eye,
   KeyRound,
   User,
+  ScrollText,
+  ShieldCheck,
 } from "lucide-react";
 
 // ─── Business rules ──────────────────────────────────────────────────────
@@ -383,6 +385,7 @@ export type PortalRoutePath =
   | "/portal/help"
   | "/portal/wallet"
   | "/portal/tools"
+  | "/portal/disclosures"
   | "/portal/settings";
 
 export const PORTAL_NAV: {
@@ -400,6 +403,7 @@ export const PORTAL_NAV: {
   { to: "/portal/help", label: "Help Center", icon: HelpCircle },
   { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
+  { to: "/portal/disclosures", label: "Disclosures", icon: ScrollText },
   { to: "/portal/settings", label: "Settings", icon: Settings },
 ];
 
@@ -430,6 +434,8 @@ export const TOOLS: {
 export type SettingsRoutePath =
   | "/portal/settings/profile"
   | "/portal/settings/security"
+  | "/portal/settings/security/activity"
+  | "/portal/settings/consents"
   | "/portal/settings/notifications"
   | "/portal/settings/privacy"
   | "/portal/settings/payment-methods"
@@ -442,6 +448,8 @@ export const SETTINGS_NAV: {
 }[] = [
   { to: "/portal/settings/profile", label: "Profile", icon: User },
   { to: "/portal/settings/security", label: "Security", icon: KeyRound },
+  { to: "/portal/settings/security/activity", label: "Access Log", icon: ShieldCheck },
+  { to: "/portal/settings/consents", label: "Consents", icon: ScrollText },
   { to: "/portal/settings/notifications", label: "Notifications", icon: Bell },
   { to: "/portal/settings/privacy", label: "Privacy", icon: Eye },
   { to: "/portal/settings/payment-methods", label: "Payment Methods", icon: CreditCard },
