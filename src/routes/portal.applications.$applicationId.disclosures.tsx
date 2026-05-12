@@ -1,0 +1,273 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Download,
+  FileText,
+  Mail,
+  ShieldCheck,
+  Upload,
+  Users,
+} from "lucide-react";
+import {
+  ApplicationShell,
+  NotFoundApplication,
+  getApplicationSummary,
+} from "@/components/portal/application-shell";
+import {
+  appliesToLabel,
+  getApplicationBundle,
+  isComplete,
+  rollupReadiness,
+  stageLabel,
+  statusTone,
+  templateById,
+  type ApplicantConsentRecord,
+  type ApplicationDisclosureRecord,
+} from "@/lib/disclosures";
+
+export const Route = createFileRoute("/portal/applications/$applicationId/disclosures")({
+  head: () => ({
+    meta: [
+      { title: "Disclosures & Consents — approvU" },
+      {
+        name: "description",
+        content: "Application-specific disclosures and applicant consents required to submit your mortgage.",
+      },
+    ],
+  }),
+  component: AppDisclosuresPage,
+});
+
+function AppDisclosuresPage() {
+  const { applicationId } = Route.useParams();
+  const summary = getApplicationSummary(applicationId);
+  if (!summary) return <NotFoundApplication id={applicationId} />;
+
+  const bundle = getApplicationBundle(applicationId);
+  const readiness = rollupReadiness(bundle);
+
+  return (
+    <ApplicationShell summary={summary} tab="disclosures">
+      {/* Readiness banner */}
+      <div
+        className={`mb-5 flex flex-col gap-3 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between ${
+          readiness.ready
+            ? "border-mint/40 bg-mint/10"
+            : "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {readiness.ready ? (
+            <CheckCircle2 className="mt-0.5 h-5 w-5 text-mint" />
+          ) : (
+            <AlertCircle className="mt-0.5 h-5 w-5 text-amber-600" />
+          )}
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {readiness.ready
+                ? "All required disclosures and consents are complete."
+                : `${readiness.blockingCount} required disclosure${readiness.blockingCount === 1 ? "" : "s"} still outstanding.`}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {readiness.ready
+                ? "Your application can now move forward to the next stage."
+                : "Some required disclosures and consents are still outstanding. This application cannot be submitted until all required parties complete them."}
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/portal/disclosures"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" /> Global library
+        </Link>
+      </div>
+
+      {/* Readiness checklist */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Submission readiness checklist</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {readiness.items.map((i) => (
+            <li key={i.templateId} className="flex items-start gap-2 text-sm">
+              {i.ok ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-mint" />
+              ) : (
+                <AlertCircle className="mt-0.5 h-4 w-4 text-amber-600" />
+              )}
+              <span className={i.ok ? "text-foreground" : "text-foreground/90"}>
+                {i.label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Applicants summary */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Applicants on this application</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Each adult applicant must complete their own consents — you cannot consent on behalf of another applicant.
+            </p>
+          </div>
+          <Link
+            to="/applications/$applicationId/co-borrower"
+            params={{ applicationId }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+          >
+            <Users className="h-3.5 w-3.5" /> Manage co-borrowers
+          </Link>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {bundle.applicants.map((a) => (
+            <span
+              key={a.id}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs"
+            >
+              <span className="font-medium text-foreground">{a.name}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                {a.role === "primary" ? "Primary" : a.role === "co_applicant" ? "Co-applicant" : "Guarantor"}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Disclosure cards */}
+      <div className="space-y-3">
+        {bundle.disclosures.map((d) => (
+          <DisclosureCard key={d.templateId} record={d} />
+        ))}
+      </div>
+    </ApplicationShell>
+  );
+}
+
+function DisclosureCard({ record }: { record: ApplicationDisclosureRecord }) {
+  const tpl = templateById(record.templateId);
+  const [open, setOpen] = useState(false);
+  if (!tpl) return null;
+
+  const allOk = record.applicantConsents.every((a) => isComplete(a.status));
+
+  return (
+    <div className="rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">{tpl.title}</p>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusTone(record.status)}`}>
+                {record.status}
+              </span>
+              {!allOk && (
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                  Required before {stageLabel(record.requiredBeforeStage)}
+                </span>
+              )}
+            </div>
+            {tpl.whyRequired && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Why required:</span> {tpl.whyRequired}
+              </p>
+            )}
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+              <span>Applies to: <span className="font-medium text-foreground">{appliesToLabel(record.appliesTo)}</span></span>
+              <span>Version {tpl.version} · Effective {tpl.effective}</span>
+              <span>{tpl.jurisdiction}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => toast.success(`Downloading ${tpl.title}`)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+          >
+            <Download className="h-3.5 w-3.5" /> PDF
+          </button>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+          >
+            {open ? "Hide details" : "View details"}
+          </button>
+          {!allOk && (
+            <button
+              onClick={() => toast.success(`${tpl.title} marked as reviewed`)}
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Review &amp; sign
+            </button>
+          )}
+        </div>
+      </div>
+
+      {open && (
+        <div className="border-t border-border px-4 py-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Per-applicant status</p>
+          <ul className="mt-2 divide-y divide-border">
+            {record.applicantConsents.map((c) => (
+              <ApplicantRow key={c.applicantId} consent={c} disclosureTitle={tpl.title} />
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ApplicantRow({
+  consent,
+  disclosureTitle,
+}: {
+  consent: ApplicantConsentRecord;
+  disclosureTitle: string;
+}) {
+  const ok = isComplete(consent.status);
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          {consent.applicantName}{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            ({consent.role === "primary" ? "Primary" : consent.role === "co_applicant" ? "Co-applicant" : "Guarantor"})
+          </span>
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          {consent.signedAt ? `Signed ${consent.signedAt}` : "Not yet signed"}
+          {consent.signedIp ? ` · ${consent.signedIp}` : ""}
+          {consent.consentMethod ? ` · ${consent.consentMethod.replace("_", " ")}` : ""}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusTone(consent.status)}`}>
+          {consent.status}
+        </span>
+        {!ok && consent.role !== "primary" && (
+          <button
+            onClick={() => toast.success(`Resent ${disclosureTitle} to ${consent.applicantName}`)}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium hover:bg-muted"
+          >
+            <Mail className="h-3 w-3" /> Resend
+          </button>
+        )}
+        {!ok && (
+          <button
+            onClick={() => toast.success(`Manual signed copy uploaded for ${consent.applicantName}`)}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium hover:bg-muted"
+          >
+            <Upload className="h-3 w-3" /> Upload signed
+          </button>
+        )}
+      </div>
+    </li>
+  );
+}
