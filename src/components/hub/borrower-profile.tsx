@@ -119,14 +119,40 @@ type OtherProperty = {
   address: string;
   city: string;
   province: string;
+  postalCode?: string;
+  currentOwners: string[]; // applicant ids who co-own this property
+  plansToSell: "yes" | "no" | "";
   usage: string;
   type: string;
   ownership: number;
+  ownershipTimeframe: string; // e.g. "<1 year", "1-3 years"
   value: number;
-  mortgageBalance: number;
   monthlyRental: number;
+  rentalFrequency: string;
+  numberOfUnits: string;
+  heating: number;
+  heatingIncludedInCondo: "yes" | "no" | "";
+  propertyTax: number;
+  propertyTaxFrequency: string;
+  condoFee: number;
+  condoFeeFrequency: string;
   monthlyCosts: number;
+  mortgageFree: boolean;
+  mortgages: PropertyMortgage[];
   include: boolean;
+};
+
+type PropertyMortgage = {
+  id: string;
+  position: string; // First, Second, HELOC, Private
+  lender: string;
+  balance: number;
+  rate: number;
+  rateType: string;
+  termType: string;
+  maturityDate: string;
+  payment: number;
+  paymentFrequency: string;
 };
 
 // ─── Mock seeds ────────────────────────────────────────────────────
