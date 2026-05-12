@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   CircleAlert,
   CircleCheck,
+  Inbox,
+  Lock,
   Save,
   Sparkles,
 } from "lucide-react";
@@ -297,29 +299,36 @@ export function SaveAndContinueBar({
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <button
-          onClick={() => navigate({ to: "/internal/full-application" })}
-          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+          onClick={() =>
+            navigate({
+              to: "/internal/full-application",
+              search: { section: "mortgage-application" },
+            })
+          }
+          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          aria-label="Back to application hub"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to Hub
         </button>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <button
             onClick={onSaveDraft ?? onSaveContinue}
-            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            aria-label="Save draft and stay on this page"
           >
             <Save className="h-3.5 w-3.5" /> Save Draft
           </button>
           {canComplete && (
             <button
               onClick={onMarkComplete ?? onSaveContinue}
-              className="inline-flex items-center gap-1.5 rounded-md bg-mint px-3 py-2 text-xs font-semibold text-mint-foreground hover:bg-mint/90"
+              className="inline-flex items-center gap-1.5 rounded-md bg-mint px-3 py-2 text-xs font-semibold text-mint-foreground hover:bg-mint/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <CheckCircle2 className="h-3.5 w-3.5" /> Mark Complete
             </button>
           )}
           <button
             onClick={onSaveContinue}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {nextLabel} <ArrowRight className="h-3.5 w-3.5" />
           </button>
@@ -399,4 +408,88 @@ export const PROVINCES = [
 
 export function fmtMoney(n: number) {
   return n.toLocaleString("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 0 });
+}
+
+// ─── Shared status surfaces ────────────────────────────────────────────
+export function LockedState({
+  title,
+  reason,
+  unlocksWhen,
+  action,
+}: {
+  title: string;
+  reason?: string;
+  unlocksWhen?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-6 text-center">
+      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Lock className="h-5 w-5" />
+      </div>
+      <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
+      {reason && <p className="mt-1 text-xs text-muted-foreground">{reason}</p>}
+      {unlocksWhen && (
+        <p className="mt-2 inline-block rounded-full bg-background px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          Unlocks {unlocksWhen}
+        </p>
+      )}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
+    </div>
+  );
+}
+
+export function EmptyState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-background p-6 text-center">
+      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+        <Inbox className="h-5 w-5" />
+      </div>
+      <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
+      {body && <p className="mt-1 text-xs text-muted-foreground">{body}</p>}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
+    </div>
+  );
+}
+
+export function SuccessState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-mint/30 bg-mint/10 p-6 text-center">
+      <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-mint">
+        <CheckCircle2 className="h-5 w-5 text-mint-foreground" />
+      </div>
+      <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
+      {body && <p className="mt-1 text-xs text-muted-foreground">{body}</p>}
+      {action && <div className="mt-4 flex justify-center">{action}</div>}
+    </div>
+  );
+}
+
+export function SaveStatusBadge({ status }: { status: "saved" | "saving" | "unsaved" }) {
+  const cfg = {
+    saved: { label: "All changes saved", cls: "text-mint-foreground" },
+    saving: { label: "Saving…", cls: "text-muted-foreground" },
+    unsaved: { label: "Unsaved changes", cls: "text-coral" },
+  }[status];
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-medium ${cfg.cls}`}>
+      <CircleCheck className="h-3.5 w-3.5" /> {cfg.label}
+    </span>
+  );
 }
