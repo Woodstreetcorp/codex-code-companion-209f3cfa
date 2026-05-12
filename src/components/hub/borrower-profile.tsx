@@ -610,9 +610,20 @@ export function BorrowerProfilePage({
               {active === "properties" && (
                 <PropertiesSection
                   properties={properties}
+                  applicants={[
+                    { id: applicant.id, name: applicant.name },
+                    ...coApplicants.map((c) => ({ id: c.id, name: c.name })),
+                  ]}
                   none={noneProps}
                   setNone={setNoneProps}
-                  onAdd={() => setDrawer("property")}
+                  onAdd={() => {
+                    setEditingProperty(null);
+                    setDrawer("property");
+                  }}
+                  onEdit={(p) => {
+                    setEditingProperty(p);
+                    setDrawer("property");
+                  }}
                   onRemove={(id) => setProperties((p) => p.filter((x) => x.id !== id))}
                   onMark={markSection}
                 />
@@ -742,11 +753,24 @@ export function BorrowerProfilePage({
       )}
       {drawer === "property" && (
         <AddOtherPropertyDrawer
-          onClose={() => setDrawer(null)}
+          initial={editingProperty}
+          applicants={[
+            { id: applicant.id, name: applicant.name },
+            ...coApplicants.map((c) => ({ id: c.id, name: c.name })),
+          ]}
+          onClose={() => {
+            setDrawer(null);
+            setEditingProperty(null);
+          }}
           onSave={(data) => {
-            setProperties((p) => [...p, { ...data, id: `prop-${Date.now()}` }]);
+            setProperties((prev) =>
+              editingProperty
+                ? prev.map((x) => (x.id === editingProperty.id ? { ...data, id: editingProperty.id } : x))
+                : [...prev, { ...data, id: `prop-${Date.now()}` }],
+            );
             setNoneProps(false);
             setDrawer(null);
+            setEditingProperty(null);
           }}
         />
       )}
