@@ -37,7 +37,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { BorrowerProfilePage } from "./borrower-profile";
+import { BorrowerProfilePage, buildSeedLiabilities, type Liability } from "./borrower-profile";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 type TxType = "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
@@ -356,6 +356,32 @@ export function MortgageApplicationContent() {
   const [addOpen, setAddOpen] = useState(false);
   const [accessFor, setAccessFor] = useState<Applicant | null>(null);
   const [profileFor, setProfileFor] = useState<Applicant | null>(null);
+  const [liabilities, setLiabilities] = useState<Liability[]>(() =>
+    buildSeedLiabilities(INITIAL_APPLICANTS.find((a) => a.isPrimary)?.id ?? INITIAL_APPLICANTS[0].id),
+  );
+
+  const upsertLiability = (l: Liability) =>
+    setLiabilities((prev) => {
+      const idx = prev.findIndex((x) => x.id === l.id);
+      if (idx === -1) return [...prev, l];
+      const next = prev.slice();
+      next[idx] = l;
+      return next;
+    });
+  const removeLiability = (id: string) =>
+    setLiabilities((prev) => prev.filter((x) => x.id !== id));
+  const leaveSharedLiability = (id: string, applicantId: string) =>
+    setLiabilities((prev) =>
+      prev.map((x) =>
+        x.id === id
+          ? {
+              ...x,
+              sharedWith: x.sharedWith.filter((a) => a !== applicantId),
+              shared: x.sharedWith.filter((a) => a !== applicantId).length > 0,
+            }
+          : x,
+      ),
+    );
 
   const widgets = useMemo(() => {
     if (tx === "Pre-Purchase") return PRE_PURCHASE_WIDGETS;
@@ -404,6 +430,11 @@ export function MortgageApplicationContent() {
     return (
       <BorrowerProfilePage
         applicant={profileFor}
+        coApplicants={applicants.filter((a) => a.id !== profileFor.id)}
+        liabilities={liabilities}
+        onUpsertLiability={upsertLiability}
+        onRemoveLiability={removeLiability}
+        onLeaveSharedLiability={leaveSharedLiability}
         onBack={() => setProfileFor(null)}
       />
     );
