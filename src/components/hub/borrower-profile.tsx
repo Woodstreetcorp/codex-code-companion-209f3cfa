@@ -1324,21 +1324,28 @@ function DrawerShell({
   footer: ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-foreground/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="flex h-full w-full max-w-lg flex-col bg-background shadow-2xl">
-        <header className="flex items-start justify-between gap-3 border-b border-border p-5">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-background px-6 py-4 sm:px-10">
+        <div className="mx-auto flex w-full max-w-4xl items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-foreground">{title}</h3>
-            {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+            <h1 className="text-lg font-semibold text-foreground sm:text-xl">{title}</h1>
+            {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
-          <button onClick={onClose} className="rounded-md p-1.5 hover:bg-muted">
-            <X className="h-4 w-4" />
+          <button
+            onClick={onClose}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
-        </header>
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
-        <footer className="border-t border-border p-4">{footer}</footer>
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10">
+        <div className="mx-auto w-full max-w-4xl">{children}</div>
       </div>
+      <footer className="sticky bottom-0 border-t border-border bg-background px-6 py-4 sm:px-10">
+        <div className="mx-auto w-full max-w-4xl">{footer}</div>
+      </footer>
     </div>
   );
 }
