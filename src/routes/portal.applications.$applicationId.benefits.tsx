@@ -28,10 +28,10 @@ function BenefitsPage() {
   // Map application bucket → funding stage gating used by ExclusiveOffersContent
   const fundingStage =
     summary.bucket === "Completed"
-      ? "funded"
+      ? ("funded" as const)
       : summary.bucket === "Submitted"
-      ? "approved"
-      : "in_application";
+      ? ("approval_accepted" as const)
+      : ("in_application" as const);
 
   return (
     <ApplicationShell summary={summary} tab="benefits">
