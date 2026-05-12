@@ -980,17 +980,25 @@ function IncomeSection({
 
 function CreditSection({
   liabilities,
+  currentApplicantId,
+  applicantNameById,
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
+  onLeaveShared,
   onMark,
 }: {
   liabilities: Liability[];
+  currentApplicantId: string;
+  applicantNameById: Record<string, string>;
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (l: Liability) => void;
   onRemove: (id: string) => void;
+  onLeaveShared: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
   const [creditScore, setCreditScore] = useState("");
@@ -999,11 +1007,14 @@ function CreditSection({
   const [bankruptcyType, setBankruptcyType] = useState<"bankruptcy" | "consumer_proposal" | "">("");
   const [bankruptcyActive, setBankruptcyActive] = useState<"yes" | "no" | "">("");
   const [dischargedWhen, setDischargedWhen] = useState<string>("");
-  const totalBalance = liabilities.reduce((s, l) => s + l.balance, 0);
-  const totalMonthly = liabilities
+  // Only count debts owned by this applicant — shared debts are counted on the
+  // owner's profile to avoid double counting in the qualification ratios.
+  const ownLiabilities = liabilities.filter((l) => l.ownerId === currentApplicantId);
+  const totalBalance = ownLiabilities.reduce((s, l) => s + l.balance, 0);
+  const totalMonthly = ownLiabilities
     .filter((l) => l.payoffPlan !== "payoff_before_closing")
     .reduce((s, l) => s + l.monthlyPayment, 0);
-  const payoff = liabilities
+  const payoff = ownLiabilities
     .filter((l) => l.payoffPlan === "payoff_before_closing")
     .reduce((s, l) => s + l.balance, 0);
 
