@@ -949,86 +949,163 @@ function CreditSection({
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
-  const [scoreRange, setScoreRange] = useState("720–759");
-  const [pullCredit, setPullCredit] = useState(false);
+  const [creditScore, setCreditScore] = useState("");
+  const [scoreSource, setScoreSource] = useState("");
+  const [bankruptcy, setBankruptcy] = useState<"yes" | "no" | "">("");
   const totalBalance = liabilities.reduce((s, l) => s + l.balance, 0);
-  const totalMonthly = liabilities.filter((l) => l.include).reduce((s, l) => s + l.monthlyPayment, 0);
-  const payoff = liabilities.filter((l) => l.payOffAtClose).reduce((s, l) => s + l.balance, 0);
+  const totalMonthly = liabilities
+    .filter((l) => l.payoffPlan !== "payoff_before_closing")
+    .reduce((s, l) => s + l.monthlyPayment, 0);
+  const payoff = liabilities
+    .filter((l) => l.payoffPlan === "payoff_before_closing")
+    .reduce((s, l) => s + l.balance, 0);
+
+  const scoreNum = Number(creditScore);
+  const scoreInvalid =
+    creditScore.length > 0 && (Number.isNaN(scoreNum) || scoreNum < 300 || scoreNum > 850);
 
   return (
     <div className="space-y-6">
-      <Group title="Credit Information">
-        <Field label="Estimated credit score range" full>
-          <Select
-            value={scoreRange}
-            onChange={setScoreRange}
-            options={[
-              "760+",
-              "720–759",
-              "680–719",
-              "650–679",
-              "620–649",
-              "600–619",
-              "Below 600",
-              "Not sure",
-            ]}
-          />
-        </Field>
-        <YesNo label="Bankruptcy in the last 7 years?" />
-        <YesNo label="Consumer proposal in the last 7 years?" />
-        <YesNo label="Missed payments in the last 12 months?" />
-        <YesNo label="Active collections or judgments?" />
-      </Group>
-
-      <div className="rounded-2xl border border-border bg-muted/40 p-4">
-        <label className="flex items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={pullCredit}
-            onChange={(e) => setPullCredit(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-input"
-          />
-          <span>
-            <span className="font-semibold text-foreground">
-              I authorize approvU to pull my credit report
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              Required for mortgage qualification. Each borrower must provide their own consent.
-            </span>
-          </span>
-        </label>
+      <div className="flex items-start gap-2 rounded-xl border border-secondary/30 bg-secondary/5 p-3 text-xs text-foreground">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+        <div>
+          <p className="font-semibold">Why we ask for this information</p>
+          <p className="mt-0.5 text-muted-foreground">
+            We're requesting detailed credit information to prevent checking your credit report at this early stage,
+            which could impact your score. All the information we're asking for can be found on your credit report,
+            and we'll ask you to upload a copy later to help our agents avoid pulling your credit record unnecessarily.
+          </p>
+        </div>
       </div>
 
+      <Group title="Credit Score Information">
+        <Field label="What is your current credit score?" required full>
+          <Input
+            type="number"
+            value={creditScore}
+            onChange={setCreditScore}
+            placeholder="e.g. 720"
+          />
+          <p className={`mt-1 text-[11px] ${scoreInvalid ? "text-coral" : "text-muted-foreground"}`}>
+            {scoreInvalid
+              ? "Please enter a score between 300 and 850."
+              : "Enter your exact credit score (300–850)"}
+          </p>
+        </Field>
+        <Field label="Where did you check your credit score?" full>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {CREDIT_SCORE_SOURCES.map((s) => (
+              <label
+                key={s}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  scoreSource === s
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="score-source"
+                  checked={scoreSource === s}
+                  onChange={() => setScoreSource(s)}
+                  className="h-3.5 w-3.5"
+                />
+                <span>{s}</span>
+              </label>
+            ))}
+          </div>
+        </Field>
+        <div className="sm:col-span-2 flex items-start gap-2 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <div>
+            <p className="font-semibold text-foreground">Credit Report Upload Required</p>
+            <p className="mt-0.5 text-muted-foreground">
+              Please upload a copy of your credit report in the document section of your application.
+              This helps our agents avoid pulling your credit record and saves costs.
+            </p>
+          </div>
+        </div>
+      </Group>
+
+      <Group title="Negative Credit Events">
+        <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
+          <span className="text-sm text-foreground">
+            Have you ever filed for a Consumer Proposal or Bankruptcy?
+          </span>
+          <div className="flex items-center gap-1.5">
+            {(["yes", "no"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setBankruptcy(opt)}
+                className={`rounded-md px-3 py-1 text-xs font-medium ${
+                  bankruptcy === opt
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-input bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                {opt === "yes" ? "Yes" : "No"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Group>
+
       <div>
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-coral/30 bg-coral/5 p-3 text-xs">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <p>
+            <span className="font-semibold">Note:</span> Please list all non-mortgage debts only.
+            Existing mortgage details will be captured in a separate section.
+          </p>
+        </div>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Liabilities" value={`${liabilities.length}`} />
           <Stat label="Total balance" value={fmtMoney(totalBalance)} />
-          <Stat label="Monthly (incl.)" value={fmtMoney(totalMonthly)} tone="secondary" />
-          <Stat label="Payoff at close" value={fmtMoney(payoff)} tone="mint" />
+          <Stat label="Monthly (kept)" value={fmtMoney(totalMonthly)} tone="secondary" />
+          <Stat label="Pay off before closing" value={fmtMoney(payoff)} tone="mint" />
         </div>
 
-        {liabilities.map((l) => (
+        {liabilities.map((l, i) => (
           <div
             key={l.id}
             className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  Debt #{i + 1}
+                </span>
                 <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
                   {l.type}
                 </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {l.ownership}
-                </span>
-                {l.payOffAtClose && (
+                {l.shared && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    Shared
+                  </span>
+                )}
+                {l.paymentHistory && (
+                  <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                    {l.paymentHistory}
+                  </span>
+                )}
+                {l.payoffPlan === "payoff_before_closing" && (
                   <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Pay off at close
+                    Pay off before closing
+                  </span>
+                )}
+                {l.payoffPlan === "include_in_loan" && (
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                    Include in loan
                   </span>
                 )}
               </div>
               <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
               <p className="text-xs text-muted-foreground">
                 Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
+                {l.shared && l.sharedWith.length > 0 && (
+                  <> · Shared with {l.sharedWith.join(", ")}</>
+                )}
               </p>
             </div>
             <button
