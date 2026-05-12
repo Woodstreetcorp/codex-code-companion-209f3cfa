@@ -1,4 +1,4 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
   Bell,
@@ -20,8 +20,7 @@ import {
 
 // ─── Shell ───────────────────────────────────────────────────────────────
 export function PortalShell({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const path = router.state.location.pathname;
+  const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
