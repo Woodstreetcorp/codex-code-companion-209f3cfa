@@ -136,7 +136,19 @@ export const EXPIRED: ExpiredApp[] = [
   },
 ];
 
-export const COMPLETED: CompletedApp[] = [];
+export const COMPLETED: CompletedApp[] = [
+  {
+    id: "APP-1801",
+    property: "78 River Rd, Ottawa, ON",
+    lender: "Major Bank",
+    fundedDate: "2026-04-29",
+    amount: "$510,000",
+    term: "5 years",
+    rateType: "Fixed 4.59%",
+    maturityDate: "2031-04-29",
+    bundleStatus: "Active",
+  },
+];
 
 export const DOCUMENTS = [
   { name: "Government ID", app: "APP-2041", status: "Received", due: "—" },
