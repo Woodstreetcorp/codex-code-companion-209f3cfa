@@ -858,14 +858,14 @@ function statusBadge(status: WidgetStatus) {
 function WidgetCard({ widget }: { widget: Widget }) {
   const Icon = widget.icon;
   const routeMap: Record<string, string> = {
-    property: "/portal/applications/current/property-financing/property",
-    financing: "/portal/applications/current/property-financing/down-payment",
-    "purchase-plan": "/portal/applications/current/property-financing/purchase-plan",
-    preferences: "/portal/applications/current/property-financing/target-property",
-    "property-r": "/portal/applications/current/property-financing/property",
-    "current-mortgage": "/portal/applications/current/property-financing/current-mortgage",
-    "refi-request": "/portal/applications/current/property-financing/refinance-request",
-    "renewal-preferences": "/portal/applications/current/property-financing/renewal-preferences",
+    property: "/applications/current/property-financing/property",
+    financing: "/applications/current/property-financing/down-payment",
+    "purchase-plan": "/applications/current/property-financing/purchase-plan",
+    preferences: "/applications/current/property-financing/target-property",
+    "property-r": "/applications/current/property-financing/property",
+    "current-mortgage": "/applications/current/property-financing/current-mortgage",
+    "refi-request": "/applications/current/property-financing/refinance-request",
+    "renewal-preferences": "/applications/current/property-financing/renewal-preferences",
     "mortgage-request": "/applications/current/mortgage-request",
     offers: "/applications/current/mortgage-offers",
     consent: "/applications/current/product-review-consent",

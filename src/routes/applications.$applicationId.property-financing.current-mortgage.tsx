@@ -165,7 +165,7 @@ function CurrentMortgagePage() {
         canComplete={missing.length === 0}
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/property-financing/refinance-request",
+            to: "/applications/$applicationId/property-financing/refinance-request",
             params: { applicationId },
           })
         }

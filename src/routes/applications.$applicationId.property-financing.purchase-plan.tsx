@@ -195,7 +195,7 @@ function PurchasePlanPage() {
             <button
               onClick={() =>
                 navigate({
-                  to: "/portal/applications/$applicationId/property-financing/property",
+                  to: "/applications/$applicationId/property-financing/property",
                   params: { applicationId },
                 })
               }
@@ -248,8 +248,8 @@ function PurchasePlanPage() {
           navigate({
             to:
               hasProperty === "yes"
-                ? "/portal/applications/$applicationId/property-financing/property"
-                : "/portal/applications/$applicationId/property-financing/target-property",
+                ? "/applications/$applicationId/property-financing/property"
+                : "/applications/$applicationId/property-financing/target-property",
             params: { applicationId },
           })
         }

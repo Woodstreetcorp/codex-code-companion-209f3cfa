@@ -213,7 +213,7 @@ function TargetPropertyPage() {
         canComplete={missing.length === 0}
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/property-financing/down-payment",
+            to: "/applications/$applicationId/property-financing/down-payment",
             params: { applicationId },
           })
         }

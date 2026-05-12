@@ -418,7 +418,7 @@ function AboutPropertyPage() {
         canComplete={canComplete}
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/property-financing/down-payment",
+            to: "/applications/$applicationId/property-financing/down-payment",
             params: { applicationId },
           })
         }
