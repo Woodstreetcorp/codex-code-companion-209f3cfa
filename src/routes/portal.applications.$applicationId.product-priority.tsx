@@ -224,7 +224,7 @@ function ProductPriorityReviewPage() {
       <section className="mb-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ListOrdered className="h-4.5 w-4.5" />
+            <ListOrdered className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-foreground">How Product Priority Works</h2>
