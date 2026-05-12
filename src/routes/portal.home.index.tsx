@@ -199,6 +199,16 @@ function MyMortgagePage() {
         </div>
       </Card>
     </div>
+    <BankConnectDialog
+      open={bankOpen}
+      onOpenChange={setBankOpen}
+      provider="Flinks"
+      onComplete={() => {
+        setLinked(true);
+        toast.success("Bank linked — balance will refresh shortly");
+      }}
+    />
+    </>
   );
 }
 
