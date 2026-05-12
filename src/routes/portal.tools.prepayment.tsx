@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Info, TrendingDown, Calendar } from "lucide-react";
 import {
-  NumField, SelectField, ToolPageShell, fmtMoney, fmtPct, saveScenario,
+  NumField, SelectField, ToolPageShell, fmtMoney, saveScenario,
   periodicRate, paymentsPerYear, periodicPayment, type PaymentFreq,
 } from "@/components/portal/tools-shared";
 
