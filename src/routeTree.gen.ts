@@ -29,6 +29,7 @@ import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mo
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
+import { Route as PortalHomeIndexRouteImport } from './routes/portal.home.index'
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
 import { Route as PortalToolsStressTestRouteImport } from './routes/portal.tools.stress-test'
 import { Route as PortalToolsScenarioCompareRouteImport } from './routes/portal.tools.scenario-compare'
@@ -172,6 +173,11 @@ const InternalAccountHandoffRoute = InternalAccountHandoffRouteImport.update({
   id: '/internal/account-handoff',
   path: '/internal/account-handoff',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PortalHomeIndexRoute = PortalHomeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PortalHomeRoute,
 } as any)
 const PortalApplicationsIndexRoute = PortalApplicationsIndexRouteImport.update({
   id: '/applications/',
@@ -429,7 +435,7 @@ export interface FileRoutesByFullPath {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
-  '/portal/home': typeof PortalHomeRoute
+  '/portal/home': typeof PortalHomeRouteWithChildren
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -466,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
+  '/portal/home/': typeof PortalHomeIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/applications/$applicationId/property-financing/property': typeof ApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -492,7 +499,6 @@ export interface FileRoutesByTo {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
-  '/portal/home': typeof PortalHomeRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -529,6 +535,7 @@ export interface FileRoutesByTo {
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
+  '/portal/home': typeof PortalHomeIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/applications/$applicationId/property-financing/property': typeof ApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -557,7 +564,7 @@ export interface FileRoutesById {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
-  '/portal/home': typeof PortalHomeRoute
+  '/portal/home': typeof PortalHomeRouteWithChildren
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -594,6 +601,7 @@ export interface FileRoutesById {
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
+  '/portal/home/': typeof PortalHomeIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/applications/$applicationId/property-financing/property': typeof ApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -660,6 +668,7 @@ export interface FileRouteTypes {
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
+    | '/portal/home/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
     | '/applications/$applicationId/property-financing/property'
@@ -686,7 +695,6 @@ export interface FileRouteTypes {
     | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
-    | '/portal/home'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -723,6 +731,7 @@ export interface FileRouteTypes {
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications'
+    | '/portal/home'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
     | '/applications/$applicationId/property-financing/property'
@@ -787,6 +796,7 @@ export interface FileRouteTypes {
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
+    | '/portal/home/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
     | '/applications/$applicationId/property-financing/property'
@@ -960,6 +970,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/internal/account-handoff'
       preLoaderRoute: typeof InternalAccountHandoffRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/portal/home/': {
+      id: '/portal/home/'
+      path: '/'
+      fullPath: '/portal/home/'
+      preLoaderRoute: typeof PortalHomeIndexRouteImport
+      parentRoute: typeof PortalHomeRoute
     }
     '/portal/applications/': {
       id: '/portal/applications/'
@@ -1258,6 +1275,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalHomeRouteChildren {
+  PortalHomeIndexRoute: typeof PortalHomeIndexRoute
+}
+
+const PortalHomeRouteChildren: PortalHomeRouteChildren = {
+  PortalHomeIndexRoute: PortalHomeIndexRoute,
+}
+
+const PortalHomeRouteWithChildren = PortalHomeRoute._addFileChildren(
+  PortalHomeRouteChildren,
+)
+
 interface PortalSettingsSecurityRouteChildren {
   PortalSettingsSecurityActivityRoute: typeof PortalSettingsSecurityActivityRoute
 }
@@ -1343,7 +1372,7 @@ interface PortalRouteChildren {
   PortalDisclosuresRoute: typeof PortalDisclosuresRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalHelpRoute: typeof PortalHelpRoute
-  PortalHomeRoute: typeof PortalHomeRoute
+  PortalHomeRoute: typeof PortalHomeRouteWithChildren
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
@@ -1362,7 +1391,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDisclosuresRoute: PortalDisclosuresRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalHelpRoute: PortalHelpRoute,
-  PortalHomeRoute: PortalHomeRoute,
+  PortalHomeRoute: PortalHomeRouteWithChildren,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalNotificationsRoute: PortalNotificationsRoute,
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
