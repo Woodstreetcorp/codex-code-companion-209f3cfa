@@ -1438,6 +1438,19 @@ function AddIncomeDrawer({
   const [otherContinuance, setOtherContinuance] = useState<"yes" | "no" | "unknown">("yes");
   const [otherVerification, setOtherVerification] = useState("Government Award Letter");
 
+  const [addedCount, setAddedCount] = useState(0);
+
+  const resetOtherForm = () => {
+    setOtherType("");
+    setOtherSource("");
+    setOtherAmount("");
+    setOtherFrequency("Annual");
+    setOtherStart("");
+    setOtherDuration("3+y");
+    setOtherContinuance("yes");
+    setOtherVerification("Government Award Letter");
+  };
+
   const computedEmployedTotal =
     Number(baseSalary || 0) +
     (overtimeIncluded === "no" ? Number(overtimeAmount || 0) : 0) +
@@ -1450,7 +1463,7 @@ function AddIncomeDrawer({
       : employerName.trim().length > 0 &&
         (category === "employed" ? computedEmployedTotal > 0 : Number(netIncome) > 0);
 
-  const handleSave = () => {
+  const performSave = () => {
     if (category === "employed") {
       onSave({
         type: employmentType,
@@ -1484,6 +1497,17 @@ function AddIncomeDrawer({
         include,
       });
     }
+    setAddedCount((n) => n + 1);
+  };
+
+  const handleSave = () => {
+    performSave();
+    onClose();
+  };
+
+  const handleSaveAndAddAnother = () => {
+    performSave();
+    resetOtherForm();
   };
 
   return (
@@ -1493,12 +1517,30 @@ function AddIncomeDrawer({
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
+          {addedCount > 0 && (
+            <span className="mr-auto text-xs text-muted-foreground">
+              {addedCount} income source{addedCount === 1 ? "" : "s"} added
+            </span>
+          )}
           <button
             onClick={onClose}
             className="rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
           >
-            Cancel
+            {addedCount > 0 ? "Done" : "Cancel"}
           </button>
+          {category === "other" && (
+            <button
+              disabled={!valid}
+              onClick={handleSaveAndAddAnother}
+              className={`rounded-md border px-3.5 py-2 text-xs font-semibold ${
+                valid
+                  ? "border-primary text-primary hover:bg-primary/10"
+                  : "cursor-not-allowed border-muted text-muted-foreground"
+              }`}
+            >
+              Save & add another
+            </button>
+          )}
           <button
             disabled={!valid}
             onClick={handleSave}
