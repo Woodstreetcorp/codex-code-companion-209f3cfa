@@ -1052,6 +1052,9 @@ function CreditSection({
       </Group>
 
       <div>
+        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Current Debt Obligations
+        </h3>
         <div className="mb-3 flex items-start gap-2 rounded-xl border border-coral/30 bg-coral/5 p-3 text-xs">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
           <p>
@@ -1137,7 +1140,7 @@ function CreditSection({
           onClick={onAdd}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          <Plus className="h-3.5 w-3.5" /> Add Liability
+          <Plus className="h-3.5 w-3.5" /> Add Debt
         </button>
         <button
           onClick={() =>
