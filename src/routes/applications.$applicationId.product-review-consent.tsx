@@ -16,7 +16,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/product-review-consent",
+  "/applications/$applicationId/product-review-consent",
 )({
   head: () => ({
     meta: [

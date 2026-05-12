@@ -14,7 +14,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/submit",
+  "/applications/$applicationId/submit",
 )({
   head: () => ({
     meta: [
