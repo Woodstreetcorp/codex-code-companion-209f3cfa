@@ -1405,7 +1405,7 @@ function AssetsSection({
 }) {
   const total = assets.reduce((s, a) => s + a.value, 0);
   const downpayment = assets.reduce((s, a) => s + a.forDownPayment, 0);
-  const liquid = assets.filter((a) => a.liquid).reduce((s, a) => s + a.value, 0);
+  const liquid = assets.filter((a) => isLiquidAsset(a.type)).reduce((s, a) => s + a.value, 0);
 
   return (
     <div className="space-y-5">
@@ -1426,14 +1426,16 @@ function AssetsSection({
               <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
                 {a.type}
               </span>
-              {a.liquid && (
+              {isLiquidAsset(a.type) && (
                 <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
                   Liquid
                 </span>
               )}
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                {a.source}
-              </span>
+              {a.forDownPayment > 0 && (
+                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                  Down payment {fmtMoney(a.forDownPayment)}
+                </span>
+              )}
             </div>
             <p className="mt-1.5 text-sm font-semibold text-foreground">{a.institution}</p>
             <p className="text-xs text-muted-foreground">
