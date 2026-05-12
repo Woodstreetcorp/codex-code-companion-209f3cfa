@@ -1151,12 +1151,13 @@ function CompleteConditionDrawer({
 
   const open = !!condition;
   if (!condition) return null;
+  const c = condition;
 
-  const tone = statusTone(condition.status);
-  const requiresFile = ["file_upload", "select_existing_document"].includes(condition.actionType);
-  const requiresText = condition.actionType === "text_response";
-  const requiresCheckbox = condition.actionType === "checkbox_confirmation";
-  const requiresContact = condition.actionType === "contact_details";
+  const tone = statusTone(c.status);
+  const requiresFile = ["file_upload", "select_existing_document"].includes(c.actionType);
+  const requiresText = c.actionType === "text_response";
+  const requiresCheckbox = c.actionType === "checkbox_confirmation";
+  const requiresContact = c.actionType === "contact_details";
 
   function canSubmit() {
     if (requiresFile) return !!file;
@@ -1171,7 +1172,7 @@ function CompleteConditionDrawer({
       toast.error("Please complete the required information.");
       return;
     }
-    onSubmit(condition.id, note.trim() || undefined);
+    onSubmit(c.id, note.trim() || undefined);
     setNote("");
     setFile(null);
     setConfirmed(false);
