@@ -55,6 +55,7 @@ import { Route as ApplicationsApplicationIdProductReviewConsentRouteImport } fro
 import { Route as ApplicationsApplicationIdProductPriorityRouteImport } from './routes/applications.$applicationId.product-priority'
 import { Route as ApplicationsApplicationIdMortgageRequestRouteImport } from './routes/applications.$applicationId.mortgage-request'
 import { Route as PortalApplicationsApplicationIdIndexRouteImport } from './routes/portal.applications.$applicationId.index'
+import { Route as PortalSettingsSecurityActivityRouteImport } from './routes/portal.settings.security.activity'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdOffersRouteImport } from './routes/portal.applications.$applicationId.offers'
 import { Route as PortalApplicationsApplicationIdConditionsRouteImport } from './routes/portal.applications.$applicationId.conditions'
@@ -313,6 +314,12 @@ const PortalApplicationsApplicationIdIndexRoute =
     path: '/applications/$applicationId/',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalSettingsSecurityActivityRoute =
+  PortalSettingsSecurityActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => PortalSettingsSecurityRoute,
+  } as any)
 const PortalApplicationsApplicationIdQualificationSummaryRoute =
   PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
     id: '/applications/$applicationId/qualification-summary',
@@ -408,7 +415,7 @@ export interface FileRoutesByFullPath {
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId/': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -465,7 +473,7 @@ export interface FileRoutesByTo {
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -489,6 +497,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRoutesById {
@@ -524,7 +533,7 @@ export interface FileRoutesById {
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -548,6 +557,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId/': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -608,6 +618,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId'
   id:
     | '__root__'
@@ -723,6 +735,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId/'
   fileRoutesById: FileRoutesById
 }
@@ -1068,6 +1081,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdIndexRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/settings/security/activity': {
+      id: '/portal/settings/security/activity'
+      path: '/activity'
+      fullPath: '/portal/settings/security/activity'
+      preLoaderRoute: typeof PortalSettingsSecurityActivityRouteImport
+      parentRoute: typeof PortalSettingsSecurityRoute
+    }
     '/portal/applications/$applicationId/qualification-summary': {
       id: '/portal/applications/$applicationId/qualification-summary'
       path: '/applications/$applicationId/qualification-summary'
@@ -1141,6 +1161,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalSettingsSecurityRouteChildren {
+  PortalSettingsSecurityActivityRoute: typeof PortalSettingsSecurityActivityRoute
+}
+
+const PortalSettingsSecurityRouteChildren: PortalSettingsSecurityRouteChildren =
+  {
+    PortalSettingsSecurityActivityRoute: PortalSettingsSecurityActivityRoute,
+  }
+
+const PortalSettingsSecurityRouteWithChildren =
+  PortalSettingsSecurityRoute._addFileChildren(
+    PortalSettingsSecurityRouteChildren,
+  )
+
 interface PortalSettingsRouteChildren {
   PortalSettingsConsentsRoute: typeof PortalSettingsConsentsRoute
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
@@ -1148,7 +1182,7 @@ interface PortalSettingsRouteChildren {
   PortalSettingsPreferencesRoute: typeof PortalSettingsPreferencesRoute
   PortalSettingsPrivacyRoute: typeof PortalSettingsPrivacyRoute
   PortalSettingsProfileRoute: typeof PortalSettingsProfileRoute
-  PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRoute
+  PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRouteWithChildren
 }
 
 const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
@@ -1158,7 +1192,7 @@ const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
   PortalSettingsPreferencesRoute: PortalSettingsPreferencesRoute,
   PortalSettingsPrivacyRoute: PortalSettingsPrivacyRoute,
   PortalSettingsProfileRoute: PortalSettingsProfileRoute,
-  PortalSettingsSecurityRoute: PortalSettingsSecurityRoute,
+  PortalSettingsSecurityRoute: PortalSettingsSecurityRouteWithChildren,
 }
 
 const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
