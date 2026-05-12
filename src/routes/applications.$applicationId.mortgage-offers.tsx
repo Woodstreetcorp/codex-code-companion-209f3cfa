@@ -44,6 +44,32 @@ export const Route = createFileRoute(
 
 const MAX_SELECT = 3;
 
+const SORT_OPTIONS = [
+  { value: "best", label: "Best Match" },
+  { value: "rate", label: "Lowest Rate" },
+  { value: "payment", label: "Lowest Monthly Payment" },
+  { value: "closing", label: "Lowest Closing Cost" },
+  { value: "value", label: "Best Overall Value" },
+  { value: "flexible", label: "Most Flexible" },
+  { value: "fast", label: "Fastest Approval" },
+  { value: "bundle", label: "Strongest Home Life Bundle" },
+] as const;
+
+const QUICK_FILTERS = [
+  "Fixed",
+  "Variable",
+  "Lower Payment",
+  "Lowest Rate",
+  "No Lender Fee",
+  "Cash Back",
+  "Flexible Prepayment",
+  "Lower Closing Cost",
+  "Prime Products",
+  "Alternative Products",
+] as const;
+
+type SortKey = (typeof SORT_OPTIONS)[number]["value"];
+
 type Product = {
   id: string;
   lender: string;
