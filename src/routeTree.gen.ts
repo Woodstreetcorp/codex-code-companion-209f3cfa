@@ -18,6 +18,7 @@ import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
 import { Route as PortalToolsRouteImport } from './routes/portal.tools'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
+import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
@@ -99,6 +100,11 @@ const PortalToolsRoute = PortalToolsRouteImport.update({
 const PortalSettingsRoute = PortalSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
   getParentRoute: () => PortalRoute,
 } as any)
 const InternalMortgageOffersRoute = InternalMortgageOffersRouteImport.update({
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/documents': typeof PortalDocumentsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -370,6 +377,7 @@ export interface FileRoutesByTo {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/documents': typeof PortalDocumentsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -419,6 +427,7 @@ export interface FileRoutesById {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/documents': typeof PortalDocumentsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -469,6 +478,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/documents'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/documents'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/documents'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -684,6 +696,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/portal/settings'
       preLoaderRoute: typeof PortalSettingsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/documents': {
+      id: '/portal/documents'
+      path: '/documents'
+      fullPath: '/portal/documents'
+      preLoaderRoute: typeof PortalDocumentsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/internal/mortgage-offers': {
@@ -1005,6 +1024,7 @@ const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
 )
 
 interface PortalRouteChildren {
+  PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
   PortalToolsRoute: typeof PortalToolsRouteWithChildren
   PortalWalletRoute: typeof PortalWalletRoute
@@ -1014,6 +1034,7 @@ interface PortalRouteChildren {
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalDocumentsRoute: PortalDocumentsRoute,
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
   PortalToolsRoute: PortalToolsRouteWithChildren,
   PortalWalletRoute: PortalWalletRoute,
@@ -1084,3 +1105,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
