@@ -954,6 +954,9 @@ function CreditSection({
   const [creditScore, setCreditScore] = useState("");
   const [scoreSource, setScoreSource] = useState("");
   const [bankruptcy, setBankruptcy] = useState<"yes" | "no" | "">("");
+  const [bankruptcyType, setBankruptcyType] = useState<"bankruptcy" | "consumer_proposal" | "">("");
+  const [bankruptcyActive, setBankruptcyActive] = useState<"yes" | "no" | "">("");
+  const [dischargedWhen, setDischargedWhen] = useState<string>("");
   const totalBalance = liabilities.reduce((s, l) => s + l.balance, 0);
   const totalMonthly = liabilities
     .filter((l) => l.payoffPlan !== "payoff_before_closing")
@@ -1030,26 +1033,110 @@ function CreditSection({
       </Group>
 
       <Group title="Negative Credit Events">
-        <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
-          <span className="text-sm text-foreground">
-            Have you ever filed for a Consumer Proposal or Bankruptcy?
-          </span>
-          <div className="flex items-center gap-1.5">
-            {(["yes", "no"] as const).map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setBankruptcy(opt)}
-                className={`rounded-md px-3 py-1 text-xs font-medium ${
-                  bankruptcy === opt
-                    ? "bg-primary text-primary-foreground"
-                    : "border border-input bg-background text-foreground hover:bg-muted"
-                }`}
-              >
-                {opt === "yes" ? "Yes" : "No"}
-              </button>
-            ))}
+        <div className="sm:col-span-2 space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
+            <span className="text-sm text-foreground">
+              Have you ever filed for a Consumer Proposal or Bankruptcy?
+            </span>
+            <div className="flex items-center gap-1.5">
+              {(["yes", "no"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    setBankruptcy(opt);
+                    if (opt === "no") {
+                      setBankruptcyType("");
+                      setBankruptcyActive("");
+                      setDischargedWhen("");
+                    }
+                  }}
+                  className={`rounded-md px-3 py-1 text-xs font-medium ${
+                    bankruptcy === opt
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-input bg-background text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {opt === "yes" ? "Yes" : "No"}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {bankruptcy === "yes" && (
+            <div className="ml-1 space-y-4 border-l-2 border-secondary/40 pl-4">
+              <div>
+                <p className="mb-2 text-sm font-medium text-foreground">
+                  Which one applies to you?
+                </p>
+                <div className="flex flex-wrap gap-x-6 gap-y-2">
+                  {([
+                    ["bankruptcy", "Bankruptcy"],
+                    ["consumer_proposal", "Consumer Proposal"],
+                  ] as const).map(([val, label]) => (
+                    <label key={val} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="radio"
+                        name="bankruptcy-type"
+                        checked={bankruptcyType === val}
+                        onChange={() => setBankruptcyType(val)}
+                        className="h-3.5 w-3.5 accent-primary"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {bankruptcyType && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">Is it still active?</p>
+                  <div className="flex flex-wrap gap-x-6 gap-y-2">
+                    {(["yes", "no"] as const).map((opt) => (
+                      <label key={opt} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="bankruptcy-active"
+                          checked={bankruptcyActive === opt}
+                          onChange={() => {
+                            setBankruptcyActive(opt);
+                            if (opt === "yes") setDischargedWhen("");
+                          }}
+                          className="h-3.5 w-3.5 accent-primary"
+                        />
+                        {opt === "yes" ? "Yes" : "No"}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bankruptcyType && bankruptcyActive === "no" && (
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">When was it discharged?</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {[
+                      "Less than 12 months ago",
+                      "Just over 1 year ago",
+                      "2 years ago",
+                      "Over 2 years ago",
+                    ].map((opt) => (
+                      <label key={opt} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="radio"
+                          name="discharged-when"
+                          checked={dischargedWhen === opt}
+                          onChange={() => setDischargedWhen(opt)}
+                          className="h-3.5 w-3.5 accent-primary"
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Group>
 
