@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Info, Plus, Trash2, Trophy, Lightbulb } from "lucide-react";
+import { CheckCircle2, Plus, Trash2, Trophy, Lightbulb } from "lucide-react";
 import {
   NumField, SelectField, ToolPageShell, fmtMoney, fmtPct, saveScenario,
   paymentsPerYear, periodicPayment, periodicRate, type PaymentFreq,
