@@ -130,6 +130,33 @@ function ConnectionsPage() {
         action={<Plug className="h-5 w-5 text-muted-foreground" />}
       />
     </div>
+    {bankFlow && (
+      <BankConnectDialog
+        open={!!bankFlow}
+        onOpenChange={(o) => { if (!o) setBankFlow(null); }}
+        provider="Flinks"
+        onComplete={(result: BankConnectResult) => {
+          if (bankFlow.mode === "reconnect") {
+            flip(banking, setBanking, bankFlow.id, "Connected");
+            toast.success(`${result.institution} reconnected`);
+          } else {
+            const acct = result.accounts[0];
+            const newConn: Conn = {
+              id: `${result.institution}-${Date.now()}`,
+              name: `${result.institution} · ${acct?.type ?? "Account"} ${acct?.mask ?? ""}`.trim(),
+              desc: `Auto-pulls ${result.monthsRetrieved} months of statements via ${result.provider}.`,
+              status: "Connected",
+              lastSync: "Just now",
+              scope: "Read transactions, balance",
+              icon: Banknote,
+            };
+            setBanking((prev) => [...prev, newConn]);
+            toast.success(`${result.institution} connected`);
+          }
+        }}
+      />
+    )}
+    </>
   );
 }
 
