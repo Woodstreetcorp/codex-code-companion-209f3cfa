@@ -109,8 +109,9 @@ type Asset = {
   institution: string;
   value: number;
   forDownPayment: number;
-  liquid: boolean;
-  source: string;
+  // amount = specific dollar amount entered; pct = percent of value
+  dpMode?: "amount" | "pct";
+  dpInput?: string;
 };
 
 type OtherProperty = {
@@ -218,6 +219,20 @@ const CREDIT_SCORE_SOURCES = [
 
 // Co-applicants are now passed in dynamically from the application's applicant list.
 
+const LIQUID_ASSET_TYPES = new Set([
+  "Chequing account",
+  "Savings account",
+  "TFSA",
+  "RRSP",
+  "FHSA",
+  "Investment account",
+  "GIC",
+  "Stocks/bonds",
+  "Crypto",
+  "Gift funds",
+]);
+const isLiquidAsset = (type: string) => LIQUID_ASSET_TYPES.has(type);
+
 const SEED_ASSETS_PRIMARY: Asset[] = [
   {
     id: "ast-1",
@@ -225,8 +240,8 @@ const SEED_ASSETS_PRIMARY: Asset[] = [
     institution: "RBC Royal Bank",
     value: 62500,
     forDownPayment: 50000,
-    liquid: true,
-    source: "Savings",
+    dpMode: "amount",
+    dpInput: "50000",
   },
   {
     id: "ast-2",
@@ -234,8 +249,6 @@ const SEED_ASSETS_PRIMARY: Asset[] = [
     institution: "Wealthsimple",
     value: 21800,
     forDownPayment: 0,
-    liquid: true,
-    source: "Savings",
   },
 ];
 
