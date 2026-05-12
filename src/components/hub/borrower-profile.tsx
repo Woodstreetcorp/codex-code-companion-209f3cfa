@@ -2739,19 +2739,41 @@ function AddLiabilityDrawer({
 }
 
 function AddAssetDrawer({
+  tx,
+  applicantId: _applicantId,
+  applicantName: _applicantName,
   onClose,
   onSave,
 }: {
+  tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
+  applicantId: string;
+  applicantName: string;
   onClose: () => void;
   onSave: (d: Omit<Asset, "id">) => void;
 }) {
   const [type, setType] = useState("Savings account");
   const [institution, setInstitution] = useState("");
   const [value, setValue] = useState("");
-  const [forDownPayment, setForDownPayment] = useState("");
-  const [liquid, setLiquid] = useState(true);
-  const [source, setSource] = useState("Savings");
-  const valid = institution.trim().length > 0 && Number(value) > 0;
+  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">("");
+  const [dpMode, setDpMode] = useState<"amount" | "pct">("amount");
+  const [dpInput, setDpInput] = useState("");
+
+  const valueNum = Number(value) || 0;
+  const dpInputNum = Number(dpInput) || 0;
+  const isLiquid = isLiquidAsset(type);
+  const dpEligible = isLiquid && (tx === "Purchase" || tx === "Pre-Purchase");
+  const computedDP =
+    useForDP === "yes" && dpEligible
+      ? dpMode === "amount"
+        ? Math.min(dpInputNum, valueNum)
+        : Math.round((Math.min(dpInputNum, 100) / 100) * valueNum)
+      : 0;
+
+  const dpAnswered = !dpEligible || useForDP === "no" || (useForDP === "yes" && computedDP > 0);
+  const dpInputInvalid =
+    useForDP === "yes" &&
+    (dpInputNum <= 0 || (dpMode === "amount" && dpInputNum > valueNum) || (dpMode === "pct" && dpInputNum > 100));
+  const valid = institution.trim().length > 0 && valueNum > 0 && dpAnswered && !dpInputInvalid;
 
   return (
     <DrawerShell
@@ -2772,10 +2794,10 @@ function AddAssetDrawer({
               onSave({
                 type,
                 institution,
-                value: Number(value),
-                forDownPayment: Number(forDownPayment) || 0,
-                liquid,
-                source,
+                value: valueNum,
+                forDownPayment: computedDP,
+                dpMode: useForDP === "yes" ? dpMode : undefined,
+                dpInput: useForDP === "yes" ? dpInput : undefined,
               })
             }
             className={`rounded-md px-3.5 py-2 text-xs font-semibold ${
@@ -2818,36 +2840,82 @@ function AddAssetDrawer({
         <Field label="Current value" required>
           <Input value={value} onChange={setValue} placeholder="0" />
         </Field>
-        <Field label="Amount used for down payment">
-          <Input value={forDownPayment} onChange={setForDownPayment} placeholder="0" />
-        </Field>
-        <Field label="Source of funds">
-          <Select
-            value={source}
-            onChange={setSource}
-            options={[
-              "Savings",
-              "RRSP",
-              "FHSA",
-              "Gift",
-              "Sale of property",
-              "Sale of asset",
-              "Borrowed funds",
-              "Business funds",
-              "Funds from outside Canada",
-              "Other",
-            ]}
-          />
-        </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={liquid}
-            onChange={(e) => setLiquid(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          This asset is liquid
-        </label>
+
+        {dpEligible ? (
+          <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-3">
+            <p className="text-sm font-medium text-foreground">
+              Will any portion of this asset be used for the down payment?
+            </p>
+            <div className="flex gap-6 text-sm">
+              {(["yes", "no"] as const).map((opt) => (
+                <label key={opt} className="inline-flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name="asset-use-dp"
+                    checked={useForDP === opt}
+                    onChange={() => {
+                      setUseForDP(opt);
+                      if (opt === "no") setDpInput("");
+                    }}
+                    className="h-3.5 w-3.5 accent-primary"
+                  />
+                  {opt === "yes" ? "Yes" : "No"}
+                </label>
+              ))}
+            </div>
+
+            {useForDP === "yes" && (
+              <div className="space-y-3 rounded-lg border border-border bg-background p-3">
+                <p className="text-xs font-medium text-foreground">
+                  How would you like to specify the down payment amount?
+                </p>
+                <div className="flex gap-6 text-sm">
+                  {(["amount", "pct"] as const).map((m) => (
+                    <label key={m} className="inline-flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="asset-dp-mode"
+                        checked={dpMode === m}
+                        onChange={() => setDpMode(m)}
+                        className="h-3.5 w-3.5 accent-primary"
+                      />
+                      {m === "amount" ? "Specific Amount" : "Percentage"}
+                    </label>
+                  ))}
+                </div>
+                <Field
+                  label={dpMode === "amount" ? "Amount (CAD)" : "Percentage of asset value"}
+                  full
+                  required
+                >
+                  <Input
+                    value={dpInput}
+                    onChange={setDpInput}
+                    placeholder={dpMode === "amount" ? "0.00" : "0"}
+                  />
+                </Field>
+                <p className="text-[11px] text-muted-foreground">
+                  Down payment contribution: {fmtMoney(computedDP)}
+                  {dpInputInvalid && (
+                    <span className="ml-2 text-coral">
+                      {dpMode === "amount"
+                        ? "Cannot exceed the asset's current value."
+                        : "Must be between 1 and 100."}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  This amount will auto-populate in the Down Payment page of your application.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : isLiquid ? null : (
+          <p className="text-[11px] text-muted-foreground">
+            Down payment use is only available for liquid assets on Purchase or Pre-Purchase
+            applications.
+          </p>
+        )}
       </div>
     </DrawerShell>
   );
