@@ -1,5 +1,4 @@
 import {
-  Award,
   Calculator,
   Clock,
   FileText,
