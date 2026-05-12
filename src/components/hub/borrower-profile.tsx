@@ -390,9 +390,11 @@ export function BorrowerProfilePage({
         {isPending && (
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-foreground/15 bg-primary-foreground/10 p-3 text-sm">
             <div className="min-w-0">
-              <p className="font-semibold">Waiting for borrower</p>
+              <p className="font-semibold">Completing on behalf of {applicant.name}</p>
               <p className="text-xs text-primary-foreground/75">
-                Invite sent to {applicant.email ?? "borrower"} · Status: {applicant.inviteStatus}
+                As the account holder you have full access to fill out this co-applicant's
+                profile. Invite sent to {applicant.email ?? "borrower"} · Status:{" "}
+                {applicant.inviteStatus}
               </p>
             </div>
             <button className="inline-flex items-center gap-1.5 rounded-md bg-primary-foreground px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-foreground/90">
