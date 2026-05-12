@@ -40,15 +40,20 @@ _Last updated: 2026-05-12._
 
 ## Open — admin frontend not built
 
+> **Not applicable to this borrower/frontend project.** Admin is tracked in the
+> separate Admin Lovable project and will be merged by Codex later. The rows
+> below are kept for cross-reference only — they are **not bugs in this project**.
+> See [`project-boundary.md`](./project-boundary.md).
+
 | # | Bug | Route | Severity | Status |
 |---|---|---|---|---|
-| 27 | No admin dashboard exists | `/admin/*` | Critical | Open — needs build phase |
-| 28 | No partner directory / growth engine | `/admin/partners` | Critical | Open — needs build phase |
-| 29 | No offer builder (standard, partner, bundles) | `/admin/offers` | Critical | Open — needs build phase |
-| 30 | No mortgage application command centre | `/admin/applications/$id` | Critical | Open — needs build phase |
-| 31 | No condition engine, document vault admin, task center | `/admin/*` | High | Open — needs build phase |
-| 32 | No lenders / products / pricing admin | `/admin/products` | High | Open — needs build phase |
-| 33 | No roles & permissions UI | `/admin/settings/roles` | High | Open — needs build phase |
+| 27 | No admin dashboard exists | `/admin/*` | n/a | N/A — separate Admin Lovable project |
+| 28 | No partner directory / growth engine | `/admin/partners` | n/a | N/A — separate Admin Lovable project |
+| 29 | No offer builder (standard, partner, bundles) | `/admin/offers` | n/a | N/A — separate Admin Lovable project |
+| 30 | No mortgage application command centre | `/admin/applications/$id` | n/a | N/A — separate Admin Lovable project |
+| 31 | No condition engine, document vault admin, task center | `/admin/*` | n/a | N/A — separate Admin Lovable project |
+| 32 | No lenders / products / pricing admin | `/admin/products` | n/a | N/A — separate Admin Lovable project |
+| 33 | No roles & permissions UI | `/admin/settings/roles` | n/a | N/A — separate Admin Lovable project |
 
 ## Visual / responsive
 
