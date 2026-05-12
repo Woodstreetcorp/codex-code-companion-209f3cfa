@@ -25,6 +25,14 @@ import { DocumentUploadContent } from "@/components/hub/document-upload";
 import { LenderResponseContent } from "@/components/hub/lender-response";
 import { FundingConditionsContent } from "@/components/hub/funding-conditions";
 import { ExclusiveOffersContent } from "@/components/hub/exclusive-offers";
+import {
+  APPLICATION,
+  PRE_PURCHASE_WIDGETS,
+  PURCHASE_WIDGETS,
+  REFINANCE_WIDGETS,
+  SELECTED_OFFER,
+  type Widget,
+} from "@/components/hub/mortgage-application";
 
 const SECTION_SLUGS = [
   "overview",
@@ -119,89 +127,152 @@ const HUB_NAV: { label: string; icon: ComponentType<{ className?: string }>; sta
   { label: "Funding Conditions", icon: Flag, status: "active" },
 ];
 
-const OFFER = {
-  rate: "5.25%",
-  term: "5-yr",
-  type: "Fixed",
-  monthly: "$1,250.76",
-  totalBenefits: "$2,350",
-  benefits: [
-    { label: "$500 Moving Expense Credit", value: "$500" },
-    { label: "2 Months Free Home Insurance", value: "$350" },
-    { label: "No Brokerage Fees", value: "$1,200" },
-    { label: "Smart Home Starter Kit", value: "$300" },
-  ],
-};
-
-const NEXT_STEPS = [
-  {
-    title: "Complete Mortgage Application",
-    body: "3 sections remaining: assets, debts, and declarations.",
-    cta: "Continue application",
-    tone: "urgent" as const,
-    icon: FileCheck,
-    section: "mortgage-application" as const,
-  },
-  {
-    title: "Review your exclusive offers",
-    body: "Explore your Home Life Bundle benefits — worth up to $2,350.",
-    cta: "View offers",
-    tone: "accent" as const,
-    icon: Gift,
-    section: "exclusive-offers" as const,
-  },
-  {
-    title: "Prepare your documents",
-    body: "See what you'll need to upload before lender review.",
-    cta: "See what's needed",
-    tone: "neutral" as const,
-    icon: Upload,
-    section: "document-upload" as const,
-  },
+// Bundle benefits surfaced from selected offer
+const BUNDLE_BENEFITS = [
+  { label: "$500 Moving Expense Credit", value: "$500" },
+  { label: "2 Months Free Home Insurance", value: "$350" },
+  { label: "No Brokerage Fees", value: "$1,200" },
+  { label: "Smart Home Starter Kit", value: "$300" },
 ];
 
-const MILESTONES: {
+function widgetsForTx(tx: typeof APPLICATION.type): Widget[] {
+  if (tx === "Pre-Purchase") return PRE_PURCHASE_WIDGETS;
+  if (tx === "Refinance" || tx === "Renewal") return REFINANCE_WIDGETS;
+  return PURCHASE_WIDGETS;
+}
+
+function deriveOverview() {
+  const widgets = widgetsForTx(APPLICATION.type);
+  const total = widgets.length;
+  const sectionsComplete = widgets.filter(
+    (w) => w.status === "Complete" || w.status === "Selected",
+  ).length;
+  const remaining = total - sectionsComplete;
+  const completion = Math.round(
+    widgets.reduce((sum, w) => sum + w.progress, 0) / Math.max(total, 1),
+  );
+
+  // Next incomplete actionable widget within the mortgage application
+  const nextWidget = widgets.find(
+    (w) => !w.locked && w.status !== "Complete" && w.status !== "Selected",
+  );
+  const lockedRemaining = widgets.filter((w) => w.locked).length;
+
+  return {
+    widgets,
+    total,
+    sectionsComplete,
+    remaining,
+    completion,
+    nextWidget,
+    lockedRemaining,
+  };
+}
+
+type NextStep = {
+  title: string;
+  body: string;
+  cta: string;
+  tone: "urgent" | "accent" | "neutral";
+  icon: ComponentType<{ className?: string }>;
+  section: SectionSlug;
+};
+
+function buildNextSteps(): NextStep[] {
+  const o = deriveOverview();
+  const steps: NextStep[] = [];
+
+  if (o.remaining > 0) {
+    steps.push({
+      title: "Complete Mortgage Application",
+      body: o.nextWidget
+        ? `${o.remaining} section${o.remaining === 1 ? "" : "s"} remaining — next: ${o.nextWidget.title}.`
+        : `${o.remaining} sections remaining.`,
+      cta: "Continue Application",
+      tone: "urgent",
+      icon: FileCheck,
+      section: "mortgage-application",
+    });
+  } else {
+    steps.push({
+      title: "Submit Application",
+      body: "All required sections are complete — submit for lender review.",
+      cta: "Review & Submit",
+      tone: "urgent",
+      icon: FileCheck,
+      section: "mortgage-application",
+    });
+  }
+
+  steps.push({
+    title: "Review Exclusive Offers",
+    body: `Explore your Home Life Bundle benefits worth ${SELECTED_OFFER.bundle}.`,
+    cta: "View Offers",
+    tone: "accent",
+    icon: Gift,
+    section: "exclusive-offers",
+  });
+
+  steps.push({
+    title: "Prepare Documents",
+    body: "Get ready to upload supporting documents for lender review.",
+    cta: "See Requirements",
+    tone: "neutral",
+    icon: Upload,
+    section: "document-upload",
+  });
+
+  return steps;
+}
+
+function buildMilestones(): {
   title: string;
   body: string;
   meta?: string;
   state: "complete" | "active" | "upcoming" | "locked";
-}[] = [
-  {
-    title: "Pre-Qualification Complete",
-    body: "Your qualification summary has been generated",
-    state: "complete",
-  },
-  {
-    title: "Application in Progress",
-    body: "Complete all sections of your mortgage application",
-    meta: "Complete by Jan 20, 2027",
-    state: "active",
-  },
-  {
-    title: "Document Upload",
-    body: "Upload required documents for verification",
-    meta: "Available after application",
-    state: "upcoming",
-  },
-  {
-    title: "Lender Review",
-    body: "Lenders review your application and send offers",
-    meta: "Est. 2–3 business days",
-    state: "locked",
-  },
-  {
-    title: "Funding Conditions",
-    body: "Complete final requirements to fund your mortgage",
-    meta: "Est. 5–10 business days",
-    state: "locked",
-  },
-  {
-    title: "Mortgage Funded",
-    body: "Your mortgage is approved and ready to close",
-    meta: "Est. closing date",
-    state: "locked",
-  },
-];
+}[] {
+  const o = deriveOverview();
+  const appComplete = o.remaining === 0;
+  return [
+    {
+      title: "Pre-Qualification Complete",
+      body: "Your qualification summary has been generated",
+      state: "complete",
+    },
+    {
+      title: "Application in Progress",
+      body: appComplete
+        ? "All sections complete — ready to submit"
+        : `Complete ${o.remaining} of ${o.total} remaining section${o.remaining === 1 ? "" : "s"}`,
+      meta: appComplete ? "Ready for submission" : `${o.completion}% complete`,
+      state: appComplete ? "complete" : "active",
+    },
+    {
+      title: "Document Upload",
+      body: "Upload required documents for verification",
+      meta: appComplete ? "Ready to start" : "Available after application",
+      state: appComplete ? "active" : "upcoming",
+    },
+    {
+      title: "Lender Review",
+      body: "Lenders review your application and send offers",
+      meta: "Est. 2–3 business days",
+      state: "locked",
+    },
+    {
+      title: "Funding Conditions",
+      body: "Complete final requirements to fund your mortgage",
+      meta: "Est. 5–10 business days",
+      state: "locked",
+    },
+    {
+      title: "Mortgage Funded",
+      body: "Your mortgage is approved and ready to close",
+      meta: "Est. closing date",
+      state: "locked",
+    },
+  ];
+}
 
 // ─── Page ────────────────────────────────────────────────────────────────
 function ApplicationHub() {
