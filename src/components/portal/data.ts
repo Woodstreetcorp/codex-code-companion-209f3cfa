@@ -1,5 +1,4 @@
 import {
-  Award,
   Calculator,
   Clock,
   FileText,
@@ -189,7 +188,6 @@ export type PortalRoutePath =
   | "/portal"
   | "/portal/applications"
   | "/portal/documents"
-  | "/portal/offers"
   | "/portal/wallet"
   | "/portal/tools"
   | "/portal/settings";
@@ -203,7 +201,6 @@ export const PORTAL_NAV: {
   { to: "/portal", label: "Overview", icon: Home, exact: true },
   { to: "/portal/applications", label: "Applications", icon: Inbox },
   { to: "/portal/documents", label: "Documents", icon: FileText },
-  { to: "/portal/offers", label: "Mortgage Offers", icon: Award },
   { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
   { to: "/portal/settings", label: "Settings", icon: Settings },
