@@ -3,16 +3,20 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Banknote,
+  BookmarkCheck,
   Calculator,
   Coins,
+  FileText,
   Home,
   HomeIcon,
   LineChart,
+  MoveRight,
   PiggyBank,
   Receipt,
   RefreshCw,
   Scale,
   ShieldAlert,
+  Shield,
   Sparkles,
   Trash2,
   TrendingUp,
@@ -104,6 +108,33 @@ const TOOLS: Tool[] = [
     cats: ["Purchase"],
   },
   {
+    to: "/portal/tools/land-transfer-tax",
+    name: "Land Transfer Tax Calculator",
+    desc: "Provincial and municipal land transfer tax with first-time buyer rebates across Canada.",
+    bestFor: "Buyers comparing provinces & rebates",
+    cta: "Calculate LTT",
+    icon: FileText,
+    cats: ["Purchase"],
+  },
+  {
+    to: "/portal/tools/insurance-premium",
+    name: "Mortgage Insurance Premium",
+    desc: "Estimate CMHC, Sagen, or Canada Guaranty premiums plus PST in MB, SK, and ON.",
+    bestFor: "High-ratio purchases (under 20% down)",
+    cta: "Estimate Premium",
+    icon: Shield,
+    cats: ["Purchase", "Affordability"],
+  },
+  {
+    to: "/portal/tools/portability",
+    name: "Mortgage Portability Comparator",
+    desc: "Mid-term move? Compare porting, blending, or breaking your existing mortgage.",
+    bestFor: "Homeowners moving before maturity",
+    cta: "Compare Options",
+    icon: MoveRight,
+    cats: ["Refinance", "Renewal", "Scenario Planning"],
+  },
+  {
     to: "/portal/tools/down-payment",
     name: "Down Payment Planner",
     desc: "Plan your down payment sources and see how it affects your mortgage and LTV.",
@@ -186,6 +217,46 @@ const TOOLS: Tool[] = [
   },
 ];
 
+// ─── Recommendation engine (stage-based) ────────────────────────────────
+function recommendedForStage(txType: string | undefined): Tool[] {
+  const byPath = (p: string) => TOOLS.find((t) => t.to === p);
+  const picks: (Tool | undefined)[] = (() => {
+    switch (txType) {
+      case "Pre-Purchase":
+        return [
+          byPath("/portal/tools/affordability"),
+          byPath("/portal/tools/down-payment"),
+          byPath("/portal/tools/stress-test"),
+        ];
+      case "Purchase":
+        return [
+          byPath("/portal/tools/closing-costs"),
+          byPath("/portal/tools/land-transfer-tax"),
+          byPath("/portal/tools/insurance-premium"),
+        ];
+      case "Refinance":
+        return [
+          byPath("/portal/tools/refinance-savings"),
+          byPath("/portal/tools/debt-consolidation"),
+          byPath("/portal/tools/home-equity"),
+        ];
+      case "Renewal":
+        return [
+          byPath("/portal/tools/renewal-comparison"),
+          byPath("/portal/tools/portability"),
+          byPath("/portal/tools/prepayment"),
+        ];
+      default:
+        return [
+          byPath("/portal/tools/affordability"),
+          byPath("/portal/tools/payment-calculator"),
+          byPath("/portal/tools/rent-vs-buy"),
+        ];
+    }
+  })();
+  return picks.filter(Boolean) as Tool[];
+}
+
 function ToolsHub() {
   const [cat, setCat] = useState<Category>("All");
   const tools = useMemo(
@@ -194,6 +265,7 @@ function ToolsHub() {
   );
   const { list: scenarios, remove } = useSavedScenarios();
   const activeApp = ACTIVE_APPS[0];
+  const recommended = useMemo(() => recommendedForStage(activeApp?.txType), [activeApp]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -265,6 +337,46 @@ function ToolsHub() {
         </section>
       )}
 
+      {/* Recommended for you */}
+      <section className="rounded-2xl border border-secondary/30 bg-gradient-to-br from-secondary/5 to-primary/5 p-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-secondary">
+              Recommended for you
+            </p>
+            <h2 className="mt-0.5 text-base font-semibold text-foreground">
+              {activeApp ? `Best next steps for your ${activeApp.txType.toLowerCase()} stage` : "Start with these essentials"}
+            </h2>
+          </div>
+          <Link
+            to="/portal/tools/saved"
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+          >
+            <BookmarkCheck className="h-3.5 w-3.5" /> Saved scenarios
+          </Link>
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          {recommended.map((t) => (
+            <Link
+              key={t.to}
+              to={t.to}
+              className="group rounded-xl border border-border bg-card p-3 transition hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <t.icon className="h-4 w-4" />
+                </span>
+                <p className="text-sm font-semibold text-foreground">{t.name}</p>
+              </div>
+              <p className="mt-2 line-clamp-2 text-[11px] text-muted-foreground">{t.desc}</p>
+              <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+                Open <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Category chips */}
       <nav aria-label="Tool categories" className="flex flex-wrap gap-1.5">
         {CATEGORIES.map((c) => (
@@ -295,7 +407,12 @@ function ToolsHub() {
       <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">Saved scenarios</h2>
-          <span className="text-[11px] text-muted-foreground">Stored on this device</span>
+          <Link
+            to="/portal/tools/saved"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+          >
+            Manage all <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
         {scenarios.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed border-border bg-background p-6 text-center">
@@ -306,11 +423,21 @@ function ToolsHub() {
             </p>
           </div>
         ) : (
-          <ul className="mt-3 divide-y divide-border">
-            {scenarios.map((s) => (
-              <ScenarioRow key={s.id} scenario={s} onRemove={() => remove(s.id)} />
-            ))}
-          </ul>
+          <>
+            <ul className="mt-3 divide-y divide-border">
+              {scenarios.slice(0, 4).map((s) => (
+                <ScenarioRow key={s.id} scenario={s} onRemove={() => remove(s.id)} />
+              ))}
+            </ul>
+            {scenarios.length > 4 && (
+              <Link
+                to="/portal/tools/saved"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+              >
+                View all {scenarios.length} scenarios <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
+          </>
         )}
       </section>
 

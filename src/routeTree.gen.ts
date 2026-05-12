@@ -31,6 +31,7 @@ import { Route as InternalAccountHandoffRouteImport } from './routes/internal.ac
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
 import { Route as PortalToolsStressTestRouteImport } from './routes/portal.tools.stress-test'
 import { Route as PortalToolsScenarioCompareRouteImport } from './routes/portal.tools.scenario-compare'
+import { Route as PortalToolsSavedRouteImport } from './routes/portal.tools.saved'
 import { Route as PortalToolsRentVsBuyRouteImport } from './routes/portal.tools.rent-vs-buy'
 import { Route as PortalToolsRenewalComparisonRouteImport } from './routes/portal.tools.renewal-comparison'
 import { Route as PortalToolsRefinanceSavingsRouteImport } from './routes/portal.tools.refinance-savings'
@@ -182,6 +183,11 @@ const PortalToolsScenarioCompareRoute =
     path: '/scenario-compare',
     getParentRoute: () => PortalToolsRoute,
   } as any)
+const PortalToolsSavedRoute = PortalToolsSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
 const PortalToolsRentVsBuyRoute = PortalToolsRentVsBuyRouteImport.update({
   id: '/rent-vs-buy',
   path: '/rent-vs-buy',
@@ -449,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
@@ -510,6 +517,7 @@ export interface FileRoutesByTo {
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
@@ -573,6 +581,7 @@ export interface FileRoutesById {
   '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
   '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
   '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/saved': typeof PortalToolsSavedRoute
   '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
   '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
@@ -637,6 +646,7 @@ export interface FileRouteTypes {
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
@@ -698,6 +708,7 @@ export interface FileRouteTypes {
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications'
@@ -760,6 +771,7 @@ export interface FileRouteTypes {
     | '/portal/tools/refinance-savings'
     | '/portal/tools/renewal-comparison'
     | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/saved'
     | '/portal/tools/scenario-compare'
     | '/portal/tools/stress-test'
     | '/portal/applications/'
@@ -949,6 +961,13 @@ declare module '@tanstack/react-router' {
       path: '/scenario-compare'
       fullPath: '/portal/tools/scenario-compare'
       preLoaderRoute: typeof PortalToolsScenarioCompareRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/saved': {
+      id: '/portal/tools/saved'
+      path: '/saved'
+      fullPath: '/portal/tools/saved'
+      preLoaderRoute: typeof PortalToolsSavedRouteImport
       parentRoute: typeof PortalToolsRoute
     }
     '/portal/tools/rent-vs-buy': {
@@ -1272,6 +1291,7 @@ interface PortalToolsRouteChildren {
   PortalToolsRefinanceSavingsRoute: typeof PortalToolsRefinanceSavingsRoute
   PortalToolsRenewalComparisonRoute: typeof PortalToolsRenewalComparisonRoute
   PortalToolsRentVsBuyRoute: typeof PortalToolsRentVsBuyRoute
+  PortalToolsSavedRoute: typeof PortalToolsSavedRoute
   PortalToolsScenarioCompareRoute: typeof PortalToolsScenarioCompareRoute
   PortalToolsStressTestRoute: typeof PortalToolsStressTestRoute
 }
@@ -1290,6 +1310,7 @@ const PortalToolsRouteChildren: PortalToolsRouteChildren = {
   PortalToolsRefinanceSavingsRoute: PortalToolsRefinanceSavingsRoute,
   PortalToolsRenewalComparisonRoute: PortalToolsRenewalComparisonRoute,
   PortalToolsRentVsBuyRoute: PortalToolsRentVsBuyRoute,
+  PortalToolsSavedRoute: PortalToolsSavedRoute,
   PortalToolsScenarioCompareRoute: PortalToolsScenarioCompareRoute,
   PortalToolsStressTestRoute: PortalToolsStressTestRoute,
 }
