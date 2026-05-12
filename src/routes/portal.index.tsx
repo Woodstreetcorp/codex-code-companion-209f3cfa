@@ -1,14 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowRight,
+  Bell,
+  BellRing,
   Calculator,
+  CalendarClock,
   CheckCircle2,
   Clock,
   FileText,
   Inbox,
   Lock,
+  MessageSquare,
+  Phone,
   Plus,
+  ShieldCheck,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import {
@@ -32,6 +43,7 @@ import {
   SubmittedCard,
   SummaryCard,
 } from "@/components/portal/ui";
+import { useSavedScenarios } from "@/components/portal/tools-shared";
 
 export const Route = createFileRoute("/portal/")({
   head: () => ({
@@ -48,6 +60,49 @@ export const Route = createFileRoute("/portal/")({
 });
 
 const FIRST_NAME = "Alex";
+
+// ─── Stage rail (mirrors ApplicationShell) ──────────────────────────────
+const STAGES = [
+  "Snapshot",
+  "Application",
+  "Submitted",
+  "Lender Review",
+  "Approved",
+  "Conditions",
+  "Closing",
+] as const;
+
+function stageFromStatus(status: string): number {
+  const s = status.toLowerCase();
+  if (s.includes("closing") || s.includes("ready for closing")) return 6;
+  if (s.includes("conditions")) return 5;
+  if (s.includes("approved")) return 4;
+  if (s.includes("lender") || s.includes("review")) return 3;
+  if (s.includes("submitted")) return 2;
+  if (s.includes("snapshot")) return 0;
+  return 1;
+}
+
+// ─── Rate watch (mock current rates) ────────────────────────────────────
+const RATES = {
+  fiveYrFixed: { rate: 4.79, prev: 4.84, ts: "May 12, 2026" },
+  fiveYrVariable: { rate: 5.20, prev: 5.20, ts: "May 12, 2026" },
+};
+
+// ─── Advisor (mock) ─────────────────────────────────────────────────────
+const ADVISOR = {
+  name: "Jordan Lee",
+  title: "Mortgage Advisor",
+  initials: "JL",
+  responseTime: "Usually responds within 1 business hour",
+};
+
+// ─── Disclosures (mock state) ───────────────────────────────────────────
+const DISCLOSURES = [
+  { id: "d1", name: "Privacy & Information Collection", reviewed: true },
+  { id: "d2", name: "Credit Bureau Consent", reviewed: true },
+  { id: "d3", name: "Cost of Borrowing Disclosure", reviewed: false },
+];
 
 const ACTIVITY = [
   { date: "May 11", text: "You selected the Best Value Fixed Offer" },
@@ -67,6 +122,19 @@ function PortalDashboard() {
   const atLimit = counts.active >= MAX_ACTIVE_APPLICATIONS;
   const hasFunded = COMPLETED.length > 0;
   const activeIncomplete = ACTIVE[0];
+  const submittedFirst = SUBMITTED[0];
+  const fundedFirst = COMPLETED[0];
+  const fundedMaturityMonths = fundedFirst ? monthsUntil(fundedFirst.maturityDate) : null;
+  const showRenewalNudge = fundedMaturityMonths !== null && fundedMaturityMonths <= 6 && fundedMaturityMonths >= 0;
+
+  // Build the strongest single next-best-action
+  const nba = buildNextBestAction({
+    activeIncomplete, submittedFirst,
+    docsPending: counts.docsPending,
+    conditionsOutstanding: counts.conditions,
+    showRenewalNudge,
+    fundedMaturityMonths,
+  });
 
   return (
     <div className="space-y-8">
@@ -118,41 +186,27 @@ function PortalDashboard() {
         </Alert>
       )}
 
-      {/* Next Best Action */}
-      {activeIncomplete && (
-        <section
-          aria-label="Next best action"
-          className="rounded-3xl border border-secondary/30 bg-card p-5 shadow-sm sm:p-6"
-        >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <span className="rounded-2xl bg-secondary/15 p-3 text-secondary">
-                <Sparkles className="h-6 w-6" />
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
-                  Next best action
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground">
-                  Continue your purchase application
-                </p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  APP-{activeIncomplete.id.replace(/^APP-/, "")} · {activeIncomplete.property}
-                </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-yellow/30 px-2.5 py-1 text-xs font-medium text-foreground">
-                  <Clock className="h-3.5 w-3.5" /> Expires in {activeIncomplete.daysToExpiry} days
-                </div>
-              </div>
-            </div>
-            <Link
-              to="/internal/full-application"
-              className="inline-flex shrink-0 items-center justify-center rounded-md bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90"
-            >
-              Continue Application <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Link>
-          </div>
-        </section>
+      {/* Next Best Action (enhanced) */}
+      {nba && <NextBestActionCard nba={nba} />}
+
+      {/* Application progress (stage 1–7) */}
+      {(activeIncomplete || submittedFirst) && (
+        <ApplicationProgressWidget
+          appId={(submittedFirst ?? activeIncomplete!).id}
+          property={(submittedFirst ?? activeIncomplete!).property}
+          status={submittedFirst ? submittedFirst.stage : activeIncomplete!.status}
+          progress={submittedFirst ? submittedFirst.progress : activeIncomplete!.completion}
+          eta={submittedFirst ? "Est. funding May 30" : `Expires in ${activeIncomplete!.daysToExpiry} days`}
+        />
       )}
+
+      {/* Renewal countdown (if mortgage on file and within 6 months) */}
+      {showRenewalNudge && fundedFirst && fundedMaturityMonths !== null && (
+        <RenewalCountdownCard funded={fundedFirst} months={fundedMaturityMonths} />
+      )}
+
+      {/* Disclosure status pill */}
+      <DisclosureStatusRow />
 
       {/* Summary cards */}
       <section aria-label="Summary">
@@ -195,6 +249,15 @@ function PortalDashboard() {
           </p>
         )}
       </section>
+
+      {/* Rate watch + Advisor */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <RateWatchCard />
+        <AdvisorCard />
+      </section>
+
+      {/* Saved scenarios from tools */}
+      <SavedScenariosCard />
 
       {/* Two-column: Documents/Conditions + Offers */}
       <section className="grid gap-6 lg:grid-cols-2">
@@ -381,5 +444,392 @@ function PageHeaderLite({ title, subtitle }: { title: string; subtitle?: string 
       <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
       {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
     </div>
+  );
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+function monthsUntil(dateStr: string): number {
+  const target = new Date(dateStr);
+  if (isNaN(target.getTime())) return 999;
+  const now = new Date();
+  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+}
+
+type Nba = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  meta?: string;
+  ctaLabel: string;
+  ctaTo: "/portal/applications" | "/internal/full-application" | "/portal/documents" | "/portal/tools/renewal-comparison";
+  ctaParams?: Record<string, string>;
+  tone: "secondary" | "primary" | "amber";
+};
+
+function buildNextBestAction(args: {
+  activeIncomplete?: { id: string; property: string; daysToExpiry: number };
+  submittedFirst?: { id: string; property: string; conditionsOutstanding: number };
+  docsPending: number;
+  conditionsOutstanding: number;
+  showRenewalNudge: boolean;
+  fundedMaturityMonths: number | null;
+}): Nba | null {
+  const { activeIncomplete, submittedFirst, docsPending, conditionsOutstanding, showRenewalNudge, fundedMaturityMonths } = args;
+
+  if (submittedFirst && conditionsOutstanding > 0) {
+    return {
+      eyebrow: "Next best action",
+      title: `Clear ${conditionsOutstanding} outstanding condition${conditionsOutstanding === 1 ? "" : "s"}`,
+      subtitle: `${submittedFirst.id} · ${submittedFirst.property}`,
+      meta: "Lender is waiting on you",
+      ctaLabel: "View conditions",
+      ctaTo: "/portal/applications",
+      tone: "amber",
+    };
+  }
+  if (docsPending > 0) {
+    return {
+      eyebrow: "Next best action",
+      title: `Upload ${docsPending} requested document${docsPending === 1 ? "" : "s"}`,
+      subtitle: "Keep your application moving forward",
+      ctaLabel: "Open Document Vault",
+      ctaTo: "/portal/documents",
+      tone: "secondary",
+    };
+  }
+  if (activeIncomplete) {
+    return {
+      eyebrow: "Next best action",
+      title: "Continue your purchase application",
+      subtitle: `${activeIncomplete.id} · ${activeIncomplete.property}`,
+      meta: `Expires in ${activeIncomplete.daysToExpiry} days`,
+      ctaLabel: "Continue Application",
+      ctaTo: "/internal/full-application",
+      tone: activeIncomplete.daysToExpiry <= 3 ? "amber" : "secondary",
+    };
+  }
+  if (showRenewalNudge && fundedMaturityMonths !== null) {
+    return {
+      eyebrow: "Renewal coming up",
+      title: "Start your renewal review",
+      subtitle: `Maturity in ~${fundedMaturityMonths} month${fundedMaturityMonths === 1 ? "" : "s"}`,
+      ctaLabel: "Plan renewal",
+      ctaTo: "/portal/tools/renewal-comparison",
+      tone: "primary",
+    };
+  }
+  return null;
+}
+
+// ─── Next Best Action Card ──────────────────────────────────────────────
+function NextBestActionCard({ nba }: { nba: Nba }) {
+  const toneCls =
+    nba.tone === "amber" ? "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
+    : nba.tone === "primary" ? "border-primary/30 bg-gradient-to-br from-primary/8 via-card to-primary/5"
+    : "border-secondary/30 bg-card";
+  const iconCls = nba.tone === "amber" ? "bg-amber-200/40 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"
+    : nba.tone === "primary" ? "bg-primary/15 text-primary"
+    : "bg-secondary/15 text-secondary";
+  return (
+    <section aria-label="Next best action" className={`rounded-3xl border p-5 shadow-sm sm:p-6 ${toneCls}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <span className={`rounded-2xl p-3 ${iconCls}`}><Sparkles className="h-6 w-6" /></span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">{nba.eyebrow}</p>
+            <p className="mt-1 text-lg font-semibold text-foreground">{nba.title}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{nba.subtitle}</p>
+            {nba.meta && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-yellow/30 px-2.5 py-1 text-xs font-medium text-foreground">
+                <Clock className="h-3.5 w-3.5" /> {nba.meta}
+              </div>
+            )}
+          </div>
+        </div>
+        <Link
+          to={nba.ctaTo}
+          className="inline-flex shrink-0 items-center justify-center rounded-md bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90"
+        >
+          {nba.ctaLabel} <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+// ─── Application Progress (stage 1–7) ───────────────────────────────────
+function ApplicationProgressWidget({
+  appId, property, status, progress, eta,
+}: { appId: string; property: string; status: string; progress: number; eta: string }) {
+  const stageIdx = stageFromStatus(status);
+  return (
+    <section aria-label="Application progress" className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-secondary">Application progress</p>
+          <h3 className="mt-0.5 text-base font-semibold text-foreground">{property}</h3>
+          <p className="text-xs text-muted-foreground">#{appId} · {status} · {eta}</p>
+        </div>
+        <Link
+          to="/portal/applications/$applicationId"
+          params={{ applicationId: appId }}
+          className="inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80"
+        >
+          Open application hub <ArrowRight className="ml-1 h-3.5 w-3.5" />
+        </Link>
+      </div>
+      <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${progress}%` }} />
+      </div>
+      <ol className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
+        {STAGES.map((label, i) => {
+          const done = i < stageIdx;
+          const active = i === stageIdx;
+          return (
+            <li key={label} className="flex flex-1 flex-col items-center min-w-[60px]">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                done ? "bg-primary text-primary-foreground"
+                : active ? "border border-secondary bg-secondary/15 text-secondary"
+                : "border border-border bg-background text-muted-foreground"
+              }`}>
+                {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
+              </div>
+              <span className={`mt-1 whitespace-nowrap text-[10px] ${
+                active ? "font-semibold text-secondary" : done ? "text-foreground" : "text-muted-foreground"
+              }`}>
+                {label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+// ─── Renewal Countdown ──────────────────────────────────────────────────
+function RenewalCountdownCard({ funded, months }: {
+  funded: { id: string; property: string; lender: string; maturityDate: string; rateType: string };
+  months: number;
+}) {
+  return (
+    <section aria-label="Renewal countdown" className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 via-card to-secondary/5 p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="rounded-2xl bg-primary/15 p-3 text-primary"><CalendarClock className="h-5 w-5" /></span>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Renewal coming up</p>
+            <p className="mt-0.5 text-base font-semibold text-foreground">
+              {months} month{months === 1 ? "" : "s"} until your mortgage matures
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {funded.lender} · {funded.rateType} · matures {funded.maturityDate}
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/portal/tools/renewal-comparison"
+          className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Start renewal review <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+// ─── Disclosure Status Row ──────────────────────────────────────────────
+function DisclosureStatusRow() {
+  const reviewed = DISCLOSURES.filter((d) => d.reviewed).length;
+  const total = DISCLOSURES.length;
+  const allDone = reviewed === total;
+  return (
+    <section
+      aria-label="Disclosure status"
+      className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+        allDone ? "border-mint bg-mint/15" : "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <span className={`rounded-xl p-2.5 ${allDone ? "bg-mint/40 text-mint-foreground" : "bg-amber-200/50 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"}`}>
+          <ShieldCheck className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/70">Required disclosures</p>
+          <p className="mt-0.5 text-sm font-semibold text-foreground">
+            {allDone ? "All disclosures reviewed" : `${total - reviewed} disclosure${total - reviewed === 1 ? "" : "s"} need your review`}
+          </p>
+          <p className="text-xs text-muted-foreground">{reviewed} of {total} acknowledged</p>
+        </div>
+      </div>
+      <Link
+        to="/portal/settings/privacy"
+        className={`inline-flex items-center justify-center rounded-md px-3.5 py-2 text-xs font-semibold ${
+          allDone ? "border border-mint bg-background text-foreground hover:bg-muted" : "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-amber-950"
+        }`}
+      >
+        {allDone ? "View disclosures" : "Review now"} <ArrowRight className="ml-1 h-3.5 w-3.5" />
+      </Link>
+    </section>
+  );
+}
+
+// ─── Rate Watch ─────────────────────────────────────────────────────────
+function RateWatchCard() {
+  const [alertOn, setAlertOn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("approvu:rate-alert") === "1";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("approvu:rate-alert", alertOn ? "1" : "0");
+    }
+  }, [alertOn]);
+
+  const fixed = RATES.fiveYrFixed;
+  const variable = RATES.fiveYrVariable;
+  const fixedDelta = +(fixed.rate - fixed.prev).toFixed(2);
+  const varDelta = +(variable.rate - variable.prev).toFixed(2);
+
+  return (
+    <Card>
+      <CardHeader
+        title="Rate watch"
+        right={<span className="text-[11px] text-muted-foreground">Updated {fixed.ts}</span>}
+      />
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <RateTile label="5-yr fixed" rate={fixed.rate} delta={fixedDelta} />
+        <RateTile label="5-yr variable" rate={variable.rate} delta={varDelta} />
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
+        <div className="flex items-start gap-2">
+          <span className={`mt-0.5 rounded-md p-1.5 ${alertOn ? "bg-secondary/15 text-secondary" : "bg-muted text-muted-foreground"}`}>
+            {alertOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+          </span>
+          <div>
+            <p className="text-xs font-semibold text-foreground">Rate-drop alerts</p>
+            <p className="text-[11px] text-muted-foreground">
+              {alertOn ? "We'll email you when 5-yr fixed drops by 0.10%+" : "Get notified when rates drop in your favour."}
+            </p>
+          </div>
+        </div>
+        <button
+          role="switch"
+          aria-checked={alertOn}
+          onClick={() => {
+            setAlertOn((v) => !v);
+            toast.success(alertOn ? "Rate alerts turned off" : "Rate alerts turned on");
+          }}
+          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${alertOn ? "bg-secondary" : "bg-muted"}`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${alertOn ? "translate-x-4" : "translate-x-0.5"}`} />
+        </button>
+      </div>
+      <Link to="/portal/tools/renewal-comparison" className="mt-3 inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80">
+        Run a rate scenario <ArrowRight className="ml-1 h-3.5 w-3.5" />
+      </Link>
+    </Card>
+  );
+}
+
+function RateTile({ label, rate, delta }: { label: string; rate: number; delta: number }) {
+  const dropped = delta < 0;
+  const flat = delta === 0;
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold text-foreground">{rate.toFixed(2)}%</p>
+      <div className={`mt-1 inline-flex items-center gap-1 text-[11px] font-medium ${
+        flat ? "text-muted-foreground" : dropped ? "text-mint-foreground" : "text-coral"
+      }`}>
+        {flat ? "—" : dropped ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
+        {flat ? "no change" : `${dropped ? "" : "+"}${delta.toFixed(2)}% vs last week`}
+      </div>
+    </div>
+  );
+}
+
+// ─── Advisor card ───────────────────────────────────────────────────────
+function AdvisorCard() {
+  return (
+    <Card>
+      <CardHeader title="Your advisor" />
+      <div className="mt-4 flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-sm font-semibold text-primary-foreground shadow">
+          {ADVISOR.initials}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-foreground">{ADVISOR.name}</p>
+          <p className="text-xs text-muted-foreground">{ADVISOR.title}</p>
+          <p className="text-[11px] text-muted-foreground">{ADVISOR.responseTime}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          onClick={() => toast.success("Opening calendar to book a 15-minute call")}
+          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          <Phone className="h-3.5 w-3.5" /> Book 15-min call
+        </button>
+        <button
+          onClick={() => toast.success("Message thread opened")}
+          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          <MessageSquare className="h-3.5 w-3.5" /> Message
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+// ─── Saved Scenarios ────────────────────────────────────────────────────
+function SavedScenariosCard() {
+  const { list, remove } = useSavedScenarios();
+  return (
+    <section aria-label="Saved scenarios">
+      <Card>
+        <CardHeader
+          title="Saved scenarios"
+          right={
+            <Link to="/portal/tools" className="text-xs font-medium text-secondary hover:underline">
+              Open Mortgage Tools <ArrowRight className="ml-0.5 inline h-3 w-3" />
+            </Link>
+          }
+        />
+        {list.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-border bg-background p-6 text-center">
+            <Calculator className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm font-semibold text-foreground">No saved scenarios yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use the calculators to estimate payments, savings and equity — save any scenario to revisit it here.
+            </p>
+            <Link to="/portal/tools" className="mt-3 inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80">
+              Browse tools <ArrowRight className="ml-1 h-3 w-3" />
+            </Link>
+          </div>
+        ) : (
+          <ul className="mt-4 divide-y divide-border">
+            {list.slice(0, 4).map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-secondary">{s.tool}</p>
+                  <p className="truncate text-sm font-medium text-foreground">{s.name}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Saved {new Date(s.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { remove(s.id); toast.message("Scenario removed"); }}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-coral"
+                  aria-label="Remove scenario"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </section>
   );
 }
