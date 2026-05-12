@@ -20,6 +20,7 @@ import { Route as PortalToolsRouteImport } from './routes/portal.tools'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalNotificationsRouteImport } from './routes/portal.notifications'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalHelpRouteImport } from './routes/portal.help'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalAppointmentsRouteImport } from './routes/portal.appointments'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
@@ -116,6 +117,11 @@ const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalHelpRoute = PortalHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
@@ -370,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -424,6 +431,7 @@ export interface FileRoutesByTo {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -480,6 +488,7 @@ export interface FileRoutesById {
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -537,6 +546,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -591,6 +601,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -646,6 +657,7 @@ export interface FileRouteTypes {
     | '/internal/mortgage-offers'
     | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -785,6 +797,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/help': {
+      id: '/portal/help'
+      path: '/help'
+      fullPath: '/portal/help'
+      preLoaderRoute: typeof PortalHelpRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/documents': {
@@ -1143,6 +1162,7 @@ const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
 interface PortalRouteChildren {
   PortalAppointmentsRoute: typeof PortalAppointmentsRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
+  PortalHelpRoute: typeof PortalHelpRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
@@ -1159,6 +1179,7 @@ interface PortalRouteChildren {
 const PortalRouteChildren: PortalRouteChildren = {
   PortalAppointmentsRoute: PortalAppointmentsRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
+  PortalHelpRoute: PortalHelpRoute,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalNotificationsRoute: PortalNotificationsRoute,
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
