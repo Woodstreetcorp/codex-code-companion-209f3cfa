@@ -423,7 +423,7 @@ function TwoFactorVerification({
         {code.map((d, i) => (
           <input
             key={i}
-            ref={(el) => (refs.current[i] = el)}
+            ref={(el) => { refs.current[i] = el; }}
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={1}
