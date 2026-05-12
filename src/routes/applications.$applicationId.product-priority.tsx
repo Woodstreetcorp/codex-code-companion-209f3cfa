@@ -17,7 +17,7 @@ import {
 import { PageShell } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/product-priority",
+  "/applications/$applicationId/product-priority",
 )({
   head: () => ({
     meta: [
