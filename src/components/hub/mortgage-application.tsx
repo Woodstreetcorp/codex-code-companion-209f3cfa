@@ -763,7 +763,7 @@ function SelectedOfferCard() {
           <span className="text-sm font-semibold text-mint">{SELECTED_OFFER.bundle} value</span>
         </div>
         <Link
-          to="/applications/$applicationId/mortgage-offers"
+          to="/applications/$applicationId/qualified-mortgages"
           params={{ applicationId: "current" }}
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
@@ -939,7 +939,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
     "refi-request": "/applications/current/property-financing/refinance-request",
     "renewal-preferences": "/applications/current/property-financing/renewal-preferences",
     "mortgage-request": "/applications/current/mortgage-request",
-    offers: "/applications/current/mortgage-offers",
+    offers: "/applications/current/qualified-mortgages",
     consent: "/applications/current/product-review-consent",
     submit: "/applications/current/submit",
   };

@@ -382,7 +382,7 @@ function ReviewMortgageRequestPage() {
             <button
               onClick={() =>
                 navigate({
-                  to: "/applications/$applicationId/mortgage-offers",
+                  to: "/applications/$applicationId/qualified-mortgages",
                   params: { applicationId },
                 })
               }
@@ -411,7 +411,7 @@ function ReviewMortgageRequestPage() {
         nextLabel="See Qualified Products"
         onSaveContinue={() =>
           navigate({
-            to: "/applications/$applicationId/mortgage-offers",
+            to: "/applications/$applicationId/qualified-mortgages",
             params: { applicationId },
           })
         }
