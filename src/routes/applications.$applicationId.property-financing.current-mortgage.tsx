@@ -18,7 +18,7 @@ import {
 } from "@/components/property-financing/shared";
 
 export const Route = createFileRoute(
-  "/portal/applications/$applicationId/property-financing/current-mortgage",
+  "/applications/$applicationId/property-financing/current-mortgage",
 )({
   head: () => ({
     meta: [
@@ -165,7 +165,7 @@ function CurrentMortgagePage() {
         canComplete={missing.length === 0}
         onSaveContinue={() =>
           navigate({
-            to: "/portal/applications/$applicationId/property-financing/refinance-request",
+            to: "/applications/$applicationId/property-financing/refinance-request",
             params: { applicationId },
           })
         }
