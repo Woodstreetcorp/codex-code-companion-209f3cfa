@@ -56,7 +56,9 @@ export function getActivity(): ActivityEntry[] {
 
 export function subscribeActivity(fn: () => void) {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => {
+    listeners.delete(fn);
+  };
 }
 
 export function markActivityRead(id?: string) {
