@@ -107,6 +107,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "LOC Available", "No Penalty Payout", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Our top recommended product with excellent features and competitive rates.",
     curated: true,
+    matchReason: "Best value when benefits are included.",
+    bundleValue: 2350, classification: "Prime", lenderFee: 0,
   },
   {
     id: "ml", lender: "Merix-Lendwise", initials: "ML", product: "MERIX FN Capital Metro - Quebec | Uninsured FRM",
@@ -117,6 +119,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "LOC Available", "No Penalty Payout", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Lower rate with strong flexibility for prepayments and life changes.",
     curated: true,
+    matchReason: "Lower payment option with flexible features.",
+    bundleValue: 1900, classification: "Prime", lenderFee: 0,
   },
   {
     id: "cm", lender: "CMLS", initials: "CM", product: "CMLS Mtl - Ques O/O Uninsured Extra Quebec Funds FRM",
@@ -127,6 +131,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Stable monoline option with strong prepayment freedom.",
     curated: true,
+    matchReason: "Strong match for your loan amount and property type.",
+    bundleValue: 1750, classification: "Prime", lenderFee: 0,
   },
   {
     id: "mc", lender: "MCAP Financial", initials: "MC", product: "MCAP Standard Fixed Rate Mortgage",
@@ -137,6 +143,8 @@ const TOP: Product[] = [
     features: ["Portable", "Rate Hold 90 Days", "Payment Increase"],
     description: "Tailored for first-time buyers needing guidance and stability.",
     curated: true,
+    matchReason: "Good fit for your down payment and credit profile.",
+    bundleValue: 1500, classification: "Standard", lenderFee: 250,
   },
   {
     id: "td", lender: "TD Bank", initials: "TD", product: "TD Fixed Rate Mortgage",
@@ -147,6 +155,8 @@ const TOP: Product[] = [
     features: ["Branch Support", "Rate Hold 120 Days", "Pre-Payment Options"],
     description: "Big-bank service with reliable in-branch support.",
     curated: true,
+    matchReason: "Trusted lender with strong service for your profile.",
+    bundleValue: 1200, classification: "Prime", lenderFee: 300,
   },
 ];
 
