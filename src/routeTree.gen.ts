@@ -10,14 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RefinanceRouteImport } from './routes/refinance'
 import { Route as PurchaseRouteImport } from './routes/purchase'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
@@ -95,6 +98,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -115,6 +123,11 @@ const PurchaseRoute = PurchaseRouteImport.update({
   path: '/purchase',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrePurchaseRoute = PrePurchaseRouteImport.update({
   id: '/pre-purchase',
   path: '/pre-purchase',
@@ -133,6 +146,11 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -534,14 +552,17 @@ const ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
+  '/privacy': typeof PrivacyRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
@@ -616,13 +637,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/pre-purchase': typeof PrePurchaseRoute
+  '/privacy': typeof PrivacyRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
@@ -697,14 +721,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/pre-purchase': typeof PrePurchaseRoute
+  '/privacy': typeof PrivacyRoute
   '/purchase': typeof PurchaseRoute
   '/refinance': typeof RefinanceRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/terms': typeof TermsRoute
   '/verify-email': typeof VerifyEmailRoute
   '/internal/account-handoff': typeof InternalAccountHandoffRoute
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
@@ -781,14 +808,17 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/cookies'
     | '/forgot-password'
     | '/login'
     | '/portal'
     | '/pre-purchase'
+    | '/privacy'
     | '/purchase'
     | '/refinance'
     | '/reset-password'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
@@ -863,13 +893,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cookies'
     | '/forgot-password'
     | '/login'
     | '/pre-purchase'
+    | '/privacy'
     | '/purchase'
     | '/refinance'
     | '/reset-password'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
@@ -943,14 +976,17 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/cookies'
     | '/forgot-password'
     | '/login'
     | '/portal'
     | '/pre-purchase'
+    | '/privacy'
     | '/purchase'
     | '/refinance'
     | '/reset-password'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/internal/account-handoff'
     | '/internal/borrower-dashboard'
@@ -1026,14 +1062,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CookiesRoute: typeof CookiesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
   PrePurchaseRoute: typeof PrePurchaseRoute
+  PrivacyRoute: typeof PrivacyRoute
   PurchaseRoute: typeof PurchaseRoute
   RefinanceRoute: typeof RefinanceRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  TermsRoute: typeof TermsRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   InternalAccountHandoffRoute: typeof InternalAccountHandoffRoute
   InternalBorrowerDashboardRoute: typeof InternalBorrowerDashboardRoute
@@ -1055,6 +1094,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -1085,6 +1131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PurchaseRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pre-purchase': {
       id: '/pre-purchase'
       path: '/pre-purchase'
@@ -1111,6 +1164,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -1813,14 +1873,17 @@ const ApplicationsApplicationIdPropertyFinancingRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CookiesRoute: CookiesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
   PrePurchaseRoute: PrePurchaseRoute,
+  PrivacyRoute: PrivacyRoute,
   PurchaseRoute: PurchaseRoute,
   RefinanceRoute: RefinanceRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  TermsRoute: TermsRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   InternalAccountHandoffRoute: InternalAccountHandoffRoute,
   InternalBorrowerDashboardRoute: InternalBorrowerDashboardRoute,
