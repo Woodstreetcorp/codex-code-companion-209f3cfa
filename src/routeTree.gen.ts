@@ -30,6 +30,7 @@ import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/porta
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/portal.applications.$applicationId.property-financing'
+import { Route as PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.target-property'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRouteImport } from './routes/portal.applications.$applicationId.property-financing.purchase-plan'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.property'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingDownPaymentRouteImport } from './routes/portal.applications.$applicationId.property-financing.down-payment'
@@ -145,6 +146,15 @@ const PortalApplicationsApplicationIdPropertyFinancingRoute =
     path: '/applications/$applicationId/property-financing',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute =
+  PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport.update(
+    {
+      id: '/target-property',
+      path: '/target-property',
+      getParentRoute: () =>
+        PortalApplicationsApplicationIdPropertyFinancingRoute,
+    } as any,
+  )
 const PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute =
   PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRouteImport.update(
     {
@@ -195,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
+  '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -220,6 +231,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
+  '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -247,6 +259,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
+  '/portal/applications/$applicationId/property-financing/target-property': typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -275,6 +288,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
+    | '/portal/applications/$applicationId/property-financing/target-property'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -300,6 +314,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
+    | '/portal/applications/$applicationId/property-financing/target-property'
   id:
     | '__root__'
     | '/'
@@ -326,6 +341,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
+    | '/portal/applications/$applicationId/property-financing/target-property'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -489,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/applications/$applicationId/property-financing/target-property': {
+      id: '/portal/applications/$applicationId/property-financing/target-property'
+      path: '/target-property'
+      fullPath: '/portal/applications/$applicationId/property-financing/target-property'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport
+      parentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
+    }
     '/portal/applications/$applicationId/property-financing/purchase-plan': {
       id: '/portal/applications/$applicationId/property-financing/purchase-plan'
       path: '/purchase-plan'
@@ -539,6 +562,7 @@ interface PortalApplicationsApplicationIdPropertyFinancingRouteChildren {
   PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   PortalApplicationsApplicationIdPropertyFinancingPropertyRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
+  PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute: typeof PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
 }
 
 const PortalApplicationsApplicationIdPropertyFinancingRouteChildren: PortalApplicationsApplicationIdPropertyFinancingRouteChildren =
@@ -549,6 +573,8 @@ const PortalApplicationsApplicationIdPropertyFinancingRouteChildren: PortalAppli
       PortalApplicationsApplicationIdPropertyFinancingPropertyRoute,
     PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute:
       PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute,
+    PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute:
+      PortalApplicationsApplicationIdPropertyFinancingTargetPropertyRoute,
   }
 
 const PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren =
