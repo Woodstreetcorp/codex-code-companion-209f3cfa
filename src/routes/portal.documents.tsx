@@ -512,7 +512,15 @@ function AllDocumentsView({
               className="hidden"
               onChange={(e) => {
                 const n = e.target.files?.length ?? 0;
-                if (n) toast.success(`${n} file${n > 1 ? "s" : ""} uploaded`);
+                if (n) {
+                  notify({
+                    category: "Document",
+                    title: `${n} file${n > 1 ? "s" : ""} uploaded`,
+                    body: "Your documents are encrypted and pending review by your advisor.",
+                    href: "/portal/documents",
+                    tone: "success",
+                  });
+                }
                 e.currentTarget.value = "";
               }}
             />
