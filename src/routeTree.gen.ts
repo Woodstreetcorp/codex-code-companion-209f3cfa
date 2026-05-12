@@ -24,6 +24,7 @@ import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
 import { Route as PortalToolsPaymentCalculatorRouteImport } from './routes/portal.tools.payment-calculator'
+import { Route as PortalToolsClosingCostsRouteImport } from './routes/portal.tools.closing-costs'
 import { Route as PortalToolsAffordabilityRouteImport } from './routes/portal.tools.affordability'
 import { Route as PortalSettingsSecurityRouteImport } from './routes/portal.settings.security'
 import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
@@ -123,6 +124,11 @@ const PortalToolsPaymentCalculatorRoute =
     path: '/payment-calculator',
     getParentRoute: () => PortalToolsRoute,
   } as any)
+const PortalToolsClosingCostsRoute = PortalToolsClosingCostsRouteImport.update({
+  id: '/closing-costs',
+  path: '/closing-costs',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
 const PortalToolsAffordabilityRoute =
   PortalToolsAffordabilityRouteImport.update({
     id: '/affordability',
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
@@ -313,6 +320,7 @@ export interface FileRoutesByTo {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
@@ -352,6 +360,7 @@ export interface FileRoutesById {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
     | '/portal/tools/payment-calculator'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
     | '/portal/tools/payment-calculator'
     | '/portal/applications'
     | '/applications/$applicationId/property-financing/current-mortgage'
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
     | '/portal/tools/payment-calculator'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
@@ -602,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/payment-calculator'
       fullPath: '/portal/tools/payment-calculator'
       preLoaderRoute: typeof PortalToolsPaymentCalculatorRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/closing-costs': {
+      id: '/portal/tools/closing-costs'
+      path: '/closing-costs'
+      fullPath: '/portal/tools/closing-costs'
+      preLoaderRoute: typeof PortalToolsClosingCostsRouteImport
       parentRoute: typeof PortalToolsRoute
     }
     '/portal/tools/affordability': {
@@ -778,11 +797,13 @@ const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
 
 interface PortalToolsRouteChildren {
   PortalToolsAffordabilityRoute: typeof PortalToolsAffordabilityRoute
+  PortalToolsClosingCostsRoute: typeof PortalToolsClosingCostsRoute
   PortalToolsPaymentCalculatorRoute: typeof PortalToolsPaymentCalculatorRoute
 }
 
 const PortalToolsRouteChildren: PortalToolsRouteChildren = {
   PortalToolsAffordabilityRoute: PortalToolsAffordabilityRoute,
+  PortalToolsClosingCostsRoute: PortalToolsClosingCostsRoute,
   PortalToolsPaymentCalculatorRoute: PortalToolsPaymentCalculatorRoute,
 }
 
@@ -870,3 +891,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
