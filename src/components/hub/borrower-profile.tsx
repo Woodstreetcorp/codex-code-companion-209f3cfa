@@ -2456,20 +2456,30 @@ function IncludedToggle({
 }
 
 function AddLiabilityDrawer({
+  coApplicants,
+  initial,
   onClose,
   onSave,
 }: {
+  coApplicants: BorrowerProfileApplicant[];
+  initial: Liability | null;
   onClose: () => void;
-  onSave: (d: Omit<Liability, "id">) => void;
+  onSave: (d: Omit<Liability, "id" | "ownerId">) => void;
 }) {
-  const [type, setType] = useState("");
-  const [creditor, setCreditor] = useState("");
-  const [balance, setBalance] = useState("");
-  const [monthlyPayment, setMonthlyPayment] = useState("");
-  const [shared, setShared] = useState(false);
-  const [sharedWith, setSharedWith] = useState<string[]>([]);
-  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>("");
-  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>("");
+  const [type, setType] = useState(initial?.type ?? "");
+  const [creditor, setCreditor] = useState(initial?.creditor ?? "");
+  const [balance, setBalance] = useState(initial ? String(initial.balance) : "");
+  const [monthlyPayment, setMonthlyPayment] = useState(
+    initial ? String(initial.monthlyPayment) : "",
+  );
+  const [shared, setShared] = useState(initial?.shared ?? false);
+  const [sharedWith, setSharedWith] = useState<string[]>(initial?.sharedWith ?? []);
+  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>(
+    initial?.paymentHistory ?? "",
+  );
+  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>(
+    initial?.payoffPlan ?? "",
+  );
   const valid =
     !!type &&
     creditor.trim().length > 0 &&
@@ -2477,15 +2487,19 @@ function AddLiabilityDrawer({
     !!paymentHistory &&
     !!payoffPlan &&
     (!shared || sharedWith.length > 0);
-  const toggleSharedWith = (name: string) =>
+  const toggleSharedWith = (id: string) =>
     setSharedWith((prev) =>
-      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
   return (
     <DrawerShell
-      title="Add Debt"
-      subtitle="Add a credit card, loan, or other monthly non-mortgage debt."
+      title={initial ? "Edit Debt" : "Add Debt"}
+      subtitle={
+        initial
+          ? "Update this debt. Shared debts will sync to the linked co-applicants automatically."
+          : "Add a credit card, loan, or other monthly non-mortgage debt."
+      }
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -2565,17 +2579,25 @@ function AddLiabilityDrawer({
               <p className="text-xs font-medium text-foreground">
                 Select co-applicant(s) this debt is shared with:
               </p>
-              {MOCK_CO_APPLICANTS.map((name) => (
-                <label key={name} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={sharedWith.includes(name)}
-                    onChange={() => toggleSharedWith(name)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  {name}
-                </label>
-              ))}
+              {coApplicants.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No co-applicants on this application yet. Add a co-applicant in the Mortgage
+                  Application Hub to share a debt.
+                </p>
+              ) : (
+                coApplicants.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={sharedWith.includes(c.id)}
+                      onChange={() => toggleSharedWith(c.id)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    {c.name}
+                    <span className="text-xs text-muted-foreground">({c.role})</span>
+                  </label>
+                ))
+              )}
             </div>
           )}
         </div>
