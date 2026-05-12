@@ -28,6 +28,9 @@ import {
   Search,
   ShieldCheck,
   Upload,
+  UserCheck,
+  Building2,
+  ListChecks,
   X,
   Zap,
 } from "lucide-react";
