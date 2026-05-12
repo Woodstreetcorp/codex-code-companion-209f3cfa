@@ -75,6 +75,8 @@ import { Route as PortalApplicationsApplicationIdManageRouteImport } from './rou
 import { Route as PortalApplicationsApplicationIdLenderRouteImport } from './routes/portal.applications.$applicationId.lender'
 import { Route as PortalApplicationsApplicationIdFundingRouteImport } from './routes/portal.applications.$applicationId.funding'
 import { Route as PortalApplicationsApplicationIdConditionsRouteImport } from './routes/portal.applications.$applicationId.conditions'
+import { Route as PortalApplicationsApplicationIdCertificateRouteImport } from './routes/portal.applications.$applicationId.certificate'
+import { Route as PortalApplicationsApplicationIdBenefitsRouteImport } from './routes/portal.applications.$applicationId.benefits'
 import { Route as ApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport } from './routes/applications.$applicationId.property-financing.target-property'
 import { Route as ApplicationsApplicationIdPropertyFinancingRenewalPreferencesRouteImport } from './routes/applications.$applicationId.property-financing.renewal-preferences'
 import { Route as ApplicationsApplicationIdPropertyFinancingRefinanceRequestRouteImport } from './routes/applications.$applicationId.property-financing.refinance-request'
@@ -443,6 +445,18 @@ const PortalApplicationsApplicationIdConditionsRoute =
     path: '/applications/$applicationId/conditions',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalApplicationsApplicationIdCertificateRoute =
+  PortalApplicationsApplicationIdCertificateRouteImport.update({
+    id: '/applications/$applicationId/certificate',
+    path: '/applications/$applicationId/certificate',
+    getParentRoute: () => PortalRoute,
+  } as any)
+const PortalApplicationsApplicationIdBenefitsRoute =
+  PortalApplicationsApplicationIdBenefitsRouteImport.update({
+    id: '/applications/$applicationId/benefits',
+    path: '/applications/$applicationId/benefits',
+    getParentRoute: () => PortalRoute,
+  } as any)
 const ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute =
   ApplicationsApplicationIdPropertyFinancingTargetPropertyRouteImport.update({
     id: '/target-property',
@@ -553,6 +567,8 @@ export interface FileRoutesByFullPath {
   '/applications/$applicationId/property-financing/refinance-request': typeof ApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
   '/applications/$applicationId/property-financing/renewal-preferences': typeof ApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
+  '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
+  '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
@@ -626,6 +642,8 @@ export interface FileRoutesByTo {
   '/applications/$applicationId/property-financing/refinance-request': typeof ApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
   '/applications/$applicationId/property-financing/renewal-preferences': typeof ApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
+  '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
+  '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
@@ -702,6 +720,8 @@ export interface FileRoutesById {
   '/applications/$applicationId/property-financing/refinance-request': typeof ApplicationsApplicationIdPropertyFinancingRefinanceRequestRoute
   '/applications/$applicationId/property-financing/renewal-preferences': typeof ApplicationsApplicationIdPropertyFinancingRenewalPreferencesRoute
   '/applications/$applicationId/property-financing/target-property': typeof ApplicationsApplicationIdPropertyFinancingTargetPropertyRoute
+  '/portal/applications/$applicationId/benefits': typeof PortalApplicationsApplicationIdBenefitsRoute
+  '/portal/applications/$applicationId/certificate': typeof PortalApplicationsApplicationIdCertificateRoute
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/funding': typeof PortalApplicationsApplicationIdFundingRoute
   '/portal/applications/$applicationId/lender': typeof PortalApplicationsApplicationIdLenderRoute
@@ -779,6 +799,8 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/refinance-request'
     | '/applications/$applicationId/property-financing/renewal-preferences'
     | '/applications/$applicationId/property-financing/target-property'
+    | '/portal/applications/$applicationId/benefits'
+    | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
@@ -852,6 +874,8 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/refinance-request'
     | '/applications/$applicationId/property-financing/renewal-preferences'
     | '/applications/$applicationId/property-financing/target-property'
+    | '/portal/applications/$applicationId/benefits'
+    | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
@@ -927,6 +951,8 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing/refinance-request'
     | '/applications/$applicationId/property-financing/renewal-preferences'
     | '/applications/$applicationId/property-financing/target-property'
+    | '/portal/applications/$applicationId/benefits'
+    | '/portal/applications/$applicationId/certificate'
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/funding'
     | '/portal/applications/$applicationId/lender'
@@ -1421,6 +1447,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdConditionsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/applications/$applicationId/certificate': {
+      id: '/portal/applications/$applicationId/certificate'
+      path: '/applications/$applicationId/certificate'
+      fullPath: '/portal/applications/$applicationId/certificate'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdCertificateRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/applications/$applicationId/benefits': {
+      id: '/portal/applications/$applicationId/benefits'
+      path: '/applications/$applicationId/benefits'
+      fullPath: '/portal/applications/$applicationId/benefits'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdBenefitsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/applications/$applicationId/property-financing/target-property': {
       id: '/applications/$applicationId/property-financing/target-property'
       path: '/target-property'
@@ -1588,6 +1628,8 @@ interface PortalRouteChildren {
   PortalWalletRoute: typeof PortalWalletRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
+  PortalApplicationsApplicationIdBenefitsRoute: typeof PortalApplicationsApplicationIdBenefitsRoute
+  PortalApplicationsApplicationIdCertificateRoute: typeof PortalApplicationsApplicationIdCertificateRoute
   PortalApplicationsApplicationIdConditionsRoute: typeof PortalApplicationsApplicationIdConditionsRoute
   PortalApplicationsApplicationIdFundingRoute: typeof PortalApplicationsApplicationIdFundingRoute
   PortalApplicationsApplicationIdLenderRoute: typeof PortalApplicationsApplicationIdLenderRoute
@@ -1611,6 +1653,10 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalWalletRoute: PortalWalletRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
+  PortalApplicationsApplicationIdBenefitsRoute:
+    PortalApplicationsApplicationIdBenefitsRoute,
+  PortalApplicationsApplicationIdCertificateRoute:
+    PortalApplicationsApplicationIdCertificateRoute,
   PortalApplicationsApplicationIdConditionsRoute:
     PortalApplicationsApplicationIdConditionsRoute,
   PortalApplicationsApplicationIdFundingRoute:
@@ -1692,3 +1738,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
