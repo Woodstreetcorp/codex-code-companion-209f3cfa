@@ -176,7 +176,7 @@ function ProductPriorityReviewPage() {
       {/* Header */}
       <header className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
         <Link
-          to="/applications/$applicationId/mortgage-offers"
+          to="/applications/$applicationId/qualified-mortgages"
           params={{ applicationId }}
           className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
         >
@@ -203,7 +203,7 @@ function ProductPriorityReviewPage() {
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Link
-              to="/applications/$applicationId/mortgage-offers"
+              to="/applications/$applicationId/qualified-mortgages"
               params={{ applicationId }}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
             >
@@ -295,7 +295,7 @@ function ProductPriorityReviewPage() {
             You can continue with one product or add backup options.
           </p>
           <Link
-            to="/applications/$applicationId/mortgage-offers"
+            to="/applications/$applicationId/qualified-mortgages"
             params={{ applicationId }}
             className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-semibold hover:bg-muted"
           >
@@ -557,7 +557,7 @@ function EmptySelectedProductsState({ applicationId }: { applicationId: string }
         </p>
       </div>
       <Link
-        to="/applications/$applicationId/mortgage-offers"
+        to="/applications/$applicationId/qualified-mortgages"
         params={{ applicationId }}
         className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
       >
