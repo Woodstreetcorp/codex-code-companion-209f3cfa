@@ -351,8 +351,8 @@ export function ToolPageShell({
   subtitle: string;
   bestFor?: string;
   children?: ReactNode;
-  inputs: ReactNode;
-  results: ReactNode;
+  inputs?: ReactNode;
+  results?: ReactNode;
   onReset?: () => void;
   onSave?: () => void;
   primaryCta?: { label: string; to?: string; onClick?: () => void };
@@ -383,6 +383,7 @@ export function ToolPageShell({
 
       {children}
 
+      {(inputs || results) && (
       <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
@@ -447,6 +448,7 @@ export function ToolPageShell({
           </div>
         </section>
       </div>
+      )}
 
       {explanation && (
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
