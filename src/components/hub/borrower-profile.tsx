@@ -1452,6 +1452,7 @@ function AssetsSection({
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
   onMark,
 }: {
@@ -1459,6 +1460,7 @@ function AssetsSection({
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (a: Asset) => void;
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
@@ -1501,12 +1503,20 @@ function AssetsSection({
               Value {fmtMoney(a.value)} · Down payment {fmtMoney(a.forDownPayment)}
             </p>
           </div>
-          <button
-            onClick={() => onRemove(a.id)}
-            className="self-start rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10 sm:self-center"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1 self-start sm:self-center">
+            <button
+              onClick={() => onEdit(a)}
+              className="rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onRemove(a.id)}
+              className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       ))}
 
