@@ -34,6 +34,7 @@ import { Route as PortalApplicationsApplicationIdPropertyFinancingTargetProperty
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRouteImport } from './routes/portal.applications.$applicationId.property-financing.purchase-plan'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingPropertyRouteImport } from './routes/portal.applications.$applicationId.property-financing.property'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingDownPaymentRouteImport } from './routes/portal.applications.$applicationId.property-financing.down-payment'
+import { Route as PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRouteImport } from './routes/portal.applications.$applicationId.property-financing.current-mortgage'
 
 const RefinanceRoute = RefinanceRouteImport.update({
   id: '/refinance',
@@ -179,6 +180,15 @@ const PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute =
         PortalApplicationsApplicationIdPropertyFinancingRoute,
     } as any,
   )
+const PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute =
+  PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRouteImport.update(
+    {
+      id: '/current-mortgage',
+      path: '/current-mortgage',
+      getParentRoute: () =>
+        PortalApplicationsApplicationIdPropertyFinancingRoute,
+    } as any,
+  )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -202,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
@@ -228,6 +239,7 @@ export interface FileRoutesByTo {
   '/portal/applications': typeof PortalApplicationsIndexRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
@@ -256,6 +268,7 @@ export interface FileRoutesById {
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   '/portal/applications/$applicationId/property-financing/purchase-plan': typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
@@ -285,6 +298,7 @@ export interface FileRouteTypes {
     | '/portal/applications/'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
@@ -311,6 +325,7 @@ export interface FileRouteTypes {
     | '/portal/applications'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
@@ -338,6 +353,7 @@ export interface FileRouteTypes {
     | '/portal/applications/'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
     | '/portal/applications/$applicationId/property-financing/purchase-plan'
@@ -533,6 +549,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRouteImport
       parentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
     }
+    '/portal/applications/$applicationId/property-financing/current-mortgage': {
+      id: '/portal/applications/$applicationId/property-financing/current-mortgage'
+      path: '/current-mortgage'
+      fullPath: '/portal/applications/$applicationId/property-financing/current-mortgage'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRouteImport
+      parentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
+    }
   }
 }
 
@@ -559,6 +582,7 @@ const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
 )
 
 interface PortalApplicationsApplicationIdPropertyFinancingRouteChildren {
+  PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute: typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute: typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   PortalApplicationsApplicationIdPropertyFinancingPropertyRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
   PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute: typeof PortalApplicationsApplicationIdPropertyFinancingPurchasePlanRoute
@@ -567,6 +591,8 @@ interface PortalApplicationsApplicationIdPropertyFinancingRouteChildren {
 
 const PortalApplicationsApplicationIdPropertyFinancingRouteChildren: PortalApplicationsApplicationIdPropertyFinancingRouteChildren =
   {
+    PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute:
+      PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute,
     PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute:
       PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute,
     PortalApplicationsApplicationIdPropertyFinancingPropertyRoute:
