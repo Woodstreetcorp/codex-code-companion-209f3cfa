@@ -2317,19 +2317,30 @@ function AddLiabilityDrawer({
   onClose: () => void;
   onSave: (d: Omit<Liability, "id">) => void;
 }) {
+  const [type, setType] = useState("");
   const [creditor, setCreditor] = useState("");
-  const [type, setType] = useState("Credit Card");
   const [balance, setBalance] = useState("");
   const [monthlyPayment, setMonthlyPayment] = useState("");
-  const [ownership, setOwnership] = useState<Liability["ownership"]>("Individual");
-  const [payOffAtClose, setPayOffAtClose] = useState(false);
-  const [include, setInclude] = useState(true);
-  const valid = creditor.trim().length > 0 && Number(balance) >= 0;
+  const [shared, setShared] = useState(false);
+  const [sharedWith, setSharedWith] = useState<string[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>("");
+  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>("");
+  const valid =
+    !!type &&
+    creditor.trim().length > 0 &&
+    Number(balance) >= 0 &&
+    !!paymentHistory &&
+    !!payoffPlan &&
+    (!shared || sharedWith.length > 0);
+  const toggleSharedWith = (name: string) =>
+    setSharedWith((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
 
   return (
     <DrawerShell
-      title="Add Liability"
-      subtitle="Add a credit card, loan, or other monthly debt for this borrower."
+      title="Add Debt"
+      subtitle="Add a credit card, loan, or other monthly non-mortgage debt."
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -2347,9 +2358,10 @@ function AddLiabilityDrawer({
                 type,
                 balance: Number(balance),
                 monthlyPayment: Number(monthlyPayment) || 0,
-                ownership,
-                payOffAtClose,
-                include,
+                shared,
+                sharedWith: shared ? sharedWith : [],
+                paymentHistory,
+                payoffPlan,
               })
             }
             className={`rounded-md px-3.5 py-2 text-xs font-semibold ${
@@ -2358,65 +2370,109 @@ function AddLiabilityDrawer({
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
           >
-            Save Liability
+            Save Debt
           </button>
         </div>
       }
     >
       <div className="space-y-4">
-        <Field label="Creditor name" full required>
-          <Input value={creditor} onChange={setCreditor} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Type of debt" required>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-secondary"
+            >
+              <option value="">Select debt type</option>
+              {DEBT_TYPES.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Name of lender" required>
+            <Input value={creditor} onChange={setCreditor} placeholder="Enter lender name" />
+          </Field>
+          <Field label="Outstanding balance" required>
+            <Input value={balance} onChange={setBalance} placeholder="$0.00" />
+          </Field>
+          <Field label="Monthly payment" required>
+            <Input value={monthlyPayment} onChange={setMonthlyPayment} placeholder="$0.00" />
+          </Field>
+        </div>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              checked={shared}
+              onChange={(e) => {
+                setShared(e.target.checked);
+                if (!e.target.checked) setSharedWith([]);
+              }}
+              className="h-4 w-4 rounded border-input"
+            />
+            Is this debt shared with another applicant?
+          </label>
+          {shared && (
+            <div className="ml-6 space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground">
+                Select co-applicant(s) this debt is shared with:
+              </p>
+              {MOCK_CO_APPLICANTS.map((name) => (
+                <label key={name} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={sharedWith.includes(name)}
+                    onChange={() => toggleSharedWith(name)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  {name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Field label="Payment History / Performance" required full>
+          <select
+            value={paymentHistory}
+            onChange={(e) => setPaymentHistory(e.target.value as Liability["paymentHistory"])}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-secondary"
+          >
+            <option value="">Select payment history rating</option>
+            {PAYMENT_HISTORY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </Field>
-        <Field label="Liability type" full>
-          <Select
-            value={type}
-            onChange={setType}
-            options={[
-              "Credit Card",
-              "Line of Credit",
-              "Unsecured Line of Credit",
-              "Auto Loan",
-              "Student Loan",
-              "Personal Loan",
-              "Collection",
-              "Lease Payment",
-              "Support Payment",
-              "Mortgage on Other Property",
-              "Other",
-            ]}
-          />
+
+        <Field label="Do you plan to pay off this debt before closing?" required full>
+          <div className="space-y-2">
+            {PAYOFF_PLAN_OPTIONS.map((o) => (
+              <label
+                key={o.value}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  payoffPlan === o.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payoff-plan"
+                  checked={payoffPlan === o.value}
+                  onChange={() => setPayoffPlan(o.value)}
+                  className="h-3.5 w-3.5"
+                />
+                <span>{o.label}</span>
+              </label>
+            ))}
+          </div>
         </Field>
-        <Field label="Balance" required>
-          <Input value={balance} onChange={setBalance} placeholder="0" />
-        </Field>
-        <Field label="Monthly payment">
-          <Input value={monthlyPayment} onChange={setMonthlyPayment} placeholder="0" />
-        </Field>
-        <Field label="Ownership">
-          <Select
-            value={ownership}
-            onChange={(v) => setOwnership(v as Liability["ownership"])}
-            options={["Individual", "Joint", "Shared"]}
-          />
-        </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={payOffAtClose}
-            onChange={(e) => setPayOffAtClose(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          Pay off at close
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={include}
-            onChange={(e) => setInclude(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          Include in qualification
-        </label>
       </div>
     </DrawerShell>
   );
