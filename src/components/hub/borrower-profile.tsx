@@ -1350,8 +1350,8 @@ function AddIncomeDrawer({
   onClose: () => void;
   onSave: (d: Omit<IncomeSource, "id">) => void;
 }) {
-  // Top-level employment category
-  const [category, setCategory] = useState<"employed" | "self_employed">("employed");
+  // Top-level income category
+  const [category, setCategory] = useState<"employed" | "self_employed" | "other">("employed");
 
   // Shared
   const [employerName, setEmployerName] = useState("");
@@ -1402,6 +1402,36 @@ function AddIncomeDrawer({
   const [accountantContact, setAccountantContact] = useState("");
   const [seIncomeBasis, setSeIncomeBasis] = useState<"net" | "gross_up" | "stated">("net");
 
+  // Other income specifics
+  const OTHER_INCOME_TYPES = [
+    "Pension",
+    "CPP / OAS",
+    "Disability Benefit",
+    "Social Benefit",
+    "Social Assistance",
+    "Child Tax Benefit",
+    "Canada Child Benefit",
+    "Child Support",
+    "Alimony / Spousal Support",
+    "Foster Care",
+    "Rental Income",
+    "Investment Income",
+    "Dividends",
+    "Tipped Income",
+    "Foreign Income",
+    "Gig Income",
+    "Other",
+  ] as const;
+  const [otherType, setOtherType] = useState<string>("");
+  const [otherSource, setOtherSource] = useState("");
+  const [otherAmount, setOtherAmount] = useState("");
+  const [otherFrequency, setOtherFrequency] =
+    useState<IncomeSource["frequency"]>("Annual");
+  const [otherStart, setOtherStart] = useState("");
+  const [otherDuration, setOtherDuration] = useState<"<1y" | "1-2y" | "2-3y" | "3+y">("3+y");
+  const [otherContinuance, setOtherContinuance] = useState<"yes" | "no" | "unknown">("yes");
+  const [otherVerification, setOtherVerification] = useState("Government Award Letter");
+
   const computedEmployedTotal =
     Number(baseSalary || 0) +
     (overtimeIncluded === "no" ? Number(overtimeAmount || 0) : 0) +
@@ -1409,8 +1439,10 @@ function AddIncomeDrawer({
     (commissionIncluded === "no" ? Number(commissionAmount || 0) : 0);
 
   const valid =
-    employerName.trim().length > 0 &&
-    (category === "employed" ? computedEmployedTotal > 0 : Number(netIncome) > 0);
+    category === "other"
+      ? otherType.length > 0 && Number(otherAmount) > 0
+      : employerName.trim().length > 0 &&
+        (category === "employed" ? computedEmployedTotal > 0 : Number(netIncome) > 0);
 
   const handleSave = () => {
     if (category === "employed") {
@@ -1424,7 +1456,7 @@ function AddIncomeDrawer({
         verification: employmentStatus === "Previous" ? "Previous Employment" : "Fully Verifiable",
         include,
       });
-    } else {
+    } else if (category === "self_employed") {
       onSave({
         type: seType,
         source: employerName,
@@ -1433,6 +1465,16 @@ function AddIncomeDrawer({
         grossIncome: Number(netIncome),
         frequency: "Annual",
         verification: seVerification,
+        include,
+      });
+    } else {
+      onSave({
+        type: otherType || "Other Income",
+        source: otherSource || otherType || "Other Income",
+        startDate: otherStart,
+        grossIncome: Number(otherAmount),
+        frequency: otherFrequency,
+        verification: otherVerification,
         include,
       });
     }
@@ -1468,15 +1510,22 @@ function AddIncomeDrawer({
       <div className="space-y-5">
         {/* Category toggle */}
         <div>
-          <p className="mb-2 text-xs font-semibold text-foreground">How is this borrower paid?</p>
-          <div className="grid grid-cols-2 gap-2">
+          <p className="mb-2 text-xs font-semibold text-foreground">
+            What type of income are you adding?
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
             {(
               [
                 { key: "employed", label: "Employed", hint: "T4 employee paid by an employer" },
                 {
                   key: "self_employed",
                   label: "Self-Employed",
-                  hint: "Owns a business or works as a contractor",
+                  hint: "Owns a business, freelancer or contractor",
+                },
+                {
+                  key: "other",
+                  label: "Other Income",
+                  hint: "Pension, benefits, rental, investment, support",
                 },
               ] as const
             ).map((opt) => {
@@ -1506,7 +1555,7 @@ function AddIncomeDrawer({
           </div>
         </div>
 
-        {category === "employed" ? (
+        {category === "employed" && (
           <>
             {/* Employment overview */}
             <SubGroup
