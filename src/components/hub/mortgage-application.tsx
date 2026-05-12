@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ComponentType } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowRight,
