@@ -257,9 +257,19 @@ function stateBadge(state: SectionState) {
 // ─── Page ──────────────────────────────────────────────────────────
 export function BorrowerProfilePage({
   applicant,
+  coApplicants,
+  liabilities,
+  onUpsertLiability,
+  onRemoveLiability,
+  onLeaveSharedLiability,
   onBack,
 }: {
   applicant: BorrowerProfileApplicant;
+  coApplicants: BorrowerProfileApplicant[];
+  liabilities: Liability[];
+  onUpsertLiability: (l: Liability) => void;
+  onRemoveLiability: (id: string) => void;
+  onLeaveSharedLiability: (id: string, applicantId: string) => void;
   onBack: () => void;
 }) {
   const isPending =
@@ -287,9 +297,6 @@ export function BorrowerProfilePage({
   const [income, setIncome] = useState<IncomeSource[]>(
     applicant.isPrimary ? SEED_INCOME_PRIMARY : [],
   );
-  const [liabilities, setLiabilities] = useState<Liability[]>(
-    applicant.isPrimary ? SEED_LIABILITIES_PRIMARY : [],
-  );
   const [assets, setAssets] = useState<Asset[]>(applicant.isPrimary ? SEED_ASSETS_PRIMARY : []);
   const [properties, setProperties] = useState<OtherProperty[]>([]);
 
@@ -301,6 +308,23 @@ export function BorrowerProfilePage({
 
   // Drawers
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
+  const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
+
+  // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
+  const visibleLiabilities = useMemo(
+    () =>
+      liabilities.filter(
+        (l) => l.ownerId === applicant.id || l.sharedWith.includes(applicant.id),
+      ),
+    [liabilities, applicant.id],
+  );
+  const applicantNameById = useMemo(() => {
+    const map: Record<string, string> = { [applicant.id]: applicant.name };
+    coApplicants.forEach((c) => {
+      map[c.id] = c.name;
+    });
+    return map;
+  }, [applicant, coApplicants]);
 
   // Consents
   const [consents, setConsents] = useState({
@@ -513,11 +537,21 @@ export function BorrowerProfilePage({
               )}
               {active === "credit" && (
                 <CreditSection
-                  liabilities={liabilities}
+                  liabilities={visibleLiabilities}
+                  currentApplicantId={applicant.id}
+                  applicantNameById={applicantNameById}
                   none={noneLiab}
                   setNone={setNoneLiab}
-                  onAdd={() => setDrawer("liab")}
-                  onRemove={(id) => setLiabilities((p) => p.filter((x) => x.id !== id))}
+                  onAdd={() => {
+                    setEditingLiability(null);
+                    setDrawer("liab");
+                  }}
+                  onEdit={(l) => {
+                    setEditingLiability(l);
+                    setDrawer("liab");
+                  }}
+                  onRemove={onRemoveLiability}
+                  onLeaveShared={(id) => onLeaveSharedLiability(id, applicant.id)}
                   onMark={markSection}
                 />
               )}
@@ -606,12 +640,23 @@ export function BorrowerProfilePage({
       )}
       {drawer === "liab" && (
         <AddLiabilityDrawer
-          onClose={() => setDrawer(null)}
-          onSave={(data) => {
-            setLiabilities((p) => [...p, { ...data, id: `lia-${Date.now()}` }]);
-            setNoneLiab(false);
+          coApplicants={coApplicants}
+          initial={editingLiability}
+          onClose={() => {
+            setEditingLiability(null);
             setDrawer(null);
           }}
+          onSave={(data) => {
+            const next: Liability = editingLiability
+              ? { ...editingLiability, ...data }
+              : { ...data, id: `lia-${Date.now()}`, ownerId: applicant.id };
+            onUpsertLiability(next);
+            setNoneLiab(false);
+            setEditingLiability(null);
+            setDrawer(null);
+          }}
+        />
+      )}
         />
       )}
       {drawer === "asset" && (
