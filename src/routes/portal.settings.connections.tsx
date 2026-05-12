@@ -13,6 +13,7 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { SettingPane, Row } from "@/components/portal/settings-fields";
+import { BankConnectDialog, type BankConnectResult } from "@/components/portal/bank-connect-dialog";
 
 export const Route = createFileRoute("/portal/settings/connections")({
   head: () => ({
@@ -35,6 +36,7 @@ type Conn = {
 };
 
 function ConnectionsPage() {
+  const [bankFlow, setBankFlow] = useState<{ mode: "new" } | { mode: "reconnect"; id: string } | null>(null);
   const [banking, setBanking] = useState<Conn[]>([
     {
       id: "td-flinks",
@@ -81,17 +83,18 @@ function ConnectionsPage() {
   ) => setter(list.map((c) => (c.id === id ? { ...c, status: target, lastSync: target === "Connected" ? "Just now" : c.lastSync } : c)));
 
   return (
+    <>
     <div className="space-y-6">
       <SettingPane title="Banking & income" desc="Connect a bank to auto-pull statements and pay history. We use Flinks; nothing is stored on our servers.">
         <div className="space-y-3">
           {banking.map((c) => (
             <ConnRow key={c.id} c={c}
-              onConnect={() => { flip(banking, setBanking, c.id, "Connected"); toast.success(`${c.name} reconnected`); }}
+              onConnect={() => setBankFlow({ mode: "reconnect", id: c.id })}
               onDisconnect={() => { flip(banking, setBanking, c.id, "Disconnected"); toast(`${c.name} disconnected`); }}
             />
           ))}
           <button
-            onClick={() => toast("Choose your bank in the secure Flinks window")}
+            onClick={() => setBankFlow({ mode: "new" })}
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-card px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted"
           >
             <Building2 className="h-4 w-4" /> Add another bank account
@@ -127,6 +130,33 @@ function ConnectionsPage() {
         action={<Plug className="h-5 w-5 text-muted-foreground" />}
       />
     </div>
+    {bankFlow && (
+      <BankConnectDialog
+        open={!!bankFlow}
+        onOpenChange={(o) => { if (!o) setBankFlow(null); }}
+        provider="Flinks"
+        onComplete={(result: BankConnectResult) => {
+          if (bankFlow.mode === "reconnect") {
+            flip(banking, setBanking, bankFlow.id, "Connected");
+            toast.success(`${result.institution} reconnected`);
+          } else {
+            const acct = result.accounts[0];
+            const newConn: Conn = {
+              id: `${result.institution}-${Date.now()}`,
+              name: `${result.institution} · ${acct?.type ?? "Account"} ${acct?.mask ?? ""}`.trim(),
+              desc: `Auto-pulls ${result.monthsRetrieved} months of statements via ${result.provider}.`,
+              status: "Connected",
+              lastSync: "Just now",
+              scope: "Read transactions, balance",
+              icon: Banknote,
+            };
+            setBanking((prev) => [...prev, newConn]);
+            toast.success(`${result.institution} connected`);
+          }
+        }}
+      />
+    )}
+    </>
   );
 }
 

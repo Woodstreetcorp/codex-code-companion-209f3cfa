@@ -39,6 +39,7 @@ import {
   type VaultDoc,
 } from "@/components/portal/data";
 import { Card, PageHeader, StatusPill, SummaryCard } from "@/components/portal/ui";
+import { BankConnectDialog, type BankConnectResult } from "@/components/portal/bank-connect-dialog";
 
 export const Route = createFileRoute("/portal/documents")({
   head: () => ({
@@ -259,6 +260,7 @@ function DocumentVaultPage() {
   const [docs, setDocs] = useState<VaultDoc[]>(VAULT_DOCUMENTS);
   const [requests, setRequests] = useState<LenderRequest[]>(LENDER_REQUESTS);
   const [connections, setConnections] = useState<Connection[]>(INITIAL_CONNECTIONS);
+  const [pendingConn, setPendingConn] = useState<Connection | null>(null);
   const [activityOpen, setActivityOpen] = useState<string | null>(null);
 
   const binderApps = useMemo(() => {
@@ -327,14 +329,28 @@ function DocumentVaultPage() {
   }
 
   function connect(conn: Connection) {
+    setPendingConn(conn);
+  }
+
+  function handleConnectComplete(conn: Connection, result: BankConnectResult) {
     setConnections((prev) =>
       prev.map((c) =>
         c.id === conn.id
-          ? { ...c, status: "Connected", lastSync: "just now", institutions: c.institutions ?? 1 }
+          ? {
+              ...c,
+              status: "Connected",
+              lastSync: "just now",
+              institutions: (c.institutions ?? 0) + 1,
+            }
           : c,
       ),
     );
-    toast.success(`${conn.provider} connected — pulling documents securely`);
+    notify({
+      category: "Document",
+      title: `${result.institution} connected via ${result.provider}`,
+      body: `Pulled ${result.monthsRetrieved} months from ${result.accounts.length} account${result.accounts.length === 1 ? "" : "s"} into your vault.`,
+      tone: "success",
+    });
   }
 
   function disconnect(conn: Connection) {
@@ -443,6 +459,15 @@ function DocumentVaultPage() {
       {tab === "esign" && <EsignInboxView envelopes={scopedEnvelopes} />}
       {tab === "connections" && (
         <ConnectionsView connections={connections} onConnect={connect} onDisconnect={disconnect} />
+      )}
+
+      {pendingConn && (
+        <BankConnectDialog
+          open={!!pendingConn}
+          onOpenChange={(o) => { if (!o) setPendingConn(null); }}
+          provider={pendingConn.provider}
+          onComplete={(result) => handleConnectComplete(pendingConn, result)}
+        />
       )}
       {tab === "expiring" && <ExpiringView entries={expiringDocs} />}
       {tab === "activity" && (

@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/portal/ui";
+import { BankConnectDialog } from "@/components/portal/bank-connect-dialog";
 
 export const Route = createFileRoute("/portal/home/")({
   head: () => ({
@@ -52,6 +53,7 @@ function fmt(n: number) {
 
 function MyMortgagePage() {
   const [linked, setLinked] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
   const daysToMaturity = daysUntil(MORTGAGE.maturityDate);
   const monthsToMaturity = Math.round(daysToMaturity / 30);
   const paidPct = Math.round(((MORTGAGE.originalAmount - MORTGAGE.balance) / MORTGAGE.originalAmount) * 100);
@@ -64,6 +66,7 @@ function MyMortgagePage() {
   ];
 
   return (
+    <>
     <div className="space-y-6">
       {/* Hero */}
       <Card className="bg-gradient-to-br from-primary/10 via-card to-secondary/10">
@@ -82,8 +85,8 @@ function MyMortgagePage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => {
-                  setLinked(true);
-                  toast.success("Bank linked — balance refreshed");
+                  if (linked) toast.success("Bank already linked — refreshing balance");
+                  else setBankOpen(true);
                 }}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
               >
@@ -197,6 +200,16 @@ function MyMortgagePage() {
         </div>
       </Card>
     </div>
+    <BankConnectDialog
+      open={bankOpen}
+      onOpenChange={setBankOpen}
+      provider="Flinks"
+      onComplete={() => {
+        setLinked(true);
+        toast.success("Bank linked — balance will refresh shortly");
+      }}
+    />
+    </>
   );
 }
 
