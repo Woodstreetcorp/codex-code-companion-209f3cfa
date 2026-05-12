@@ -342,57 +342,59 @@ export function BorrowerProfilePage({
         )}
       </header>
 
-      {/* Body grid */}
-      <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-        {/* Sidebar stepper */}
-        <aside className="space-y-3">
-          <nav className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <div className="border-b border-border bg-muted/40 px-4 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                Sections
-              </p>
-            </div>
-            <ol className="p-2">
-              {sections.map((s, i) => {
-                const Icon = s.icon;
-                const isActive = active === s.key;
-                return (
-                  <li key={s.key}>
-                    <button
-                      onClick={() => setActive(s.key)}
-                      className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left text-sm transition ${
-                        isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+      {/* Horizontal section stepper */}
+      <nav className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/40 px-4 py-2.5">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Sections
+          </p>
+          <p className="text-[11px] font-medium text-muted-foreground">
+            {sections.findIndex((s) => s.key === active) + 1} / {sections.length}
+          </p>
+        </div>
+        <ol className="flex gap-2 overflow-x-auto p-2">
+          {sections.map((s, i) => {
+            const Icon = s.icon;
+            const isActive = active === s.key;
+            return (
+              <li key={s.key} className="shrink-0">
+                <button
+                  onClick={() => setActive(s.key)}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${
+                    isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
+                      isActive
+                        ? "bg-primary-foreground/15 text-primary-foreground"
+                        : s.state === "Complete"
+                          ? "bg-mint text-mint-foreground"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {s.state === "Complete" ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </span>
+                  <span className="flex flex-col leading-tight">
+                    <span className="text-[13px] font-medium">{s.shortLabel}</span>
+                    <span
+                      className={`text-[10px] ${
+                        isActive ? "text-primary-foreground/70" : "text-muted-foreground"
                       }`}
                     >
-                      <span
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
-                          isActive
-                            ? "bg-primary-foreground/15 text-primary-foreground"
-                            : s.state === "Complete"
-                              ? "bg-mint text-mint-foreground"
-                              : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {s.state === "Complete" ? <Check className="h-3.5 w-3.5" /> : i + 1}
-                      </span>
-                      <span className="flex-1 truncate">
-                        <span className="block text-[13px] font-medium">{s.shortLabel}</span>
-                        <span
-                          className={`block text-[10px] ${
-                            isActive ? "text-primary-foreground/70" : "text-muted-foreground"
-                          }`}
-                        >
-                          {s.state}
-                        </span>
-                      </span>
-                      <Icon className="h-3.5 w-3.5 opacity-70" />
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+                      {s.state}
+                    </span>
+                  </span>
+                  <Icon className="h-3.5 w-3.5 opacity-70" />
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
+      {(ownProfileOnly || true) && (
+        <div className="grid gap-3 sm:grid-cols-2">
           {ownProfileOnly && (
             <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 text-xs">
               <div className="flex items-center gap-2 font-semibold text-secondary">
@@ -404,7 +406,6 @@ export function BorrowerProfilePage({
               </p>
             </div>
           )}
-
           <div className="rounded-2xl border border-yellow/40 bg-yellow/15 p-4 text-xs">
             <div className="flex items-center gap-2 font-semibold">
               <Info className="h-4 w-4" /> Compliance
@@ -414,9 +415,11 @@ export function BorrowerProfilePage({
               declarations.
             </p>
           </div>
-        </aside>
+        </div>
+      )}
 
-        {/* Main */}
+      {/* Main */}
+      <div>
         <section className="space-y-5">
           <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
