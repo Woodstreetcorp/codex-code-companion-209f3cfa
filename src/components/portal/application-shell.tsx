@@ -6,7 +6,6 @@ import {
   Clock,
   FileText,
   HandCoins,
-  Inbox,
   LayoutDashboard,
   ListChecks,
   MessageSquare,
