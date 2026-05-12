@@ -100,3 +100,13 @@ because they belong to the separate Admin Lovable project:
 
 Recommendation: do not build admin surfaces in this project. Codex will merge
 the borrower frontend with the separate Admin Lovable project before backend wiring.
+## Disclosures (added)
+
+- `/portal/disclosures` — global Disclosures Library with tabs:
+  All / Profile-Level / Application-Level / Action Required / Review History.
+- `/portal/applications/:applicationId/disclosures` — application-specific
+  disclosures, per-applicant consent tracking, and submission readiness
+  checklist. Surfaced as a "Disclosures" tab inside ApplicationShell and as
+  the "Product Review & Consent" widget on the application snapshot.
+- See `docs/application-consent-disclosure-model.md` for the full data model
+  and submission gating rules.
