@@ -195,6 +195,10 @@ const ALL_OTHERS: Product[] = [
   tagline: "Reliable rate from a trusted lender.",
   features: ["Skip-a-payment", "Portable"],
   description: "Qualified product available for your application.",
+  matchReason: "Eligible for your application based on rate and payment.",
+  bundleValue: 800,
+  classification: "Standard" as const,
+  lenderFee: 250,
 }));
 
 function QualifiedProductsPage() {
