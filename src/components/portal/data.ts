@@ -19,6 +19,9 @@ import {
   ScrollText,
   ShieldCheck,
   House,
+  Megaphone,
+  Plug,
+  HeartPulse,
 } from "lucide-react";
 
 // ─── Business rules ──────────────────────────────────────────────────────
@@ -439,8 +442,11 @@ export type SettingsRoutePath =
   | "/portal/settings/security"
   | "/portal/settings/security/activity"
   | "/portal/settings/consents"
+  | "/portal/settings/communications"
   | "/portal/settings/notifications"
   | "/portal/settings/privacy"
+  | "/portal/settings/connections"
+  | "/portal/settings/emergency"
   | "/portal/settings/payment-methods"
   | "/portal/settings/preferences";
 
@@ -453,8 +459,11 @@ export const SETTINGS_NAV: {
   { to: "/portal/settings/security", label: "Security", icon: KeyRound },
   { to: "/portal/settings/security/activity", label: "Access Log", icon: ShieldCheck },
   { to: "/portal/settings/consents", label: "Consents", icon: ScrollText },
+  { to: "/portal/settings/communications", label: "Communications", icon: Megaphone },
   { to: "/portal/settings/notifications", label: "Notifications", icon: Bell },
   { to: "/portal/settings/privacy", label: "Privacy", icon: Eye },
+  { to: "/portal/settings/connections", label: "Connected Accounts", icon: Plug },
+  { to: "/portal/settings/emergency", label: "Emergency & Beneficiary", icon: HeartPulse },
   { to: "/portal/settings/payment-methods", label: "Payment Methods", icon: CreditCard },
   { to: "/portal/settings/preferences", label: "Preferences", icon: Settings },
 ];
