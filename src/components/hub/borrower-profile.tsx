@@ -77,14 +77,15 @@ type IncomeSource = {
   include: boolean;
 };
 
-type Liability = {
+export type Liability = {
   id: string;
+  ownerId: string; // applicant.id who entered the debt
   creditor: string; // Name of lender
   type: string; // Type of debt
   balance: number;
   monthlyPayment: number;
   shared: boolean;
-  sharedWith: string[];
+  sharedWith: string[]; // applicant IDs the debt is shared with
   paymentHistory:
     | ""
     | "R1"
@@ -152,9 +153,10 @@ const SEED_INCOME_PRIMARY: IncomeSource[] = [
   },
 ];
 
-const SEED_LIABILITIES_PRIMARY: Liability[] = [
+export const buildSeedLiabilities = (primaryId: string): Liability[] => [
   {
     id: "lia-1",
+    ownerId: primaryId,
     creditor: "TD Visa",
     type: "Credit Card",
     balance: 2480,
@@ -166,6 +168,7 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
   },
   {
     id: "lia-2",
+    ownerId: primaryId,
     creditor: "Honda Finance",
     type: "Auto Loan",
     balance: 14900,
@@ -213,11 +216,7 @@ const CREDIT_SCORE_SOURCES = [
   "Other",
 ];
 
-const MOCK_CO_APPLICANTS = [
-  "John Smith (Co-applicant)",
-  "Jane Doe (Co-applicant)",
-  "Robert Johnson (Co-applicant)",
-];
+// Co-applicants are now passed in dynamically from the application's applicant list.
 
 const SEED_ASSETS_PRIMARY: Asset[] = [
   {
@@ -258,9 +257,19 @@ function stateBadge(state: SectionState) {
 // ─── Page ──────────────────────────────────────────────────────────
 export function BorrowerProfilePage({
   applicant,
+  coApplicants,
+  liabilities,
+  onUpsertLiability,
+  onRemoveLiability,
+  onLeaveSharedLiability,
   onBack,
 }: {
   applicant: BorrowerProfileApplicant;
+  coApplicants: BorrowerProfileApplicant[];
+  liabilities: Liability[];
+  onUpsertLiability: (l: Liability) => void;
+  onRemoveLiability: (id: string) => void;
+  onLeaveSharedLiability: (id: string, applicantId: string) => void;
   onBack: () => void;
 }) {
   const isPending =
@@ -288,9 +297,6 @@ export function BorrowerProfilePage({
   const [income, setIncome] = useState<IncomeSource[]>(
     applicant.isPrimary ? SEED_INCOME_PRIMARY : [],
   );
-  const [liabilities, setLiabilities] = useState<Liability[]>(
-    applicant.isPrimary ? SEED_LIABILITIES_PRIMARY : [],
-  );
   const [assets, setAssets] = useState<Asset[]>(applicant.isPrimary ? SEED_ASSETS_PRIMARY : []);
   const [properties, setProperties] = useState<OtherProperty[]>([]);
 
@@ -302,6 +308,23 @@ export function BorrowerProfilePage({
 
   // Drawers
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
+  const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
+
+  // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
+  const visibleLiabilities = useMemo(
+    () =>
+      liabilities.filter(
+        (l) => l.ownerId === applicant.id || l.sharedWith.includes(applicant.id),
+      ),
+    [liabilities, applicant.id],
+  );
+  const applicantNameById = useMemo(() => {
+    const map: Record<string, string> = { [applicant.id]: applicant.name };
+    coApplicants.forEach((c) => {
+      map[c.id] = c.name;
+    });
+    return map;
+  }, [applicant, coApplicants]);
 
   // Consents
   const [consents, setConsents] = useState({
@@ -514,11 +537,21 @@ export function BorrowerProfilePage({
               )}
               {active === "credit" && (
                 <CreditSection
-                  liabilities={liabilities}
+                  liabilities={visibleLiabilities}
+                  currentApplicantId={applicant.id}
+                  applicantNameById={applicantNameById}
                   none={noneLiab}
                   setNone={setNoneLiab}
-                  onAdd={() => setDrawer("liab")}
-                  onRemove={(id) => setLiabilities((p) => p.filter((x) => x.id !== id))}
+                  onAdd={() => {
+                    setEditingLiability(null);
+                    setDrawer("liab");
+                  }}
+                  onEdit={(l) => {
+                    setEditingLiability(l);
+                    setDrawer("liab");
+                  }}
+                  onRemove={onRemoveLiability}
+                  onLeaveShared={(id) => onLeaveSharedLiability(id, applicant.id)}
                   onMark={markSection}
                 />
               )}
@@ -607,10 +640,19 @@ export function BorrowerProfilePage({
       )}
       {drawer === "liab" && (
         <AddLiabilityDrawer
-          onClose={() => setDrawer(null)}
+          coApplicants={coApplicants}
+          initial={editingLiability}
+          onClose={() => {
+            setEditingLiability(null);
+            setDrawer(null);
+          }}
           onSave={(data) => {
-            setLiabilities((p) => [...p, { ...data, id: `lia-${Date.now()}` }]);
+            const next: Liability = editingLiability
+              ? { ...editingLiability, ...data }
+              : { ...data, id: `lia-${Date.now()}`, ownerId: applicant.id };
+            onUpsertLiability(next);
             setNoneLiab(false);
+            setEditingLiability(null);
             setDrawer(null);
           }}
         />
@@ -938,17 +980,25 @@ function IncomeSection({
 
 function CreditSection({
   liabilities,
+  currentApplicantId,
+  applicantNameById,
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
+  onLeaveShared,
   onMark,
 }: {
   liabilities: Liability[];
+  currentApplicantId: string;
+  applicantNameById: Record<string, string>;
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (l: Liability) => void;
   onRemove: (id: string) => void;
+  onLeaveShared: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
   const [creditScore, setCreditScore] = useState("");
@@ -957,11 +1007,14 @@ function CreditSection({
   const [bankruptcyType, setBankruptcyType] = useState<"bankruptcy" | "consumer_proposal" | "">("");
   const [bankruptcyActive, setBankruptcyActive] = useState<"yes" | "no" | "">("");
   const [dischargedWhen, setDischargedWhen] = useState<string>("");
-  const totalBalance = liabilities.reduce((s, l) => s + l.balance, 0);
-  const totalMonthly = liabilities
+  // Only count debts owned by this applicant — shared debts are counted on the
+  // owner's profile to avoid double counting in the qualification ratios.
+  const ownLiabilities = liabilities.filter((l) => l.ownerId === currentApplicantId);
+  const totalBalance = ownLiabilities.reduce((s, l) => s + l.balance, 0);
+  const totalMonthly = ownLiabilities
     .filter((l) => l.payoffPlan !== "payoff_before_closing")
     .reduce((s, l) => s + l.monthlyPayment, 0);
-  const payoff = liabilities
+  const payoff = ownLiabilities
     .filter((l) => l.payoffPlan === "payoff_before_closing")
     .reduce((s, l) => s + l.balance, 0);
 
@@ -1158,56 +1211,101 @@ function CreditSection({
           <Stat label="Pay off before closing" value={fmtMoney(payoff)} tone="mint" />
         </div>
 
-        {liabilities.map((l, i) => (
-          <div
-            key={l.id}
-            className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                  Debt #{i + 1}
-                </span>
-                <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
-                  {l.type}
-                </span>
-                {l.shared && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                    Shared
+        {liabilities.map((l, i) => {
+          const isOwn = l.ownerId === currentApplicantId;
+          const ownerName = applicantNameById[l.ownerId] ?? "another applicant";
+          const sharedNames = l.sharedWith
+            .map((id) => applicantNameById[id])
+            .filter(Boolean);
+          return (
+            <div
+              key={l.id}
+              className={`mt-2 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
+                isOwn ? "border-border bg-background" : "border-secondary/30 bg-secondary/5"
+              }`}
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    Debt #{i + 1}
                   </span>
-                )}
-                {l.paymentHistory && (
-                  <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
-                    {l.paymentHistory}
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
+                    {l.type}
                   </span>
-                )}
-                {l.payoffPlan === "payoff_before_closing" && (
-                  <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Pay off before closing
-                  </span>
-                )}
-                {l.payoffPlan === "include_in_loan" && (
-                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
-                    Include in loan
-                  </span>
+                  {!isOwn && (
+                    <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                      Auto-filled · Shared from {ownerName}
+                    </span>
+                  )}
+                  {isOwn && l.shared && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                      Shared
+                    </span>
+                  )}
+                  {l.paymentHistory && (
+                    <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                      {l.paymentHistory}
+                    </span>
+                  )}
+                  {l.payoffPlan === "payoff_before_closing" && (
+                    <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Pay off before closing
+                    </span>
+                  )}
+                  {l.payoffPlan === "include_in_loan" && (
+                    <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                      Include in loan
+                    </span>
+                  )}
+                  {!isOwn && (
+                    <span className="rounded-full bg-mint/20 px-2 py-0.5 text-[10px] font-semibold text-foreground">
+                      Counted on {ownerName}'s profile
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
+                <p className="text-xs text-muted-foreground">
+                  Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
+                  {isOwn && l.shared && sharedNames.length > 0 && (
+                    <> · Shared with {sharedNames.join(", ")}</>
+                  )}
+                </p>
+                {!isOwn && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Edits are made on {ownerName}'s profile to keep both records in sync. This debt
+                    is only counted once in the qualification ratios.
+                  </p>
                 )}
               </div>
-              <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
-              <p className="text-xs text-muted-foreground">
-                Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
-                {l.shared && l.sharedWith.length > 0 && (
-                  <> · Shared with {l.sharedWith.join(", ")}</>
+              <div className="flex items-center gap-2 self-start sm:self-center">
+                {isOwn ? (
+                  <>
+                    <button
+                      onClick={() => onEdit(l)}
+                      className="rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-muted"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onRemove(l.id)}
+                      className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+                      aria-label="Remove debt"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => onLeaveShared(l.id)}
+                    className="rounded-md border border-input bg-background px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-muted"
+                  >
+                    Not mine
+                  </button>
                 )}
-              </p>
+              </div>
             </div>
-            <button
-              onClick={() => onRemove(l.id)}
-              className="self-start rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10 sm:self-center"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
+          );
+        })}
 
         {liabilities.length === 0 && !none && (
           <EmptyState
@@ -2403,20 +2501,30 @@ function IncludedToggle({
 }
 
 function AddLiabilityDrawer({
+  coApplicants,
+  initial,
   onClose,
   onSave,
 }: {
+  coApplicants: BorrowerProfileApplicant[];
+  initial: Liability | null;
   onClose: () => void;
-  onSave: (d: Omit<Liability, "id">) => void;
+  onSave: (d: Omit<Liability, "id" | "ownerId">) => void;
 }) {
-  const [type, setType] = useState("");
-  const [creditor, setCreditor] = useState("");
-  const [balance, setBalance] = useState("");
-  const [monthlyPayment, setMonthlyPayment] = useState("");
-  const [shared, setShared] = useState(false);
-  const [sharedWith, setSharedWith] = useState<string[]>([]);
-  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>("");
-  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>("");
+  const [type, setType] = useState(initial?.type ?? "");
+  const [creditor, setCreditor] = useState(initial?.creditor ?? "");
+  const [balance, setBalance] = useState(initial ? String(initial.balance) : "");
+  const [monthlyPayment, setMonthlyPayment] = useState(
+    initial ? String(initial.monthlyPayment) : "",
+  );
+  const [shared, setShared] = useState(initial?.shared ?? false);
+  const [sharedWith, setSharedWith] = useState<string[]>(initial?.sharedWith ?? []);
+  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>(
+    initial?.paymentHistory ?? "",
+  );
+  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>(
+    initial?.payoffPlan ?? "",
+  );
   const valid =
     !!type &&
     creditor.trim().length > 0 &&
@@ -2424,15 +2532,19 @@ function AddLiabilityDrawer({
     !!paymentHistory &&
     !!payoffPlan &&
     (!shared || sharedWith.length > 0);
-  const toggleSharedWith = (name: string) =>
+  const toggleSharedWith = (id: string) =>
     setSharedWith((prev) =>
-      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
   return (
     <DrawerShell
-      title="Add Debt"
-      subtitle="Add a credit card, loan, or other monthly non-mortgage debt."
+      title={initial ? "Edit Debt" : "Add Debt"}
+      subtitle={
+        initial
+          ? "Update this debt. Shared debts will sync to the linked co-applicants automatically."
+          : "Add a credit card, loan, or other monthly non-mortgage debt."
+      }
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -2512,17 +2624,25 @@ function AddLiabilityDrawer({
               <p className="text-xs font-medium text-foreground">
                 Select co-applicant(s) this debt is shared with:
               </p>
-              {MOCK_CO_APPLICANTS.map((name) => (
-                <label key={name} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={sharedWith.includes(name)}
-                    onChange={() => toggleSharedWith(name)}
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  {name}
-                </label>
-              ))}
+              {coApplicants.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No co-applicants on this application yet. Add a co-applicant in the Mortgage
+                  Application Hub to share a debt.
+                </p>
+              ) : (
+                coApplicants.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={sharedWith.includes(c.id)}
+                      onChange={() => toggleSharedWith(c.id)}
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    {c.name}
+                    <span className="text-xs text-muted-foreground">({c.role})</span>
+                  </label>
+                ))
+              )}
             </div>
           )}
         </div>
