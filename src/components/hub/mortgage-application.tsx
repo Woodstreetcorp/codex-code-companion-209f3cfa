@@ -866,10 +866,10 @@ function WidgetCard({ widget }: { widget: Widget }) {
     "current-mortgage": "/portal/applications/current/property-financing/current-mortgage",
     "refi-request": "/portal/applications/current/property-financing/refinance-request",
     "renewal-preferences": "/portal/applications/current/property-financing/renewal-preferences",
-    "mortgage-request": "/portal/applications/current/mortgage-request",
-    offers: "/portal/applications/current/mortgage-offers",
-    consent: "/portal/applications/current/product-review-consent",
-    submit: "/portal/applications/current/submit",
+    "mortgage-request": "/applications/current/mortgage-request",
+    offers: "/applications/current/mortgage-offers",
+    consent: "/applications/current/product-review-consent",
+    submit: "/applications/current/submit",
   };
   const href = routeMap[widget.id];
   return (

@@ -296,7 +296,7 @@ function QualifiedProductsPage() {
               onClear={() => setSelected([])}
               onSubmit={() =>
                 navigate({
-                  to: "/portal/applications/$applicationId/product-review-consent",
+                  to: "/applications/$applicationId/product-review-consent",
                   params: { applicationId },
                 })
               }
@@ -333,7 +333,7 @@ function QualifiedProductsPage() {
               onSubmit={() => {
                 setCartOpen(false);
                 navigate({
-                  to: "/portal/applications/$applicationId/product-review-consent",
+                  to: "/applications/$applicationId/product-review-consent",
                   params: { applicationId },
                 });
               }}
