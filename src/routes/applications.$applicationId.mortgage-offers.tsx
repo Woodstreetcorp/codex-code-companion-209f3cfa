@@ -91,6 +91,10 @@ type Product = {
   features: string[];
   description: string;
   curated?: boolean;
+  matchReason?: string;
+  bundleValue?: number;
+  classification?: "Prime" | "Standard" | "Alternative";
+  lenderFee?: number;
 };
 
 const TOP: Product[] = [
