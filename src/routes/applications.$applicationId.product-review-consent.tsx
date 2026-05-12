@@ -126,8 +126,8 @@ function ProductReviewConsentPage() {
       <PageHeader
         applicationId={applicationId}
         tx={tx}
-        title="Product Review & Consent"
-        subtitle="Review your submission details and provide consent before your application is sent for review."
+        title="Review and consent"
+        subtitle="Take a final look at your details and give consent before your application is sent for review."
         progress={progress}
         saveStatus={allAcks ? "saved" : "unsaved"}
       />
