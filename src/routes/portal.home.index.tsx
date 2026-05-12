@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Card, CardHeader } from "@/components/portal/ui";
+import { BankConnectDialog } from "@/components/portal/bank-connect-dialog";
 
 export const Route = createFileRoute("/portal/home/")({
   head: () => ({
@@ -82,8 +83,8 @@ function MyMortgagePage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => {
-                  setLinked(true);
-                  toast.success("Bank linked — balance refreshed");
+                  if (linked) toast.success("Bank already linked — refreshing balance");
+                  else setBankOpen(true);
                 }}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90"
               >
