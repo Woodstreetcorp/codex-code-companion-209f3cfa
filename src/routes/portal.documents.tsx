@@ -346,7 +346,7 @@ function DocumentVaultPage() {
       ),
     );
     notify({
-      category: "documents",
+      category: "Document",
       title: `${result.institution} connected via ${result.provider}`,
       body: `Pulled ${result.monthsRetrieved} months from ${result.accounts.length} account${result.accounts.length === 1 ? "" : "s"} into your vault.`,
       tone: "success",
