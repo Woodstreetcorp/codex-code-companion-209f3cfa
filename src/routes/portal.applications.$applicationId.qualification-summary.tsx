@@ -6,6 +6,8 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Printer,
+  Share2,
   Circle,
   Clock,
   FileText,
@@ -138,13 +140,29 @@ function QualificationSummaryPage() {
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link to="/portal" className="hover:text-foreground">Portal</Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link to="/portal" className="hover:text-foreground">Applications</Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-foreground">Qualification Summary</span>
-      </nav>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Link to="/portal" className="hover:text-foreground">Portal</Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <Link to="/portal" className="hover:text-foreground">Applications</Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-foreground">Qualification Summary</span>
+        </nav>
+        <div className="flex gap-2 print:hidden" data-no-print>
+          <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted">
+            <Printer className="h-3.5 w-3.5" /> Print / Save PDF
+          </button>
+          <button
+            onClick={() => {
+              if (navigator.share) navigator.share({ title: "approvU qualification summary", url: window.location.href }).catch(() => {});
+              else navigator.clipboard.writeText(window.location.href);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium hover:bg-muted"
+          >
+            <Share2 className="h-3.5 w-3.5" /> Share
+          </button>
+        </div>
+      </div>
       <QualificationSummaryContent />
     </div>
   );

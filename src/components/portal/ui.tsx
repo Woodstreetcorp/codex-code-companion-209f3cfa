@@ -8,8 +8,14 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Lock,
+  Headphones,
+  MessageSquare,
+  Phone,
+  CalendarDays,
+  X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   PORTAL_NAV,
   type ActiveApp,
@@ -23,6 +29,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
+      <a href="#portal-main" className="skip-to-content">Skip to main content</a>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
           <Link to="/" className="flex items-center gap-2 text-primary">
@@ -49,7 +56,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main id="portal-main" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Mobile horizontal nav */}
         <nav
           aria-label="Portal sections"
@@ -106,10 +113,78 @@ export function PortalShell({ children }: { children: ReactNode }) {
           <div className="min-w-0">{children}</div>
         </div>
 
-        <p className="mt-12 text-center text-xs text-muted-foreground">
-          Internal prototype — illustrative only. Not a mortgage approval.
-        </p>
+        <TrustFooter />
       </main>
+
+      {/* Live region announces toast/status changes for AT users */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="portal-live-region" />
+
+      <SupportFab />
+    </div>
+  );
+}
+
+// ─── Trust footer ─────────────────────────────────────────────────────────
+function TrustFooter() {
+  return (
+    <footer className="mt-12 border-t border-border pt-6 text-center" data-no-print>
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <Lock className="h-3 w-3" /> Encrypted in transit & at rest (TLS 1.3 · AES-256)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <ShieldCheck className="h-3 w-3" /> SOC 2 Type II
+        </span>
+        <span>FSRA Reg. #M25000123</span>
+        <span>FCAC compliant</span>
+        <span>PIPEDA · Law 25</span>
+      </div>
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        approvU is a licensed mortgage brokerage in Ontario. © {new Date().getFullYear()} approvU. Internal prototype — illustrative only.
+      </p>
+    </footer>
+  );
+}
+
+// ─── One-tap support FAB ──────────────────────────────────────────────────
+function SupportFab() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="fixed bottom-5 right-5 z-50 print:hidden" data-no-print>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Get support"
+          className="mb-3 w-64 rounded-2xl border border-border bg-card p-2 shadow-lg"
+        >
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-secondary">Need a hand?</p>
+            <button onClick={() => setOpen(false)} aria-label="Close support menu" className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <Link to="/portal/messages" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            <MessageSquare className="h-4 w-4 text-primary" /> Chat with my advisor
+          </Link>
+          <a href="tel:+18005550123" className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            <Phone className="h-4 w-4 text-primary" /> Call (800) 555-0123
+          </a>
+          <Link to="/portal/appointments" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            <CalendarDays className="h-4 w-4 text-primary" /> Book a 15-min call
+          </Link>
+          <Link to="/portal/help" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            <Headphones className="h-4 w-4 text-primary" /> Browse Help Center
+          </Link>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="Get support"
+        className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:bg-primary/90 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
+      >
+        {open ? <X className="h-5 w-5" /> : <Headphones className="h-5 w-5" />}
+      </button>
     </div>
   );
 }
