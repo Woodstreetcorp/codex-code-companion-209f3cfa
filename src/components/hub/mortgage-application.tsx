@@ -762,9 +762,13 @@ function SelectedOfferCard() {
           <span className="text-xs text-muted-foreground">Home Life Bundle</span>
           <span className="text-sm font-semibold text-mint">{SELECTED_OFFER.bundle} value</span>
         </div>
-        <button className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
+        <Link
+          to="/applications/$applicationId/mortgage-offers"
+          params={{ applicationId: "current" }}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           View Offer Details <ArrowRight className="h-4 w-4" />
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -979,7 +983,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
         {href && !widget.locked ? (
           <Link
             to={href}
-            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
+            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
               widget.status === "Complete" || widget.status === "Selected"
                 ? "border border-input bg-background text-foreground hover:bg-muted"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -991,6 +995,8 @@ function WidgetCard({ widget }: { widget: Widget }) {
         ) : (
           <button
             disabled={widget.locked}
+            title={widget.locked ? widget.meta ?? "Complete the required sections to unlock this step." : undefined}
+            aria-label={widget.locked ? `${widget.title} — locked. ${widget.meta ?? "Complete required sections to unlock."}` : widget.title}
             className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
               widget.locked
                 ? "cursor-not-allowed bg-muted text-muted-foreground"
@@ -999,7 +1005,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
             }`}
           >
-            {widget.cta}
+            {widget.locked ? <><Lock className="h-3 w-3" /> Locked</> : widget.cta}
             {!widget.locked && <ArrowRight className="h-3.5 w-3.5" />}
           </button>
         )}
