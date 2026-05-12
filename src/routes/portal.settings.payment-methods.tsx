@@ -149,7 +149,12 @@ function PaymentMethodsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    <button className="text-xs font-medium text-primary hover:underline">Download</button>
+                    <button
+                      onClick={() => toast.success(`Receipt for ${h.desc} downloaded`)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Download
+                    </button>
                   </td>
                 </tr>
               ))}
