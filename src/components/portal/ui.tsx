@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
   Lock,
-  HeadphonesIcon,
+  Headphones,
   MessageSquare,
   Phone,
   CalendarDays,
