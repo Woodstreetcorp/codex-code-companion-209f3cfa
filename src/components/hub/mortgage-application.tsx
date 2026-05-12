@@ -98,7 +98,7 @@ type Widget = {
 };
 
 // ─── Mock data ───────────────────────────────────────────────────────────
-const APPLICATION = {
+export const APPLICATION = {
   id: "APP-2041",
   type: "Purchase" as TxType,
   status: "In Progress",
@@ -110,7 +110,7 @@ const APPLICATION = {
   lastUpdated: "Today, 2:14 PM",
 };
 
-const SELECTED_OFFER = {
+export const SELECTED_OFFER = {
   name: "Best Value Fixed Offer",
   path: "Monoline Lender Path · 5-Year Fixed",
   rate: "4.89%",
@@ -142,7 +142,7 @@ const INITIAL_APPLICANTS: Applicant[] = [
   },
 ];
 
-const PURCHASE_WIDGETS: Widget[] = [
+export const PURCHASE_WIDGETS: Widget[] = [
   {
     id: "property",
     group: "Property & Financing",
@@ -209,7 +209,7 @@ const PURCHASE_WIDGETS: Widget[] = [
   },
 ];
 
-const PRE_PURCHASE_WIDGETS: Widget[] = [
+export const PRE_PURCHASE_WIDGETS: Widget[] = [
   {
     id: "purchase-plan",
     group: "Property & Financing",
@@ -234,7 +234,7 @@ const PRE_PURCHASE_WIDGETS: Widget[] = [
   ...PURCHASE_WIDGETS.slice(2),
 ];
 
-const REFINANCE_WIDGETS: Widget[] = [
+export const REFINANCE_WIDGETS: Widget[] = [
   {
     id: "property-r",
     group: "Property & Financing",
