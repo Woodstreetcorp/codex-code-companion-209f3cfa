@@ -8,8 +8,14 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Lock,
+  HeadphonesIcon,
+  MessageSquare,
+  Phone,
+  CalendarDays,
+  X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   PORTAL_NAV,
   type ActiveApp,
@@ -23,6 +29,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="min-h-screen bg-background">
+      <a href="#portal-main" className="skip-to-content">Skip to main content</a>
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
           <Link to="/" className="flex items-center gap-2 text-primary">
@@ -49,7 +56,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main id="portal-main" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Mobile horizontal nav */}
         <nav
           aria-label="Portal sections"
