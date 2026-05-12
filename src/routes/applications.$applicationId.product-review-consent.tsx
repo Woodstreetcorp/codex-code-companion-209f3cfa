@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Lock, Mail, Send } from "lucide-react";
+import { toast } from "sonner";
 import {
   CompletionSummaryPanel,
   Field,
@@ -247,7 +248,10 @@ function ProductReviewConsentPage() {
                   </p>
                 </div>
                 {!b.consent ? (
-                  <button className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90">
+                  <button
+                    onClick={() => toast.success(`Reminder sent to ${b.name}`)}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
                     <Mail className="h-3 w-3" /> Send Reminder
                   </button>
                 ) : (
