@@ -22,6 +22,7 @@ import { QualificationSummaryContent } from "./portal.applications.$applicationI
 import { PreQualifiedCertificateContent } from "@/components/hub/pre-qualified-certificate";
 import { MortgageApplicationContent } from "@/components/hub/mortgage-application";
 import { DocumentUploadContent } from "@/components/hub/document-upload";
+import { LenderResponseContent } from "@/components/hub/lender-response";
 
 export const Route = createFileRoute("/internal/full-application")({
   head: () => ({
@@ -47,7 +48,7 @@ const HUB_NAV: { label: string; icon: ComponentType<{ className?: string }>; sta
   { label: "Mortgage Application", icon: FileCheck, status: "active", progress: 0 },
   { label: "Exclusive Offers", icon: Gift, status: "active" },
   { label: "Document Upload", icon: Upload, status: "active" },
-  { label: "Lender Response", icon: MessageCircle, status: "locked" },
+  { label: "Lender Response", icon: MessageCircle, status: "active" },
   { label: "Funding Conditions", icon: Flag, status: "locked" },
 ];
 
@@ -277,6 +278,8 @@ function ApplicationHub() {
               <MortgageApplicationContent />
             ) : activeTab === "Document Upload" ? (
               <DocumentUploadContent />
+            ) : activeTab === "Lender Response" ? (
+              <LenderResponseContent />
             ) : activeTab === "Application Overview" ? (
               <>
             <header>
