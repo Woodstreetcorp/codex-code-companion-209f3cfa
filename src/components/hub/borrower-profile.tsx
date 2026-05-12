@@ -177,6 +177,48 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
   },
 ];
 
+const DEBT_TYPES = [
+  "Credit Card",
+  "Line of Credit",
+  "Auto Loan",
+  "Student Loan",
+  "Payday Loan",
+  "Personal Loan",
+  "Other",
+];
+
+const PAYMENT_HISTORY_OPTIONS: { value: Liability["paymentHistory"]; label: string }[] = [
+  { value: "R1", label: "R1 – Pays as agreed" },
+  { value: "R2", label: "R2 – 30 days past due" },
+  { value: "R3", label: "R3 – 60 days past due" },
+  { value: "R4", label: "R4 – 90 days past due" },
+  { value: "R5", label: "R5 – 120+ days past due" },
+  { value: "R7", label: "R7 – Making payments under arrangement" },
+  { value: "R8", label: "R8 – Repossession/voluntary return" },
+  { value: "R9", label: "R9 – Bad debt/placed for collection" },
+];
+
+const PAYOFF_PLAN_OPTIONS: { value: Liability["payoffPlan"]; label: string }[] = [
+  { value: "payoff_before_closing", label: "Yes – Will Pay Off Before Closing" },
+  { value: "leave_open", label: "No – Leave Open" },
+  { value: "include_in_loan", label: "Yes – Include in Loan" },
+];
+
+const CREDIT_SCORE_SOURCES = [
+  "Equifax",
+  "TransUnion",
+  "Borrowell",
+  "Credit Karma",
+  "Bank or Lender App",
+  "Other",
+];
+
+const MOCK_CO_APPLICANTS = [
+  "John Smith (Co-applicant)",
+  "Jane Doe (Co-applicant)",
+  "Robert Johnson (Co-applicant)",
+];
+
 const SEED_ASSETS_PRIMARY: Asset[] = [
   {
     id: "ast-1",
