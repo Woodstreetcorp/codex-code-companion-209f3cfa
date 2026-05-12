@@ -79,13 +79,27 @@ type IncomeSource = {
 
 type Liability = {
   id: string;
-  creditor: string;
-  type: string;
+  creditor: string; // Name of lender
+  type: string; // Type of debt
   balance: number;
   monthlyPayment: number;
-  ownership: "Individual" | "Joint" | "Shared";
-  payOffAtClose: boolean;
-  include: boolean;
+  shared: boolean;
+  sharedWith: string[];
+  paymentHistory:
+    | ""
+    | "R1"
+    | "R2"
+    | "R3"
+    | "R4"
+    | "R5"
+    | "R7"
+    | "R8"
+    | "R9";
+  payoffPlan:
+    | ""
+    | "payoff_before_closing"
+    | "leave_open"
+    | "include_in_loan";
 };
 
 type Asset = {
@@ -145,9 +159,10 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
     type: "Credit Card",
     balance: 2480,
     monthlyPayment: 75,
-    ownership: "Individual",
-    payOffAtClose: false,
-    include: true,
+    shared: false,
+    sharedWith: [],
+    paymentHistory: "R1",
+    payoffPlan: "leave_open",
   },
   {
     id: "lia-2",
@@ -155,10 +170,53 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
     type: "Auto Loan",
     balance: 14900,
     monthlyPayment: 412,
-    ownership: "Individual",
-    payOffAtClose: false,
-    include: true,
+    shared: false,
+    sharedWith: [],
+    paymentHistory: "R1",
+    payoffPlan: "leave_open",
   },
+];
+
+const DEBT_TYPES = [
+  "Credit Card",
+  "Line of Credit",
+  "Auto Loan",
+  "Student Loan",
+  "Payday Loan",
+  "Personal Loan",
+  "Other",
+];
+
+const PAYMENT_HISTORY_OPTIONS: { value: Liability["paymentHistory"]; label: string }[] = [
+  { value: "R1", label: "R1 – Pays as agreed" },
+  { value: "R2", label: "R2 – 30 days past due" },
+  { value: "R3", label: "R3 – 60 days past due" },
+  { value: "R4", label: "R4 – 90 days past due" },
+  { value: "R5", label: "R5 – 120+ days past due" },
+  { value: "R7", label: "R7 – Making payments under arrangement" },
+  { value: "R8", label: "R8 – Repossession/voluntary return" },
+  { value: "R9", label: "R9 – Bad debt/placed for collection" },
+];
+
+const PAYOFF_PLAN_OPTIONS: { value: Liability["payoffPlan"]; label: string }[] = [
+  { value: "payoff_before_closing", label: "Yes – Will Pay Off Before Closing" },
+  { value: "leave_open", label: "No – Leave Open" },
+  { value: "include_in_loan", label: "Yes – Include in Loan" },
+];
+
+const CREDIT_SCORE_SOURCES = [
+  "Equifax",
+  "TransUnion",
+  "Borrowell",
+  "Credit Karma",
+  "Bank or Lender App",
+  "Other",
+];
+
+const MOCK_CO_APPLICANTS = [
+  "John Smith (Co-applicant)",
+  "Jane Doe (Co-applicant)",
+  "Robert Johnson (Co-applicant)",
 ];
 
 const SEED_ASSETS_PRIMARY: Asset[] = [
@@ -891,86 +949,166 @@ function CreditSection({
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
-  const [scoreRange, setScoreRange] = useState("720–759");
-  const [pullCredit, setPullCredit] = useState(false);
+  const [creditScore, setCreditScore] = useState("");
+  const [scoreSource, setScoreSource] = useState("");
+  const [bankruptcy, setBankruptcy] = useState<"yes" | "no" | "">("");
   const totalBalance = liabilities.reduce((s, l) => s + l.balance, 0);
-  const totalMonthly = liabilities.filter((l) => l.include).reduce((s, l) => s + l.monthlyPayment, 0);
-  const payoff = liabilities.filter((l) => l.payOffAtClose).reduce((s, l) => s + l.balance, 0);
+  const totalMonthly = liabilities
+    .filter((l) => l.payoffPlan !== "payoff_before_closing")
+    .reduce((s, l) => s + l.monthlyPayment, 0);
+  const payoff = liabilities
+    .filter((l) => l.payoffPlan === "payoff_before_closing")
+    .reduce((s, l) => s + l.balance, 0);
+
+  const scoreNum = Number(creditScore);
+  const scoreInvalid =
+    creditScore.length > 0 && (Number.isNaN(scoreNum) || scoreNum < 300 || scoreNum > 850);
 
   return (
     <div className="space-y-6">
-      <Group title="Credit Information">
-        <Field label="Estimated credit score range" full>
-          <Select
-            value={scoreRange}
-            onChange={setScoreRange}
-            options={[
-              "760+",
-              "720–759",
-              "680–719",
-              "650–679",
-              "620–649",
-              "600–619",
-              "Below 600",
-              "Not sure",
-            ]}
-          />
-        </Field>
-        <YesNo label="Bankruptcy in the last 7 years?" />
-        <YesNo label="Consumer proposal in the last 7 years?" />
-        <YesNo label="Missed payments in the last 12 months?" />
-        <YesNo label="Active collections or judgments?" />
-      </Group>
-
-      <div className="rounded-2xl border border-border bg-muted/40 p-4">
-        <label className="flex items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={pullCredit}
-            onChange={(e) => setPullCredit(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-input"
-          />
-          <span>
-            <span className="font-semibold text-foreground">
-              I authorize approvU to pull my credit report
-            </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              Required for mortgage qualification. Each borrower must provide their own consent.
-            </span>
-          </span>
-        </label>
+      <div className="flex items-start gap-2 rounded-xl border border-secondary/30 bg-secondary/5 p-3 text-xs text-foreground">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+        <div>
+          <p className="font-semibold">Why we ask for this information</p>
+          <p className="mt-0.5 text-muted-foreground">
+            We're requesting detailed credit information to prevent checking your credit report at this early stage,
+            which could impact your score. All the information we're asking for can be found on your credit report,
+            and we'll ask you to upload a copy later to help our agents avoid pulling your credit record unnecessarily.
+          </p>
+        </div>
       </div>
 
+      <Group title="Credit Score Information">
+        <Field label="What is your current credit score?" required full>
+          <Input
+            type="number"
+            value={creditScore}
+            onChange={setCreditScore}
+            placeholder="e.g. 720"
+          />
+          <p className={`mt-1 text-[11px] ${scoreInvalid ? "text-coral" : "text-muted-foreground"}`}>
+            {scoreInvalid
+              ? "Please enter a score between 300 and 850."
+              : "Enter your exact credit score (300–850)"}
+          </p>
+        </Field>
+        <Field label="Where did you check your credit score?" full>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {CREDIT_SCORE_SOURCES.map((s) => (
+              <label
+                key={s}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  scoreSource === s
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="score-source"
+                  checked={scoreSource === s}
+                  onChange={() => setScoreSource(s)}
+                  className="h-3.5 w-3.5"
+                />
+                <span>{s}</span>
+              </label>
+            ))}
+          </div>
+        </Field>
+        <div className="sm:col-span-2 flex items-start gap-2 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <div>
+            <p className="font-semibold text-foreground">Credit Report Upload Required</p>
+            <p className="mt-0.5 text-muted-foreground">
+              Please upload a copy of your credit report in the document section of your application.
+              This helps our agents avoid pulling your credit record and saves costs.
+            </p>
+          </div>
+        </div>
+      </Group>
+
+      <Group title="Negative Credit Events">
+        <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
+          <span className="text-sm text-foreground">
+            Have you ever filed for a Consumer Proposal or Bankruptcy?
+          </span>
+          <div className="flex items-center gap-1.5">
+            {(["yes", "no"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setBankruptcy(opt)}
+                className={`rounded-md px-3 py-1 text-xs font-medium ${
+                  bankruptcy === opt
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-input bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                {opt === "yes" ? "Yes" : "No"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Group>
+
       <div>
+        <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+          Current Debt Obligations
+        </h3>
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-coral/30 bg-coral/5 p-3 text-xs">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <p>
+            <span className="font-semibold">Note:</span> Please list all non-mortgage debts only.
+            Existing mortgage details will be captured in a separate section.
+          </p>
+        </div>
         <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="Liabilities" value={`${liabilities.length}`} />
           <Stat label="Total balance" value={fmtMoney(totalBalance)} />
-          <Stat label="Monthly (incl.)" value={fmtMoney(totalMonthly)} tone="secondary" />
-          <Stat label="Payoff at close" value={fmtMoney(payoff)} tone="mint" />
+          <Stat label="Monthly (kept)" value={fmtMoney(totalMonthly)} tone="secondary" />
+          <Stat label="Pay off before closing" value={fmtMoney(payoff)} tone="mint" />
         </div>
 
-        {liabilities.map((l) => (
+        {liabilities.map((l, i) => (
           <div
             key={l.id}
             className="mt-2 flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  Debt #{i + 1}
+                </span>
                 <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-secondary">
                   {l.type}
                 </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {l.ownership}
-                </span>
-                {l.payOffAtClose && (
+                {l.shared && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    Shared
+                  </span>
+                )}
+                {l.paymentHistory && (
+                  <span className="rounded-full bg-secondary/10 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                    {l.paymentHistory}
+                  </span>
+                )}
+                {l.payoffPlan === "payoff_before_closing" && (
                   <span className="rounded-full bg-mint/25 px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    Pay off at close
+                    Pay off before closing
+                  </span>
+                )}
+                {l.payoffPlan === "include_in_loan" && (
+                  <span className="rounded-full bg-secondary/15 px-2 py-0.5 text-[10px] font-semibold text-secondary">
+                    Include in loan
                   </span>
                 )}
               </div>
               <p className="mt-1.5 text-sm font-semibold text-foreground">{l.creditor}</p>
               <p className="text-xs text-muted-foreground">
                 Balance {fmtMoney(l.balance)} · {fmtMoney(l.monthlyPayment)}/mo
+                {l.shared && l.sharedWith.length > 0 && (
+                  <> · Shared with {l.sharedWith.join(", ")}</>
+                )}
               </p>
             </div>
             <button
@@ -1002,7 +1140,7 @@ function CreditSection({
           onClick={onAdd}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          <Plus className="h-3.5 w-3.5" /> Add Liability
+          <Plus className="h-3.5 w-3.5" /> Add Debt
         </button>
         <button
           onClick={() =>
@@ -2182,19 +2320,30 @@ function AddLiabilityDrawer({
   onClose: () => void;
   onSave: (d: Omit<Liability, "id">) => void;
 }) {
+  const [type, setType] = useState("");
   const [creditor, setCreditor] = useState("");
-  const [type, setType] = useState("Credit Card");
   const [balance, setBalance] = useState("");
   const [monthlyPayment, setMonthlyPayment] = useState("");
-  const [ownership, setOwnership] = useState<Liability["ownership"]>("Individual");
-  const [payOffAtClose, setPayOffAtClose] = useState(false);
-  const [include, setInclude] = useState(true);
-  const valid = creditor.trim().length > 0 && Number(balance) >= 0;
+  const [shared, setShared] = useState(false);
+  const [sharedWith, setSharedWith] = useState<string[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>("");
+  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>("");
+  const valid =
+    !!type &&
+    creditor.trim().length > 0 &&
+    Number(balance) >= 0 &&
+    !!paymentHistory &&
+    !!payoffPlan &&
+    (!shared || sharedWith.length > 0);
+  const toggleSharedWith = (name: string) =>
+    setSharedWith((prev) =>
+      prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name],
+    );
 
   return (
     <DrawerShell
-      title="Add Liability"
-      subtitle="Add a credit card, loan, or other monthly debt for this borrower."
+      title="Add Debt"
+      subtitle="Add a credit card, loan, or other monthly non-mortgage debt."
       onClose={onClose}
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -2212,9 +2361,10 @@ function AddLiabilityDrawer({
                 type,
                 balance: Number(balance),
                 monthlyPayment: Number(monthlyPayment) || 0,
-                ownership,
-                payOffAtClose,
-                include,
+                shared,
+                sharedWith: shared ? sharedWith : [],
+                paymentHistory,
+                payoffPlan,
               })
             }
             className={`rounded-md px-3.5 py-2 text-xs font-semibold ${
@@ -2223,65 +2373,109 @@ function AddLiabilityDrawer({
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
           >
-            Save Liability
+            Save Debt
           </button>
         </div>
       }
     >
       <div className="space-y-4">
-        <Field label="Creditor name" full required>
-          <Input value={creditor} onChange={setCreditor} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Type of debt" required>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-secondary"
+            >
+              <option value="">Select debt type</option>
+              {DEBT_TYPES.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Name of lender" required>
+            <Input value={creditor} onChange={setCreditor} placeholder="Enter lender name" />
+          </Field>
+          <Field label="Outstanding balance" required>
+            <Input value={balance} onChange={setBalance} placeholder="$0.00" />
+          </Field>
+          <Field label="Monthly payment" required>
+            <Input value={monthlyPayment} onChange={setMonthlyPayment} placeholder="$0.00" />
+          </Field>
+        </div>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <input
+              type="checkbox"
+              checked={shared}
+              onChange={(e) => {
+                setShared(e.target.checked);
+                if (!e.target.checked) setSharedWith([]);
+              }}
+              className="h-4 w-4 rounded border-input"
+            />
+            Is this debt shared with another applicant?
+          </label>
+          {shared && (
+            <div className="ml-6 space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-foreground">
+                Select co-applicant(s) this debt is shared with:
+              </p>
+              {MOCK_CO_APPLICANTS.map((name) => (
+                <label key={name} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={sharedWith.includes(name)}
+                    onChange={() => toggleSharedWith(name)}
+                    className="h-4 w-4 rounded border-input"
+                  />
+                  {name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Field label="Payment History / Performance" required full>
+          <select
+            value={paymentHistory}
+            onChange={(e) => setPaymentHistory(e.target.value as Liability["paymentHistory"])}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-secondary"
+          >
+            <option value="">Select payment history rating</option>
+            {PAYMENT_HISTORY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </Field>
-        <Field label="Liability type" full>
-          <Select
-            value={type}
-            onChange={setType}
-            options={[
-              "Credit Card",
-              "Line of Credit",
-              "Unsecured Line of Credit",
-              "Auto Loan",
-              "Student Loan",
-              "Personal Loan",
-              "Collection",
-              "Lease Payment",
-              "Support Payment",
-              "Mortgage on Other Property",
-              "Other",
-            ]}
-          />
+
+        <Field label="Do you plan to pay off this debt before closing?" required full>
+          <div className="space-y-2">
+            {PAYOFF_PLAN_OPTIONS.map((o) => (
+              <label
+                key={o.value}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  payoffPlan === o.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:border-primary/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payoff-plan"
+                  checked={payoffPlan === o.value}
+                  onChange={() => setPayoffPlan(o.value)}
+                  className="h-3.5 w-3.5"
+                />
+                <span>{o.label}</span>
+              </label>
+            ))}
+          </div>
         </Field>
-        <Field label="Balance" required>
-          <Input value={balance} onChange={setBalance} placeholder="0" />
-        </Field>
-        <Field label="Monthly payment">
-          <Input value={monthlyPayment} onChange={setMonthlyPayment} placeholder="0" />
-        </Field>
-        <Field label="Ownership">
-          <Select
-            value={ownership}
-            onChange={(v) => setOwnership(v as Liability["ownership"])}
-            options={["Individual", "Joint", "Shared"]}
-          />
-        </Field>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={payOffAtClose}
-            onChange={(e) => setPayOffAtClose(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          Pay off at close
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={include}
-            onChange={(e) => setInclude(e.target.checked)}
-            className="h-4 w-4 rounded border-input"
-          />
-          Include in qualification
-        </label>
       </div>
     </DrawerShell>
   );
