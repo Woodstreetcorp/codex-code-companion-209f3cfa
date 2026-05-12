@@ -368,57 +368,6 @@ function ApplicationHub() {
               </ul>
             </nav>
 
-            {/* Mortgage Offer widget */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <div className="bg-primary px-4 py-3 text-primary-foreground">
-                <h2 className="text-sm font-semibold tracking-tight">Your Mortgage Offers</h2>
-              </div>
-              <div className="space-y-4 p-4">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">From</p>
-                <dl className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <dt className="text-muted-foreground">Rate</dt>
-                    <dd className="mt-0.5 text-base font-semibold text-foreground">{SELECTED_OFFER.rate}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Offer</dt>
-                    <dd className="mt-0.5 text-sm font-semibold text-foreground">{SELECTED_OFFER.name}</dd>
-                  </div>
-                </dl>
-                <p className="text-[11px] text-muted-foreground">{SELECTED_OFFER.path}</p>
-
-                <div className="rounded-xl bg-muted p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Monthly Payment
-                  </p>
-                  <p className="mt-0.5 text-xl font-semibold text-foreground">{SELECTED_OFFER.monthly}</p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Total Benefits</span>
-                    <span className="text-base font-semibold text-mint">{totalBenefitsFmt}</span>
-                  </div>
-                  <ul className="mt-2 space-y-2">
-                    {BUNDLE_BENEFITS.map((b) => (
-                      <li
-                        key={b.label}
-                        className="flex items-center justify-between gap-2 text-xs"
-                      >
-                        <span className="flex items-center gap-2 text-foreground">
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-secondary/15 text-secondary">
-                            <DollarSign className="h-3.5 w-3.5" />
-                          </span>
-                          {b.label}
-                        </span>
-                        <span className="font-semibold text-mint">{b.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-
             {/* Important Notice */}
             <Notice tone="warning" icon={AlertCircle} title="Important Notice">
               Your mortgage offer is based on your pre-qualification information. Changes to your
