@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -10,8 +10,19 @@ import {
   CheckCircle2,
   AlertCircle,
   ClipboardList,
+  Building2,
+  ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "@/components/portal/ui";
+import {
+  APPLICATION_BUNDLES,
+  PROFILE_RECORDS,
+  PROFILE_TEMPLATES,
+  isComplete,
+  statusTone,
+  templateById,
+  type ConsentStatus,
+} from "@/lib/disclosures";
 
 export const Route = createFileRoute("/portal/disclosures")({
   head: () => ({
@@ -23,118 +34,105 @@ export const Route = createFileRoute("/portal/disclosures")({
   component: DisclosuresPage,
 });
 
-type DiscStatus = "Reviewed" | "Action Required" | "New Version" | "Not Applicable";
-
-type Disclosure = {
-  id: string;
+type Row = {
+  scope: "profile" | "application";
+  templateId: string;
   title: string;
+  category: string;
   jurisdiction: string;
-  category: "Privacy" | "Brokerage" | "Cost of Borrowing" | "Conflicts" | "Suitability" | "Regulatory";
   version: string;
   effective: string;
-  reviewedOn?: string;
+  status: ConsentStatus;
+  reviewedAt?: string;
   reviewedIp?: string;
-  status: DiscStatus;
-  summary: string;
+  whyRequired?: string;
+  application?: {
+    id: string;
+    property: string;
+    transactionType: string;
+  };
 };
 
-const DISCLOSURES: Disclosure[] = [
-  {
-    id: "DSC-001",
-    title: "approvU Privacy Policy",
-    jurisdiction: "Canada (PIPEDA / Quebec Law 25)",
-    category: "Privacy",
-    version: "v3.2",
-    effective: "Jan 15, 2026",
-    reviewedOn: "Jan 18, 2026 · 9:14 AM",
-    reviewedIp: "76.10.x.x · Toronto, ON",
-    status: "Reviewed",
-    summary: "How we collect, use, store and share your personal information.",
-  },
-  {
-    id: "DSC-002",
-    title: "Form 1.1 — Mortgage Brokerage Disclosure (Ontario)",
-    jurisdiction: "Ontario · FSRA",
-    category: "Brokerage",
-    version: "v2024.1",
-    effective: "Jul 1, 2024",
-    reviewedOn: "Apr 2, 2026 · 4:32 PM",
-    reviewedIp: "76.10.x.x · Toronto, ON",
-    status: "Reviewed",
-    summary: "Brokerage relationship, services, compensation and lender list.",
-  },
-  {
-    id: "DSC-003",
-    title: "Conflict of Interest Disclosure",
-    jurisdiction: "All provinces",
-    category: "Conflicts",
-    version: "v1.4",
-    effective: "Mar 10, 2026",
-    status: "Action Required",
-    summary: "Lender referral fees, volume bonuses, and any potential conflicts.",
-  },
-  {
-    id: "DSC-004",
-    title: "Cost of Borrowing Disclosure (FCAC)",
-    jurisdiction: "Federally regulated",
-    category: "Cost of Borrowing",
-    version: "v2026.1",
-    effective: "Feb 1, 2026",
-    reviewedOn: "Apr 28, 2026 · 11:02 AM",
-    reviewedIp: "76.10.x.x · Toronto, ON",
-    status: "Reviewed",
-    summary: "APR, total cost of credit, prepayment terms, and key disclosures.",
-  },
-  {
-    id: "DSC-005",
-    title: "Suitability Questionnaire (FSRA)",
-    jurisdiction: "Ontario · FSRA",
-    category: "Suitability",
-    version: "v1.0",
-    effective: "Apr 1, 2026",
-    status: "Action Required",
-    summary: "Required intake to confirm a recommended mortgage is suitable for you.",
-  },
-  {
-    id: "DSC-006",
-    title: "Electronic Signatures & Records Consent",
-    jurisdiction: "PIPEDA · Provincial e-signature acts",
-    category: "Regulatory",
-    version: "v2.1",
-    effective: "Jan 12, 2025",
-    reviewedOn: "Jan 12, 2025 · 9:01 AM",
-    reviewedIp: "76.10.x.x · Toronto, ON",
-    status: "Reviewed",
-    summary: "You agree to transact and receive records electronically.",
-  },
-];
+function buildRows(): Row[] {
+  const profileRows: Row[] = PROFILE_TEMPLATES.map((t) => {
+    const rec = PROFILE_RECORDS.find((r) => r.templateId === t.id);
+    return {
+      scope: "profile",
+      templateId: t.id,
+      title: t.title,
+      category: t.category,
+      jurisdiction: t.jurisdiction,
+      version: t.version,
+      effective: t.effective,
+      status: rec?.status ?? "Not Started",
+      reviewedAt: rec?.reviewedAt ?? rec?.signedAt,
+      reviewedIp: rec?.ip,
+      whyRequired: t.whyRequired,
+    };
+  });
+
+  const appRows: Row[] = [];
+  for (const bundle of APPLICATION_BUNDLES) {
+    for (const d of bundle.disclosures) {
+      const tpl = templateById(d.templateId);
+      if (!tpl) continue;
+      const primary = d.applicantConsents.find((c) => c.role === "primary");
+      appRows.push({
+        scope: "application",
+        templateId: tpl.id,
+        title: tpl.title,
+        category: tpl.category,
+        jurisdiction: tpl.jurisdiction,
+        version: tpl.version,
+        effective: tpl.effective,
+        status: d.status,
+        reviewedAt: primary?.signedAt,
+        reviewedIp: primary?.signedIp,
+        whyRequired: tpl.whyRequired,
+        application: {
+          id: bundle.applicationId,
+          property: bundle.property,
+          transactionType: bundle.transactionType,
+        },
+      });
+    }
+  }
+  return [...profileRows, ...appRows];
+}
+
+type TabKey = "all" | "profile" | "application" | "action" | "history";
 
 function DisclosuresPage() {
   const [q, setQ] = useState("");
-  const [tab, setTab] = useState<"all" | "action" | "history">("all");
+  const [tab, setTab] = useState<TabKey>("all");
   const [openSuit, setOpenSuit] = useState(false);
 
-  const items = DISCLOSURES.filter((d) => {
-    if (q && !`${d.title} ${d.category} ${d.jurisdiction}`.toLowerCase().includes(q.toLowerCase())) return false;
-    if (tab === "action") return d.status === "Action Required" || d.status === "New Version";
-    if (tab === "history") return !!d.reviewedOn;
+  const allRows = buildRows();
+  const items = allRows.filter((d) => {
+    if (q && !`${d.title} ${d.category} ${d.jurisdiction} ${d.application?.id ?? ""}`.toLowerCase().includes(q.toLowerCase())) return false;
+    if (tab === "profile") return d.scope === "profile";
+    if (tab === "application") return d.scope === "application";
+    if (tab === "action") return d.status === "Action Required" || d.status === "Not Started" || d.status === "Expired";
+    if (tab === "history") return !!d.reviewedAt;
     return true;
   });
 
-  const actionCount = DISCLOSURES.filter((d) => d.status === "Action Required" || d.status === "New Version").length;
+  const actionCount = allRows.filter((d) => d.status === "Action Required" || d.status === "Not Started" || d.status === "Expired").length;
+  const profileCount = allRows.filter((d) => d.scope === "profile").length;
+  const appCount = allRows.filter((d) => d.scope === "application").length;
 
   return (
     <>
       <PageHeader
         eyebrow="Compliance"
         title="Disclosures Library"
-        description="Versioned disclosures, regulatory documents, and your review history."
+        description="Profile-level policies and application-specific disclosures, all versioned and timestamped."
       />
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <StatCard label="Disclosures on file" value={`${DISCLOSURES.length}`} icon={ShieldCheck} />
+        <StatCard label="Profile-level" value={`${profileCount}`} icon={ShieldCheck} />
+        <StatCard label="Application-level" value={`${appCount}`} icon={Building2} />
         <StatCard label="Action required" value={`${actionCount}`} icon={AlertCircle} tone={actionCount > 0 ? "warn" : "ok"} />
-        <StatCard label="Reviewed by you" value={`${DISCLOSURES.filter((d) => d.reviewedOn).length}`} icon={CheckCircle2} tone="ok" />
       </div>
 
       <div className="rounded-2xl border border-border bg-card shadow-sm">
@@ -148,14 +146,20 @@ function DisclosuresPage() {
               className="w-full bg-transparent text-sm outline-none"
             />
           </div>
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1 text-xs">
-            {(["all", "action", "history"] as const).map((t) => (
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-background p-1 text-xs">
+            {([
+              ["all", "All"],
+              ["profile", "Profile-Level"],
+              ["application", "Application-Level"],
+              ["action", `Action Required (${actionCount})`],
+              ["history", "Review History"],
+            ] as const).map(([t, label]) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`rounded-md px-3 py-1.5 font-medium ${tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                {t === "all" ? "All" : t === "action" ? `Action (${actionCount})` : "Review History"}
+                {label}
               </button>
             ))}
           </div>
@@ -163,7 +167,7 @@ function DisclosuresPage() {
 
         <div className="divide-y divide-border">
           {items.map((d) => (
-            <div key={d.id} className="flex flex-wrap items-start justify-between gap-3 p-4">
+            <div key={`${d.scope}-${d.templateId}-${d.application?.id ?? ""}`} className="flex flex-wrap items-start justify-between gap-3 p-4">
               <div className="flex items-start gap-3 min-w-0">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
                   <FileText className="h-5 w-5" />
@@ -171,13 +175,25 @@ function DisclosuresPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold text-foreground">{d.title}</p>
-                    <StatusPill status={d.status} />
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusTone(d.status)}`}>
+                      {d.status}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${d.scope === "profile" ? "bg-secondary/15 text-secondary" : "bg-primary/10 text-primary"}`}>
+                      {d.scope === "profile" ? "Profile" : "Application"}
+                    </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{d.summary}</p>
+                  {d.whyRequired && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{d.whyRequired}</p>
+                  )}
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                     <span><span className="font-medium text-foreground">{d.category}</span> · {d.jurisdiction}</span>
                     <span>Version {d.version} · Effective {d.effective}</span>
-                    {d.reviewedOn && <span>You reviewed {d.reviewedOn}{d.reviewedIp ? ` · ${d.reviewedIp}` : ""}</span>}
+                    {d.reviewedAt && <span>Reviewed {d.reviewedAt}{d.reviewedIp ? ` · ${d.reviewedIp}` : ""}</span>}
+                    {d.application && (
+                      <span>
+                        Application <span className="font-medium text-foreground">{d.application.id}</span> · {d.application.transactionType} · {d.application.property}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -188,14 +204,23 @@ function DisclosuresPage() {
                 >
                   <Download className="h-3.5 w-3.5" /> PDF
                 </button>
-                {d.id === "DSC-005" ? (
+                {d.application ? (
+                  <Link
+                    to="/portal/applications/$applicationId/disclosures"
+                    params={{ applicationId: d.application.id }}
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                  >
+                    Open application <ExternalLink className="h-3 w-3" />
+                  </Link>
+                ) : null}
+                {d.templateId === "TPL-SUIT-1" ? (
                   <button
                     onClick={() => setOpenSuit(true)}
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                   >
                     Start questionnaire
                   </button>
-                ) : d.status === "Action Required" || d.status === "New Version" ? (
+                ) : !isComplete(d.status) ? (
                   <button
                     onClick={() => toast.success(`${d.title} marked as reviewed`)}
                     className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
@@ -237,16 +262,6 @@ function StatCard({ label, value, icon: Icon, tone = "neutral" }: { label: strin
       <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
     </div>
   );
-}
-
-function StatusPill({ status }: { status: DiscStatus }) {
-  const map: Record<DiscStatus, string> = {
-    Reviewed: "bg-mint/15 text-mint",
-    "Action Required": "bg-amber-500/15 text-amber-600",
-    "New Version": "bg-primary/10 text-primary",
-    "Not Applicable": "bg-muted text-muted-foreground",
-  };
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${map[status]}`}>{status}</span>;
 }
 
 function SuitabilityModal({ onClose }: { onClose: () => void }) {
