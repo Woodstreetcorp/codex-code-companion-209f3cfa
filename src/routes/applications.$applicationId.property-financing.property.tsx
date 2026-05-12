@@ -69,7 +69,22 @@ function AboutPropertyPage() {
   const [rentalIncome, setRentalIncome] = useState("");
 
   // ── Condition ───────────────────────────────────────────────
-  const [condition, setCondition] = useState("");
+  // Two-step: group → sub-options + extra detail fields
+  const [conditionGroup, setConditionGroup] = useState<
+    "existing_structure" | "new_construction" | "not_sure" | ""
+  >("");
+  const [existingCondition, setExistingCondition] = useState("");
+  const [newConstructionType, setNewConstructionType] = useState("");
+  // Self-build details
+  const [sbOwnsLand, setSbOwnsLand] = useState<"yes" | "no" | "">("");
+  const [sbHasBudget, setSbHasBudget] = useState<"yes" | "no" | "">("");
+  const [sbPermits, setSbPermits] = useState<"yes" | "no" | "not_yet" | "">("");
+  const [sbBuilder, setSbBuilder] = useState<"yes" | "no" | "self_managed" | "">("");
+  // Under construction / to be constructed details
+  const [ucCompletionDate, setUcCompletionDate] = useState("");
+  const [ucBuilderName, setUcBuilderName] = useState("");
+  const [ucContract, setUcContract] = useState<"yes" | "no" | "">("");
+  const [ucOccupancyPermit, setUcOccupancyPermit] = useState<"yes" | "no" | "not_yet" | "">("");
 
   // ── Ownership ───────────────────────────────────────────────
   const [ownership, setOwnership] = useState("");
@@ -85,9 +100,14 @@ function AboutPropertyPage() {
   const [closingFirm, setClosingFirm] = useState<"yes" | "no" | "">("");
 
   const isCondo = propertyType === "Condo";
-  const isMulti = ["Duplex", "Triplex", "Fourplex", "Multi-unit"].includes(
-    propertyType,
-  );
+  const isMulti = propertyType === "Multi-unit";
+  const needsRental =
+    usage === "Rental / Investment" || usage === "Owner-Occupied with Rental Unit";
+
+  const conditionDone =
+    conditionGroup === "not_sure" ||
+    (conditionGroup === "existing_structure" && !!existingCondition) ||
+    (conditionGroup === "new_construction" && !!newConstructionType);
 
   const addressOk =
     hasAddress === "yes" &&
@@ -100,9 +120,11 @@ function AboutPropertyPage() {
   const groupsDone = [
     !!addressOk,
     !!price && !!valueSource,
-    !!usage && !!primary,
-    !!propertyType && (!isCondo || !!condoFee) && (!isMulti || !!units),
-    !!condition,
+    !!usage && !!primary && (!needsRental || !!rentalIncome),
+    !!propertyType &&
+      (!isCondo || !!condoFee) &&
+      (!isMulti || (!!units && Number(units) >= 2)),
+    conditionDone,
     !!ownership,
     !!tax && !!heating,
     !!closingDate,
@@ -116,12 +138,35 @@ function AboutPropertyPage() {
     if (!price) m.push("Enter the purchase price");
     if (!valueSource) m.push("Confirm how the value was determined");
     if (!usage) m.push("Select how the property will be used");
+    if (needsRental && !rentalIncome)
+      m.push("Enter the expected monthly rental income");
     if (!propertyType) m.push("Select the property type");
-    if (!condition) m.push("Select the property condition");
+    if (isMulti && (!units || Number(units) < 2))
+      m.push("Enter the number of units (2 or more)");
+    if (!conditionGroup) m.push("Select the property condition category");
+    if (conditionGroup === "existing_structure" && !existingCondition)
+      m.push("Select the condition of the existing property");
+    if (conditionGroup === "new_construction" && !newConstructionType)
+      m.push("Select the type of new construction");
     if (!ownership) m.push("Confirm the ownership structure");
     if (!closingDate) m.push("Provide the expected closing date");
     return m;
-  }, [addressOk, price, valueSource, usage, propertyType, condition, ownership, closingDate]);
+  }, [
+    addressOk,
+    price,
+    valueSource,
+    usage,
+    needsRental,
+    rentalIncome,
+    propertyType,
+    isMulti,
+    units,
+    conditionGroup,
+    existingCondition,
+    newConstructionType,
+    ownership,
+    closingDate,
+  ]);
 
   const canComplete = missing.length === 0;
 
@@ -269,6 +314,19 @@ function AboutPropertyPage() {
             options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
           />
         </Field>
+        {needsRental && (
+          <Field
+            label="Expected monthly rental income"
+            required
+            hint={
+              usage === "Owner-Occupied with Rental Unit"
+                ? "Total rent collected from the rental unit(s) in the property."
+                : "Total expected monthly rent from all units."
+            }
+          >
+            <NumberInput value={rentalIncome} onChange={setRentalIncome} prefix="$" suffix="/mo" />
+          </Field>
+        )}
       </FormCard>
 
       <FormCard step={4} title="Property Type" done={groupsDone[3]}>
@@ -282,11 +340,7 @@ function AboutPropertyPage() {
               { value: "Semi-Detached", label: "Semi-Detached" },
               { value: "Townhouse", label: "Townhouse" },
               { value: "Condo", label: "Condo" },
-              { value: "Duplex", label: "Duplex" },
-              { value: "Triplex", label: "Triplex" },
-              { value: "Fourplex", label: "Fourplex" },
-              { value: "Multi-unit", label: "Multi-unit" },
-              { value: "New Construction", label: "New Construction" },
+              { value: "Multi-unit", label: "Multi-unit (2+ units)" },
               { value: "Other", label: "Other" },
             ]}
           />
@@ -308,68 +362,248 @@ function AboutPropertyPage() {
         )}
 
         {isMulti && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Number of units" required>
-              <NumberInput value={units} onChange={setUnits} />
-            </Field>
-            <Field label="Will any units be rented?">
-              <ChoiceGrid<"yes" | "no">
-                value={unitsRented as any}
-                onChange={setUnitsRented}
-                options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
-              />
-            </Field>
-            {unitsRented === "yes" && (
-              <Field label="Estimated monthly rental income">
-                <NumberInput value={rentalIncome} onChange={setRentalIncome} prefix="$" />
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field
+                label="Number of units"
+                required
+                hint="2 = duplex, 3 = triplex, 4 = fourplex. We classify it for you."
+              >
+                <NumberInput value={units} onChange={setUnits} placeholder="2" />
               </Field>
+              {!needsRental && (
+                <Field label="Will any units be rented?">
+                  <ChoiceGrid<"yes" | "no">
+                    value={unitsRented as any}
+                    onChange={setUnitsRented}
+                    options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                  />
+                </Field>
+              )}
+              {!needsRental && unitsRented === "yes" && (
+                <Field label="Estimated monthly rental income">
+                  <NumberInput value={rentalIncome} onChange={setRentalIncome} prefix="$" suffix="/mo" />
+                </Field>
+              )}
+            </div>
+            {units && Number(units) >= 2 && (
+              <InfoNote variant="success">
+                Recorded as{" "}
+                {Number(units) === 2
+                  ? "a duplex"
+                  : Number(units) === 3
+                    ? "a triplex"
+                    : Number(units) === 4
+                      ? "a fourplex"
+                      : `a ${units}-unit multi-unit property`}
+                .
+              </InfoNote>
             )}
-          </div>
+          </>
         )}
       </FormCard>
 
       <FormCard step={5} title="Property Condition" done={groupsDone[4]}>
-        <Field label="What is the property condition?" required>
-          <ChoiceGrid
-            value={condition}
-            onChange={setCondition}
+        <Field label="What best describes the property?" required>
+          <ChoiceGrid<"existing_structure" | "new_construction" | "not_sure">
+            value={conditionGroup as any}
+            onChange={(v) => {
+              setConditionGroup(v);
+              setExistingCondition("");
+              setNewConstructionType("");
+            }}
             cols={3}
             options={[
-              { value: "Move-In Ready", label: "Move-In Ready" },
-              { value: "Minor Repairs Needed", label: "Minor Repairs Needed" },
-              { value: "Major Repairs Needed", label: "Major Repairs Needed" },
-              { value: "Under Construction", label: "Under Construction" },
-              { value: "Newly Built", label: "Newly Built" },
-              { value: "Unknown", label: "Unknown" },
+              {
+                value: "existing_structure",
+                label: "Existing Structure",
+                description: "Already built — resale or previously occupied.",
+              },
+              {
+                value: "new_construction",
+                label: "New Construction",
+                description: "Newly built, being built, or to be built.",
+              },
+              { value: "not_sure", label: "Not Sure", description: "I'll confirm later." },
             ]}
           />
         </Field>
-        {(condition === "Major Repairs Needed" || condition === "Under Construction") && (
+
+        {conditionGroup === "existing_structure" && (
+          <Field label="What is the condition of the existing property?" required>
+            <ChoiceGrid
+              value={existingCondition}
+              onChange={setExistingCondition}
+              cols={2}
+              options={[
+                { value: "move_in_ready", label: "Move-In Ready / No Repairs Required" },
+                { value: "minor_repairs", label: "Minor Repairs Needed" },
+                { value: "major_repairs", label: "Major Repairs Needed" },
+                { value: "recently_renovated", label: "Recently Renovated" },
+                { value: "older_property", label: "Older Property / Requires Review" },
+                { value: "unknown", label: "Unknown" },
+              ]}
+            />
+          </Field>
+        )}
+
+        {conditionGroup === "new_construction" && (
+          <>
+            <Field label="What type of new construction is it?" required>
+              <ChoiceGrid
+                value={newConstructionType}
+                onChange={setNewConstructionType}
+                cols={2}
+                options={[
+                  { value: "newly_built", label: "Newly Built / Completed" },
+                  { value: "under_construction", label: "Under Construction" },
+                  { value: "to_be_constructed", label: "To Be Constructed" },
+                  { value: "self_build", label: "Self-Build" },
+                  { value: "builder_purchase", label: "Builder Purchase / Pre-Construction" },
+                  { value: "construction_draw", label: "Construction Draw Mortgage Required" },
+                  { value: "unknown", label: "Unknown" },
+                ]}
+              />
+            </Field>
+
+            {newConstructionType === "self_build" && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Do you own the land already?">
+                  <ChoiceGrid<"yes" | "no">
+                    value={sbOwnsLand as any}
+                    onChange={setSbOwnsLand}
+                    options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                  />
+                </Field>
+                <Field label="Is there a construction budget?">
+                  <ChoiceGrid<"yes" | "no">
+                    value={sbHasBudget as any}
+                    onChange={setSbHasBudget}
+                    options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                  />
+                </Field>
+                <Field label="Do you have approved permits?">
+                  <ChoiceGrid<"yes" | "no" | "not_yet">
+                    value={sbPermits as any}
+                    onChange={setSbPermits}
+                    cols={3}
+                    options={[
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                      { value: "not_yet", label: "Not Yet" },
+                    ]}
+                  />
+                </Field>
+                <Field label="Do you have a builder/contractor?">
+                  <ChoiceGrid<"yes" | "no" | "self_managed">
+                    value={sbBuilder as any}
+                    onChange={setSbBuilder}
+                    cols={3}
+                    options={[
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                      { value: "self_managed", label: "Self-managed" },
+                    ]}
+                  />
+                </Field>
+              </div>
+            )}
+
+            {(newConstructionType === "under_construction" ||
+              newConstructionType === "to_be_constructed") && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Expected completion date">
+                  <input
+                    type="date"
+                    className={inputCls}
+                    value={ucCompletionDate}
+                    onChange={(e) => setUcCompletionDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Builder name (optional)">
+                  <input
+                    className={inputCls}
+                    value={ucBuilderName}
+                    onChange={(e) => setUcBuilderName(e.target.value)}
+                  />
+                </Field>
+                <Field label="Purchase agreement or builder contract available?">
+                  <ChoiceGrid<"yes" | "no">
+                    value={ucContract as any}
+                    onChange={setUcContract}
+                    options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                  />
+                </Field>
+                <Field label="Is occupancy permit issued?">
+                  <ChoiceGrid<"yes" | "no" | "not_yet">
+                    value={ucOccupancyPermit as any}
+                    onChange={setUcOccupancyPermit}
+                    cols={3}
+                    options={[
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                      { value: "not_yet", label: "Not Yet" },
+                    ]}
+                  />
+                </Field>
+              </div>
+            )}
+          </>
+        )}
+
+        {conditionGroup && (
           <InfoNote variant="warning">
-            Some lenders may require additional review for property condition.
+            Some lenders have different requirements for new construction, self-build, or
+            properties needing major repairs. Your answer helps us match you with the right
+            mortgage products.
           </InfoNote>
         )}
       </FormCard>
 
       <FormCard step={6} title="Ownership Structure" done={groupsDone[5]}>
-        <Field label="How will the property be owned?" required>
+        <Field
+          label="How will the property be owned?"
+          required
+          hint="Not sure? Most first-time buyers choose Just me or With my partner / co-buyer."
+        >
           <ChoiceGrid
             value={ownership}
             onChange={setOwnership}
-            cols={3}
+            cols={2}
             options={[
-              { value: "Sole ownership", label: "Sole ownership" },
-              { value: "Joint ownership", label: "Joint ownership" },
-              { value: "Tenants in common", label: "Tenants in common" },
-              { value: "Corporation", label: "Corporation" },
-              { value: "Trust", label: "Trust" },
-              { value: "Other", label: "Other" },
+              {
+                value: "Sole ownership",
+                label: "Just me",
+                description: "I'm the only person on title.",
+              },
+              {
+                value: "Joint ownership",
+                label: "With my partner / co-buyer",
+                description: "Equal shared ownership — if one owner passes, the other keeps the home.",
+              },
+              {
+                value: "Tenants in common",
+                label: "With others, separate shares",
+                description: "Each owner has their own % share that can be passed to heirs.",
+              },
+              {
+                value: "Other",
+                label: "Something else",
+                description: "Corporation, trust, or another arrangement — we'll help you sort it out.",
+              },
             ]}
           />
         </Field>
         {(ownership === "Joint ownership" || ownership === "Tenants in common") && (
           <InfoNote>
-            We’ll ask you to assign owners and ownership percentages from your application borrowers in the next step.
+            We’ll ask you to assign owners and ownership percentages from your application
+            borrowers in the next step.
+          </InfoNote>
+        )}
+        {ownership === "Other" && (
+          <InfoNote>
+            No problem — you can keep going. A specialist will confirm the right structure
+            with you before closing.
           </InfoNote>
         )}
       </FormCard>
