@@ -5,6 +5,8 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronUp,
+  Columns3,
   Filter,
   Info,
   Lock,
@@ -160,7 +162,8 @@ function QualifiedProductsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [detailsId, setDetailsId] = useState<string | null>(null);
-  const [cartOpen, setCartOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(true);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const all = useMemo(() => [...TOP, ...ALL_OTHERS], []);
   const byId = (id: string) => all.find((p) => p.id === id)!;
@@ -205,7 +208,7 @@ function QualifiedProductsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
+      <div className="pb-32">
         <div className="min-w-0">
           <div className="mb-4">
             <div className="flex items-center gap-2">
@@ -226,6 +229,8 @@ function QualifiedProductsPage() {
                 disabled={!isSelected(p.id) && atMax}
                 onSelect={() => toggle(p.id)}
                 onDetails={() => setDetailsId(p.id)}
+                onCompare={() => setCompareOpen(true)}
+                canCompare={selected.length >= 2}
               />
             ))}
           </div>
@@ -260,6 +265,8 @@ function QualifiedProductsPage() {
                   disabled={!isSelected(p.id) && atMax}
                   onSelect={() => toggle(p.id)}
                   onDetails={() => setDetailsId(p.id)}
+                  onCompare={() => setCompareOpen(true)}
+                  canCompare={selected.length >= 2}
                 />
               ))}
             </div>
@@ -285,63 +292,32 @@ function QualifiedProductsPage() {
             "Most sites show 2 deals. We show your full universe — simplified, not filtered."
           </p>
         </div>
-
-        {/* Cart - Desktop sidebar */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-4">
-            <CartPanel
-              selected={selected}
-              byId={byId}
-              onRemove={remove}
-              onClear={() => setSelected([])}
-              onSubmit={() =>
-                navigate({
-                  to: "/applications/$applicationId/product-review-consent",
-                  params: { applicationId },
-                })
-              }
-              canSubmit={canSubmit}
-            />
-          </div>
-        </aside>
       </div>
 
-      {/* Mobile cart FAB */}
-      <button
-        onClick={() => setCartOpen(true)}
-        className="fixed bottom-20 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-xl lg:hidden"
-      >
-        <ShoppingCart className="h-4 w-4" />
-        Cart
-        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[11px] font-bold text-primary">
-          {selected.length}
-        </span>
-      </button>
+      {/* Sticky bottom cart bar */}
+      <CartBar
+        selected={selected}
+        byId={byId}
+        open={cartOpen}
+        onToggle={() => setCartOpen((v) => !v)}
+        onRemove={remove}
+        onClear={() => setSelected([])}
+        onCompare={() => setCompareOpen(true)}
+        onSubmit={() =>
+          navigate({
+            to: "/applications/$applicationId/product-review-consent",
+            params: { applicationId },
+          })
+        }
+        canSubmit={canSubmit}
+      />
 
-      {cartOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-foreground/40 lg:hidden" onClick={() => setCartOpen(false)}>
-          <div className="w-full rounded-t-2xl bg-card p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold">Your Cart</h3>
-              <button onClick={() => setCartOpen(false)}><X className="h-4 w-4" /></button>
-            </div>
-            <CartPanel
-              selected={selected}
-              byId={byId}
-              onRemove={remove}
-              onClear={() => setSelected([])}
-              onSubmit={() => {
-                setCartOpen(false);
-                navigate({
-                  to: "/applications/$applicationId/product-review-consent",
-                  params: { applicationId },
-                });
-              }}
-              canSubmit={canSubmit}
-              embedded
-            />
-          </div>
-        </div>
+      {compareOpen && selected.length >= 2 && (
+        <CompareModal
+          products={selected.map(byId)}
+          onClose={() => setCompareOpen(false)}
+          onRemove={remove}
+        />
       )}
 
       {detailsId && (
