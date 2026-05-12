@@ -15,6 +15,9 @@ import {
   Sparkles,
   Trophy,
   X,
+  Search,
+  SlidersHorizontal,
+  Sparkle,
 } from "lucide-react";
 import {
   PageHeader,
