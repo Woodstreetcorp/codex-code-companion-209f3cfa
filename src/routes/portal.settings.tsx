@@ -27,8 +27,8 @@ function SettingsLayout() {
         title="Settings"
         description="Manage your profile, security, notifications, and preferences."
       />
-      <div className="grid gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
-        <nav className="flex flex-row gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-2 shadow-sm md:flex-col">
+      <div className="space-y-6">
+        <nav className="-mx-1 flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-2 shadow-sm">
           {SETTINGS_NAV.map((t) => {
             const active = path.startsWith(t.to);
             return (
