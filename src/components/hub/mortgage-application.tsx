@@ -514,13 +514,13 @@ export function MortgageApplicationContent() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-secondary">
-                Next Step
+                Next best step
               </p>
               <h2 className="mt-1 text-lg font-semibold text-primary">
                 Complete Jamie Scott's borrower profile
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your co-applicant needs to complete their personal details, employment, and income.
+                Your co-applicant still needs to add their personal details, employment, and income. You can save and return any time.
               </p>
             </div>
             <span className="hidden sm:inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
@@ -528,10 +528,22 @@ export function MortgageApplicationContent() {
             </span>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+            <button
+              onClick={() => {
+                const co = applicants.find((a) => !a.isPrimary);
+                if (co) setProfileFor(co);
+              }}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
               Continue Next Step <ArrowRight className="ml-1.5 h-4 w-4" />
             </button>
-            <button className="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted">
+            <button
+              onClick={() => {
+                const co = applicants.find((a) => !a.isPrimary);
+                if (co) handleResend(co.id);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3.5 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
               <Mail className="h-4 w-4" /> Resend Co-Applicant Invite
             </button>
           </div>
@@ -631,23 +643,47 @@ export function MortgageApplicationContent() {
                 : `You still have ${remaining} item${remaining === 1 ? "" : "s"} to complete before you can submit.`}
             </p>
           </div>
-          <button
-            disabled={!submitReady}
-            className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold ${
-              submitReady
-                ? "bg-mint text-mint-foreground hover:bg-mint/90"
-                : "cursor-not-allowed bg-muted text-muted-foreground"
-            }`}
-          >
-            {submitReady ? "Submit Application" : "Continue Next Step"}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          {submitReady ? (
+            <Link
+              to="/applications/$applicationId/submit"
+              params={{ applicationId: "current" }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-mint px-4 py-2 text-sm font-semibold text-mint-foreground hover:bg-mint/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              Submit application to approvU for review
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <button
+              onClick={() => {
+                const next = widgets.find((w) => !w.locked && w.progress < 100);
+                const id = next?.id;
+                const map: Record<string, string> = {
+                  property: "/applications/current/property-financing/property",
+                  financing: "/applications/current/property-financing/down-payment",
+                  "purchase-plan": "/applications/current/property-financing/purchase-plan",
+                  preferences: "/applications/current/property-financing/target-property",
+                  "property-r": "/applications/current/property-financing/property",
+                  "current-mortgage": "/applications/current/property-financing/current-mortgage",
+                  "refi-request": "/applications/current/property-financing/refinance-request",
+                  "mortgage-request": "/applications/current/mortgage-request",
+                };
+                if (id && map[id]) window.location.assign(map[id]);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              Continue next step
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <ul className="mt-5 grid gap-2 sm:grid-cols-2">
           {READINESS.map((r) => (
             <ReadinessRow key={r.label} {...r} />
           ))}
         </ul>
+        <p className="mt-4 text-[11px] text-muted-foreground">
+          Your final rate, payment, and benefits may change after approvU verifies your application.
+        </p>
       </section>
 
       {/* Locked future stages */}
@@ -726,9 +762,13 @@ function SelectedOfferCard() {
           <span className="text-xs text-muted-foreground">Home Life Bundle</span>
           <span className="text-sm font-semibold text-mint">{SELECTED_OFFER.bundle} value</span>
         </div>
-        <button className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted">
+        <Link
+          to="/applications/$applicationId/mortgage-offers"
+          params={{ applicationId: "current" }}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
           View Offer Details <ArrowRight className="h-4 w-4" />
-        </button>
+        </Link>
       </div>
     </div>
   );
@@ -943,7 +983,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
         {href && !widget.locked ? (
           <Link
             to={href}
-            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
+            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
               widget.status === "Complete" || widget.status === "Selected"
                 ? "border border-input bg-background text-foreground hover:bg-muted"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -955,6 +995,8 @@ function WidgetCard({ widget }: { widget: Widget }) {
         ) : (
           <button
             disabled={widget.locked}
+            title={widget.locked ? widget.meta ?? "Complete the required sections to unlock this step." : undefined}
+            aria-label={widget.locked ? `${widget.title} — locked. ${widget.meta ?? "Complete required sections to unlock."}` : widget.title}
             className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
               widget.locked
                 ? "cursor-not-allowed bg-muted text-muted-foreground"
@@ -963,7 +1005,7 @@ function WidgetCard({ widget }: { widget: Widget }) {
                   : "bg-primary text-primary-foreground hover:bg-primary/90"
             }`}
           >
-            {widget.cta}
+            {widget.locked ? <><Lock className="h-3 w-3" /> Locked</> : widget.cta}
             {!widget.locked && <ArrowRight className="h-3.5 w-3.5" />}
           </button>
         )}
