@@ -6,6 +6,7 @@ import {
   Clock,
   FileText,
   HandCoins,
+  History,
   LayoutDashboard,
   ListChecks,
   MessageSquare,
@@ -106,10 +107,11 @@ function stageIndexFor(summary: AppSummary): number {
 }
 
 export type AppTabKey =
-  | "snapshot" | "offers" | "documents" | "conditions" | "funding" | "messages";
+  | "snapshot" | "timeline" | "offers" | "documents" | "conditions" | "funding" | "messages";
 
 const TABS = [
   { key: "snapshot",   label: "Snapshot",   to: "/portal/applications/$applicationId",            icon: LayoutDashboard },
+  { key: "timeline",   label: "Timeline",   to: "/portal/applications/$applicationId/timeline",   icon: History },
   { key: "offers",     label: "Offers",     to: "/portal/applications/$applicationId/offers",     icon: HandCoins },
   { key: "documents",  label: "Documents",  to: "/portal/applications/$applicationId/documents",  icon: FileText },
   { key: "conditions", label: "Conditions", to: "/portal/applications/$applicationId/conditions", icon: ListChecks },
