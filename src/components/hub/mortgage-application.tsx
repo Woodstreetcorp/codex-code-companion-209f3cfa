@@ -847,6 +847,17 @@ function statusBadge(status: WidgetStatus) {
 
 function WidgetCard({ widget }: { widget: Widget }) {
   const Icon = widget.icon;
+  const routeMap: Record<string, string> = {
+    property: "/portal/applications/current/property-financing/property",
+    financing: "/portal/applications/current/property-financing/down-payment",
+    "purchase-plan": "/portal/applications/current/property-financing/purchase-plan",
+    preferences: "/portal/applications/current/property-financing/target-property",
+    "property-r": "/portal/applications/current/property-financing/property",
+    "current-mortgage": "/portal/applications/current/property-financing/current-mortgage",
+    "refi-request": "/portal/applications/current/property-financing/refinance-request",
+    "renewal-preferences": "/portal/applications/current/property-financing/renewal-preferences",
+  };
+  const href = routeMap[widget.id];
   return (
     <article
       className={`flex h-full flex-col rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:shadow-md ${
@@ -883,19 +894,33 @@ function WidgetCard({ widget }: { widget: Widget }) {
           />
         </div>
         {widget.meta && <p className="mt-2 text-[11px] text-muted-foreground">{widget.meta}</p>}
-        <button
-          disabled={widget.locked}
-          className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
-            widget.locked
-              ? "cursor-not-allowed bg-muted text-muted-foreground"
-              : widget.status === "Complete" || widget.status === "Selected"
+        {href && !widget.locked ? (
+          <Link
+            to={href}
+            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
+              widget.status === "Complete" || widget.status === "Selected"
                 ? "border border-input bg-background text-foreground hover:bg-muted"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
-          }`}
-        >
-          {widget.cta}
-          {!widget.locked && <ArrowRight className="h-3.5 w-3.5" />}
-        </button>
+            }`}
+          >
+            {widget.cta}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : (
+          <button
+            disabled={widget.locked}
+            className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold ${
+              widget.locked
+                ? "cursor-not-allowed bg-muted text-muted-foreground"
+                : widget.status === "Complete" || widget.status === "Selected"
+                  ? "border border-input bg-background text-foreground hover:bg-muted"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+            }`}
+          >
+            {widget.cta}
+            {!widget.locked && <ArrowRight className="h-3.5 w-3.5" />}
+          </button>
+        )}
       </div>
     </article>
   );
