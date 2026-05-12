@@ -136,24 +136,27 @@ const OFFER = {
 const NEXT_STEPS = [
   {
     title: "Complete Mortgage Application",
-    body: "3 sections remaining: Assets, Liabilities, and Declarations",
-    cta: "Continue Application",
+    body: "3 sections remaining: assets, debts, and declarations.",
+    cta: "Continue application",
     tone: "urgent" as const,
     icon: FileCheck,
+    section: "mortgage-application" as const,
   },
   {
-    title: "Review Exclusive Offers",
-    body: "Explore your Home Life Bundle benefits worth $2,350",
-    cta: "View Offers",
+    title: "Review your exclusive offers",
+    body: "Explore your Home Life Bundle benefits — worth up to $2,350.",
+    cta: "View offers",
     tone: "accent" as const,
     icon: Gift,
+    section: "exclusive-offers" as const,
   },
   {
-    title: "Prepare Documents",
-    body: "Get ready to upload documents",
-    cta: "See Requirements",
+    title: "Prepare your documents",
+    body: "See what you'll need to upload before lender review.",
+    cta: "See what's needed",
     tone: "neutral" as const,
     icon: Upload,
+    section: "document-upload" as const,
   },
 ];
 
@@ -442,7 +445,11 @@ function ApplicationHub() {
 
               <ul className="mt-5 space-y-3">
                 {NEXT_STEPS.map((s) => (
-                  <NextStepRow key={s.title} step={s} />
+                  <NextStepRow
+                    key={s.title}
+                    step={s}
+                    onClick={() => setActiveTab(SLUG_TO_LABEL[s.section])}
+                  />
                 ))}
               </ul>
             </Card>
@@ -516,6 +523,7 @@ function StatCard({
 
 function NextStepRow({
   step,
+  onClick,
 }: {
   step: {
     title: string;
@@ -524,6 +532,7 @@ function NextStepRow({
     tone: "urgent" | "accent" | "neutral";
     icon: ComponentType<{ className?: string }>;
   };
+  onClick?: () => void;
 }) {
   const Icon = step.icon;
   const accent = {
@@ -552,11 +561,12 @@ function NextStepRow({
         </div>
       </div>
       <button
+        onClick={onClick}
         className={`shrink-0 inline-flex items-center justify-center rounded-md px-3.5 py-2 text-sm font-medium ${
           step.tone === "neutral"
             ? "border border-input bg-background text-foreground hover:bg-muted"
             : "bg-primary text-primary-foreground hover:bg-primary/90"
-        }`}
+        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
       >
         {step.cta} <ArrowRight className="ml-1 h-4 w-4" />
       </button>
