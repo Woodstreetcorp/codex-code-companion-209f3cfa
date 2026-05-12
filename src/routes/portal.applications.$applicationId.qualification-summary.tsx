@@ -135,8 +135,6 @@ const fmtMoney = (n: number) =>
 
 // ─── Page ────────────────────────────────────────────────────────────────
 function QualificationSummaryPage() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
@@ -147,7 +145,15 @@ function QualificationSummaryPage() {
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground">Qualification Summary</span>
       </nav>
+      <QualificationSummaryContent />
+    </div>
+  );
+}
 
+export function QualificationSummaryContent() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  return (
+    <div className="space-y-6">
       <QualificationSummaryHero />
       <QualificationProgressStepper />
       <InitialQualificationResultCard />
@@ -158,7 +164,6 @@ function QualificationSummaryPage() {
       <HomeLifeBundlePreviewCard onOpenDetails={() => setDrawerOpen(true)} />
       <NextStepCard />
       <QualificationDisclosurePanel />
-
       {drawerOpen && <BenefitDetailsDrawer onClose={() => setDrawerOpen(false)} />}
     </div>
   );
