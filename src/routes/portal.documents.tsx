@@ -28,6 +28,9 @@ import {
   Search,
   ShieldCheck,
   Upload,
+  UserCheck,
+  Building2,
+  ListChecks,
   X,
   Zap,
 } from "lucide-react";
@@ -57,6 +60,7 @@ export const Route = createFileRoute("/portal/documents")({
 
 // ─── Mock data specific to this hub ─────────────────────────────
 type RequestStatus = "Outstanding" | "Uploaded" | "Under Review" | "Approved" | "Rejected";
+type RequestSource = "lender" | "advisor" | "compliance";
 type LenderRequest = {
   id: string;
   app: string;
@@ -66,6 +70,11 @@ type LenderRequest = {
   dueIn: number; // days; negative = overdue
   status: RequestStatus;
   required: boolean;
+  source: RequestSource;
+  requestedBy: string;
+  requestedAt: string;
+  conditionId?: string;
+  conditionTitle?: string;
 };
 
 const LENDER_REQUESTS: LenderRequest[] = [
@@ -78,6 +87,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 2,
     status: "Outstanding",
     required: true,
+    source: "advisor",
+    requestedBy: "Sarah Chen — Mortgage Broker",
+    requestedAt: "May 9, 2026",
+    conditionId: "C-101",
+    conditionTitle: "Confirm employment letter & income docs",
   },
   {
     id: "REQ-9002",
@@ -88,6 +102,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 5,
     status: "Outstanding",
     required: true,
+    source: "advisor",
+    requestedBy: "Sarah Chen — Mortgage Broker",
+    requestedAt: "May 9, 2026",
+    conditionId: "C-102",
+    conditionTitle: "Most recent 2 pay stubs",
   },
   {
     id: "REQ-9003",
@@ -98,6 +117,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: -1,
     status: "Outstanding",
     required: true,
+    source: "lender",
+    requestedBy: "Equitable Bank — Underwriting",
+    requestedAt: "May 8, 2026",
+    conditionId: "C-103",
+    conditionTitle: "Void cheque or PAD form",
   },
   {
     id: "REQ-9004",
@@ -108,6 +132,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 7,
     status: "Under Review",
     required: true,
+    source: "lender",
+    requestedBy: "Equitable Bank — Underwriting",
+    requestedAt: "May 8, 2026",
+    conditionId: "C-101",
+    conditionTitle: "Confirm employment letter & income docs",
   },
   {
     id: "REQ-9005",
@@ -118,6 +147,11 @@ const LENDER_REQUESTS: LenderRequest[] = [
     dueIn: 12,
     status: "Approved",
     required: true,
+    source: "lender",
+    requestedBy: "Scotiabank — Underwriting",
+    requestedAt: "Apr 18, 2026",
+    conditionId: "C-105",
+    conditionTitle: "Property insurance binder",
   },
 ];
 
@@ -660,6 +694,7 @@ function LenderRequestsView({
   hasBankConnection: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<"all" | RequestSource>("all");
 
   if (scope === "personal") {
     return (
@@ -687,12 +722,54 @@ function LenderRequestsView({
     );
   }
 
+  const counts = {
+    all: requests.length,
+    advisor: requests.filter((r) => r.source === "advisor").length,
+    lender: requests.filter((r) => r.source === "lender").length,
+    compliance: requests.filter((r) => r.source === "compliance").length,
+  };
+  const visible = sourceFilter === "all"
+    ? requests
+    : requests.filter((r) => r.source === sourceFilter);
+
   return (
     <div className="space-y-3">
-      {requests.map((r) => {
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
+        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <Inbox className="h-3 w-3" /> Inbox
+        </span>
+        <SourceChip active={sourceFilter === "all"} onClick={() => setSourceFilter("all")} icon={ListChecks} label="All" count={counts.all} />
+        <SourceChip active={sourceFilter === "advisor"} onClick={() => setSourceFilter("advisor")} icon={UserCheck} label="From advisor" count={counts.advisor} />
+        <SourceChip active={sourceFilter === "lender"} onClick={() => setSourceFilter("lender")} icon={Building2} label="From lender" count={counts.lender} />
+        {counts.compliance > 0 && (
+          <SourceChip active={sourceFilter === "compliance"} onClick={() => setSourceFilter("compliance")} icon={ShieldCheck} label="Compliance" count={counts.compliance} />
+        )}
+        <Link
+          to="/portal/applications/$applicationId/conditions"
+          params={{ applicationId: binderApp }}
+          className="ml-auto inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted"
+        >
+          Open conditions tracker <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {visible.length === 0 && (
+        <Card>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No requests match this filter.
+          </p>
+        </Card>
+      )}
+
+      {visible.map((r) => {
         const open = openId === r.id;
         const overdue = r.dueIn < 0;
         const dueSoon = r.dueIn >= 0 && r.dueIn <= 3;
+        const SourceIcon = r.source === "advisor" ? UserCheck : r.source === "lender" ? Building2 : ShieldCheck;
+        const sourceTone =
+          r.source === "advisor" ? "bg-secondary/10 text-secondary border-secondary/30"
+          : r.source === "lender" ? "bg-primary/10 text-primary border-primary/30"
+          : "bg-mint/20 text-mint-foreground border-mint/40";
         return (
           <article key={r.id} className="rounded-2xl border border-border bg-card shadow-sm">
             <button
@@ -703,6 +780,10 @@ function LenderRequestsView({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold text-foreground">{r.docType}</p>
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${sourceTone}`}>
+                    <SourceIcon className="h-3 w-3" />
+                    {r.source === "advisor" ? "Requested by advisor" : r.source === "lender" ? "Requested by lender" : "Compliance"}
+                  </span>
                   {r.required && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Required</span>}
                   <RequestStatusPill status={r.status} />
                   <span
@@ -715,6 +796,12 @@ function LenderRequestsView({
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {r.requestedBy} · {r.requestedAt}
+                  {r.conditionTitle && (
+                    <> · linked to condition <span className="font-medium text-foreground">{r.conditionTitle}</span></>
+                  )}
+                </p>
               </div>
               {open ? <ChevronDown className="mt-1 h-4 w-4 text-muted-foreground" /> : <ChevronRight className="mt-1 h-4 w-4 text-muted-foreground" />}
             </button>
@@ -768,6 +855,15 @@ function LenderRequestsView({
                       <Zap className="h-4 w-4 text-secondary" /> Auto-pull from bank
                     </button>
                   )}
+                  {r.conditionId && (
+                    <Link
+                      to="/portal/applications/$applicationId/conditions"
+                      params={{ applicationId: r.app }}
+                      className="ml-auto inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+                    >
+                      View linked condition <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  )}
                 </div>
               </div>
             )}
@@ -775,6 +871,27 @@ function LenderRequestsView({
         );
       })}
     </div>
+  );
+}
+
+function SourceChip({
+  active, onClick, icon: Icon, label, count,
+}: {
+  active: boolean; onClick: () => void; icon: typeof Inbox; label: string; count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-background text-muted-foreground hover:bg-muted"
+      }`}
+    >
+      <Icon className="h-3 w-3" /> {label}
+      <span className={`rounded-full px-1.5 text-[10px] font-semibold ${active ? "bg-primary-foreground/20" : "bg-muted-foreground/15"}`}>{count}</span>
+    </button>
   );
 }
 
