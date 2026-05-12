@@ -132,7 +132,7 @@ function DisclosuresPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">
-        <StatCard label="Disclosures on file" value={`${DISCLOSURES.length}`} icon={ScrollIcon} />
+        <StatCard label="Disclosures on file" value={`${DISCLOSURES.length}`} icon={ShieldCheck} />
         <StatCard label="Action required" value={`${actionCount}`} icon={AlertCircle} tone={actionCount > 0 ? "warn" : "ok"} />
         <StatCard label="Reviewed by you" value={`${DISCLOSURES.filter((d) => d.reviewedOn).length}`} icon={CheckCircle2} tone="ok" />
       </div>
@@ -237,10 +237,6 @@ function StatCard({ label, value, icon: Icon, tone = "neutral" }: { label: strin
       <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
     </div>
   );
-}
-
-function ScrollIcon(props: React.ComponentProps<typeof ShieldCheck>) {
-  return <ShieldCheck {...props} />;
 }
 
 function StatusPill({ status }: { status: DiscStatus }) {
