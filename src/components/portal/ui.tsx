@@ -173,7 +173,7 @@ function SupportFab() {
             <CalendarDays className="h-4 w-4 text-primary" /> Book a 15-min call
           </Link>
           <Link to="/portal/help" onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-foreground hover:bg-muted">
-            <HeadphonesIcon className="h-4 w-4 text-primary" /> Browse Help Center
+            <Headphones className="h-4 w-4 text-primary" /> Browse Help Center
           </Link>
         </div>
       )}
@@ -183,7 +183,7 @@ function SupportFab() {
         aria-label="Get support"
         className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:bg-primary/90 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-4"
       >
-        {open ? <X className="h-5 w-5" /> : <HeadphonesIcon className="h-5 w-5" />}
+        {open ? <X className="h-5 w-5" /> : <Headphones className="h-5 w-5" />}
       </button>
     </div>
   );
