@@ -29,6 +29,7 @@ import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.s
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
+import { Route as PortalApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/portal.applications.$applicationId.property-financing'
 
 const RefinanceRoute = RefinanceRouteImport.update({
   id: '/refinance',
@@ -135,6 +136,12 @@ const PortalApplicationsApplicationIdQualificationSummaryRoute =
     path: '/applications/$applicationId/qualification-summary',
     getParentRoute: () => PortalRoute,
   } as any)
+const PortalApplicationsApplicationIdPropertyFinancingRoute =
+  PortalApplicationsApplicationIdPropertyFinancingRouteImport.update({
+    id: '/applications/$applicationId/property-financing',
+    path: '/applications/$applicationId/property-financing',
+    getParentRoute: () => PortalRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
+  '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesByTo {
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
+  '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRoutesById {
@@ -200,6 +209,7 @@ export interface FileRoutesById {
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
+  '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 export interface FileRouteTypes {
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/'
+    | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -245,6 +256,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications'
+    | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
   id:
     | '__root__'
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
     | '/portal/settings/profile'
     | '/portal/settings/security'
     | '/portal/applications/'
+    | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
   fileRoutesById: FileRoutesById
 }
@@ -424,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/applications/$applicationId/property-financing': {
+      id: '/portal/applications/$applicationId/property-financing'
+      path: '/applications/$applicationId/property-financing'
+      fullPath: '/portal/applications/$applicationId/property-financing'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRouteImport
+      parentRoute: typeof PortalRoute
+    }
   }
 }
 
@@ -454,6 +474,7 @@ interface PortalRouteChildren {
   PortalWalletRoute: typeof PortalWalletRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
+  PortalApplicationsApplicationIdPropertyFinancingRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRoute
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
 }
 
@@ -462,6 +483,8 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalWalletRoute: PortalWalletRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
+  PortalApplicationsApplicationIdPropertyFinancingRoute:
+    PortalApplicationsApplicationIdPropertyFinancingRoute,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
     PortalApplicationsApplicationIdQualificationSummaryRoute,
 }
@@ -483,3 +506,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
