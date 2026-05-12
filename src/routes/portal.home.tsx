@@ -16,11 +16,12 @@ export const Route = createFileRoute("/portal/home")({
   component: HomeHubLayout,
 });
 
-const TABS = [
+type Tab = { to: string; label: string; icon: typeof House; exact?: boolean };
+const TABS: Tab[] = [
   { to: "/portal/home", label: "My Mortgage", icon: House, exact: true },
   { to: "/portal/home/renewal", label: "Renewal", icon: RefreshCw },
   { to: "/portal/home/equity", label: "Equity & Property", icon: Coins },
-] as const;
+];
 
 function HomeHubLayout() {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -36,8 +37,7 @@ function HomeHubLayout() {
         className="mb-6 flex gap-1.5 overflow-x-auto rounded-xl border border-border bg-card p-1 shadow-sm"
       >
         {TABS.map((t) => {
-          const active = t.exact ? path === t.to : path.startsWith(t.to) && path !== "/portal/home";
-          const isActive = t.exact ? path === t.to : active;
+          const isActive = t.exact ? path === t.to : path.startsWith(t.to);
           return (
             <Link
               key={t.to}

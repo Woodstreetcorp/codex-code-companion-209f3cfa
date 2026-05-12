@@ -20,6 +20,7 @@ import { Route as PortalToolsRouteImport } from './routes/portal.tools'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalNotificationsRouteImport } from './routes/portal.notifications'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalHomeRouteImport } from './routes/portal.home'
 import { Route as PortalHelpRouteImport } from './routes/portal.help'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalDisclosuresRouteImport } from './routes/portal.disclosures'
@@ -124,6 +125,11 @@ const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalHomeRoute = PortalHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalHelpRoute = PortalHelpRouteImport.update({
@@ -423,6 +429,7 @@ export interface FileRoutesByFullPath {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
+  '/portal/home': typeof PortalHomeRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -485,6 +492,7 @@ export interface FileRoutesByTo {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
+  '/portal/home': typeof PortalHomeRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -549,6 +557,7 @@ export interface FileRoutesById {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
+  '/portal/home': typeof PortalHomeRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
+    | '/portal/home'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
+    | '/portal/home'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
+    | '/portal/home'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/settings'
@@ -884,6 +896,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/home': {
+      id: '/portal/home'
+      path: '/home'
+      fullPath: '/portal/home'
+      preLoaderRoute: typeof PortalHomeRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/help': {
@@ -1324,6 +1343,7 @@ interface PortalRouteChildren {
   PortalDisclosuresRoute: typeof PortalDisclosuresRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalHelpRoute: typeof PortalHelpRoute
+  PortalHomeRoute: typeof PortalHomeRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
@@ -1342,6 +1362,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDisclosuresRoute: PortalDisclosuresRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalHelpRoute: PortalHelpRoute,
+  PortalHomeRoute: PortalHomeRoute,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalNotificationsRoute: PortalNotificationsRoute,
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
