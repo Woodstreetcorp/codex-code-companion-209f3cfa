@@ -80,8 +80,8 @@ function SubmitApplicationPage() {
       <PageHeader
         applicationId={applicationId}
         tx={tx}
-        title="Submit Application"
-        subtitle="Submit your completed application to approvU for review."
+        title="Submit your application"
+        subtitle="Send your completed application to approvU for review. You'll get updates here as it moves forward."
         progress={canSubmit ? 100 : 80}
         saveStatus="saved"
       />
@@ -126,14 +126,14 @@ function SubmitApplicationPage() {
         </div>
       </FormCard>
 
-      <FormCard step={3} title="What Happens After You Submit?">
+      <FormCard step={3} title="What happens after you submit">
         <ol className="space-y-2 text-sm">
           {[
-            "approvU reviews your application",
-            "We may request documents or clarification",
-            "We confirm eligible mortgage products",
-            "Your file is prepared for lender submission",
-            "You receive lender response updates in your portal",
+            "approvU reviews your application end-to-end.",
+            "We may ask for documents or quick clarifications.",
+            "We confirm the mortgage products you qualify for.",
+            "Your file is prepared and sent to the lender.",
+            "You'll see lender response updates right here in your hub.",
           ].map((s, i) => (
             <li key={s} className="flex items-start gap-3 rounded-lg border border-border p-3">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
@@ -144,7 +144,7 @@ function SubmitApplicationPage() {
           ))}
         </ol>
         <InfoNote>
-          Your application is not a final mortgage approval. Final approval depends on lender review, document verification, and satisfaction of conditions.
+          Submitting isn't a final mortgage approval. Final approval depends on lender review, document verification, and meeting any conditions.
         </InfoNote>
       </FormCard>
 
@@ -178,22 +178,23 @@ function SubmitApplicationPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Link
-            to="/applications/$applicationId/product-review-consent"
-            params={{ applicationId }}
-            className="rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
+            to="/internal/full-application"
+            search={{ section: "mortgage-application" }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            Back
+            Back to Hub
           </Link>
           <button
             disabled={!canSubmit}
             onClick={() => setShowModal(true)}
-            className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold ${
+            className={`inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
               canSubmit
                 ? "bg-primary text-primary-foreground hover:bg-primary/90"
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
+            title={canSubmit ? undefined : "Complete the items above before you can submit."}
           >
-            <Send className="h-3.5 w-3.5" /> Submit Application
+            <Send className="h-3.5 w-3.5" /> Submit application to approvU
           </button>
         </div>
       </div>
@@ -249,12 +250,12 @@ function SubmittedSuccess({ applicationId }: { applicationId: string }) {
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-mint">
             <CheckCircle2 className="h-6 w-6 text-mint-foreground" />
           </div>
-          <h1 className="mt-3 text-2xl font-semibold">Application Submitted</h1>
+          <h1 className="mt-3 text-2xl font-semibold">Application submitted</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your mortgage application has been submitted to approvU for review.
+            Nice work — your application is with the approvU team for review.
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            We'll review your application and let you know if documents or updates are needed.
+            We'll let you know right here if we need any documents or updates from you.
           </p>
         </div>
 
