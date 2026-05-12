@@ -20,6 +20,7 @@ import type { ComponentType, ReactNode } from "react";
 import { useState } from "react";
 import { QualificationSummaryContent } from "./portal.applications.$applicationId.qualification-summary";
 import { PreQualifiedCertificateContent } from "@/components/hub/pre-qualified-certificate";
+import { MortgageApplicationContent } from "@/components/hub/mortgage-application";
 
 export const Route = createFileRoute("/internal/full-application")({
   head: () => ({
@@ -271,6 +272,8 @@ function ApplicationHub() {
               <QualificationSummaryContent />
             ) : activeTab === "Pre-Qualified Certificate" ? (
               <PreQualifiedCertificateContent />
+            ) : activeTab === "Mortgage Application" ? (
+              <MortgageApplicationContent />
             ) : activeTab === "Application Overview" ? (
               <>
             <header>
