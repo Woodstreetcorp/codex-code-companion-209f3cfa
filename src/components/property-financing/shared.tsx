@@ -68,6 +68,7 @@ export function PageHeader({
     <header className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
       <Link
         to="/internal/full-application"
+        search={{ section: "mortgage-application" }}
         className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
