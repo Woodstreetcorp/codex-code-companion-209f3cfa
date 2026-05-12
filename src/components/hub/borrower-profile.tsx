@@ -351,6 +351,7 @@ export function BorrowerProfilePage({
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
   const [editingLiability, setEditingLiability] = useState<Liability | null>(null);
   const [editingProperty, setEditingProperty] = useState<OtherProperty | null>(null);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
   // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
   const visibleLiabilities = useMemo(
@@ -602,7 +603,14 @@ export function BorrowerProfilePage({
                   assets={assets}
                   none={noneAssets}
                   setNone={setNoneAssets}
-                  onAdd={() => setDrawer("asset")}
+                  onAdd={() => {
+                    setEditingAsset(null);
+                    setDrawer("asset");
+                  }}
+                  onEdit={(a) => {
+                    setEditingAsset(a);
+                    setDrawer("asset");
+                  }}
                   onRemove={(id) => setAssets((p) => p.filter((x) => x.id !== id))}
                   onMark={markSection}
                 />
@@ -713,15 +721,23 @@ export function BorrowerProfilePage({
       {drawer === "asset" && (
         <AddAssetDrawer
           tx={tx}
+          initial={editingAsset}
           applicantId={applicant.id}
           applicantName={applicant.name}
-          onClose={() => setDrawer(null)}
+          onClose={() => {
+            setDrawer(null);
+            setEditingAsset(null);
+          }}
           onSave={(data) => {
-            const id = `ast-${Date.now()}`;
-            setAssets((p) => [...p, { ...data, id }]);
+            const id = editingAsset?.id ?? `ast-${Date.now()}`;
+            setAssets((p) =>
+              editingAsset
+                ? p.map((x) => (x.id === id ? { ...data, id } : x))
+                : [...p, { ...data, id }],
+            );
             // Sync down-payment contribution to localStorage so the
             // Down Payment page can auto-populate the source
-            if (typeof window !== "undefined" && data.forDownPayment > 0) {
+            if (typeof window !== "undefined") {
               try {
                 const key = "approvu:dp-contributions";
                 const raw = window.localStorage.getItem(key);
@@ -733,20 +749,24 @@ export function BorrowerProfilePage({
                   institution: string;
                   amount: number;
                 }> = raw ? JSON.parse(raw) : [];
-                list.push({
-                  assetId: id,
-                  ownerId: applicant.id,
-                  ownerName: applicant.name,
-                  type: data.type,
-                  institution: data.institution,
-                  amount: data.forDownPayment,
-                });
-                window.localStorage.setItem(key, JSON.stringify(list));
+                const filtered = list.filter((x) => x.assetId !== id);
+                if (data.forDownPayment > 0) {
+                  filtered.push({
+                    assetId: id,
+                    ownerId: applicant.id,
+                    ownerName: applicant.name,
+                    type: data.type,
+                    institution: data.institution,
+                    amount: data.forDownPayment,
+                  });
+                }
+                window.localStorage.setItem(key, JSON.stringify(filtered));
               } catch {
                 // ignore storage failures
               }
             }
             setNoneAssets(false);
+            setEditingAsset(null);
             setDrawer(null);
           }}
         />
@@ -1444,6 +1464,7 @@ function AssetsSection({
   none,
   setNone,
   onAdd,
+  onEdit,
   onRemove,
   onMark,
 }: {
@@ -1451,6 +1472,7 @@ function AssetsSection({
   none: boolean;
   setNone: (v: boolean) => void;
   onAdd: () => void;
+  onEdit: (a: Asset) => void;
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
 }) {
@@ -1493,12 +1515,20 @@ function AssetsSection({
               Value {fmtMoney(a.value)} · Down payment {fmtMoney(a.forDownPayment)}
             </p>
           </div>
-          <button
-            onClick={() => onRemove(a.id)}
-            className="self-start rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10 sm:self-center"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1 self-start sm:self-center">
+            <button
+              onClick={() => onEdit(a)}
+              className="rounded-md border border-input bg-background px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => onRemove(a.id)}
+              className="rounded-md border border-input bg-background p-1.5 text-coral hover:bg-coral/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       ))}
 
@@ -2864,23 +2894,27 @@ function AddLiabilityDrawer({
 
 function AddAssetDrawer({
   tx,
+  initial,
   applicantId: _applicantId,
   applicantName: _applicantName,
   onClose,
   onSave,
 }: {
   tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
+  initial: Asset | null;
   applicantId: string;
   applicantName: string;
   onClose: () => void;
   onSave: (d: Omit<Asset, "id">) => void;
 }) {
-  const [type, setType] = useState("Savings account");
-  const [institution, setInstitution] = useState("");
-  const [value, setValue] = useState("");
-  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">("");
-  const [dpMode, setDpMode] = useState<"amount" | "pct">("amount");
-  const [dpInput, setDpInput] = useState("");
+  const [type, setType] = useState(initial?.type ?? "Savings account");
+  const [institution, setInstitution] = useState(initial?.institution ?? "");
+  const [value, setValue] = useState(initial ? String(initial.value) : "");
+  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">(
+    initial ? (initial.forDownPayment > 0 ? "yes" : "no") : "",
+  );
+  const [dpMode, setDpMode] = useState<"amount" | "pct">(initial?.dpMode ?? "amount");
+  const [dpInput, setDpInput] = useState(initial?.dpInput ?? "");
 
   const valueNum = Number(value) || 0;
   const dpInputNum = Number(dpInput) || 0;
@@ -2901,7 +2935,7 @@ function AddAssetDrawer({
 
   return (
     <DrawerShell
-      title="Add Asset"
+      title={initial ? "Edit Asset" : "Add Asset"}
       subtitle="Add bank, investment, gift, or other asset records for this borrower."
       onClose={onClose}
       footer={
@@ -2930,7 +2964,7 @@ function AddAssetDrawer({
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
           >
-            Save Asset
+            {initial ? "Save Changes" : "Save Asset"}
           </button>
         </div>
       }
