@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowLeft,
@@ -692,12 +693,7 @@ function BenefitDetailPage({
                 This benefit unlocks immediately after your mortgage is funded and closed through
                 approvU. Complete your mortgage funding to receive your secure redemption code.
               </p>
-              <button className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-                {fundingStage === "approval_accepted" || fundingStage === "in_funding"
-                  ? "View Funding Conditions"
-                  : "Continue Mortgage Application"}
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </button>
+              <UnlockCta fundingStage={fundingStage} />
             </div>
           </div>
         </div>
