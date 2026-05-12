@@ -22,6 +22,7 @@ import { Route as PortalNotificationsRouteImport } from './routes/portal.notific
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
 import { Route as PortalHelpRouteImport } from './routes/portal.help'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
+import { Route as PortalDisclosuresRouteImport } from './routes/portal.disclosures'
 import { Route as PortalAppointmentsRouteImport } from './routes/portal.appointments'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
@@ -46,6 +47,7 @@ import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.setti
 import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.settings.preferences'
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
+import { Route as PortalSettingsConsentsRouteImport } from './routes/portal.settings.consents'
 import { Route as ApplicationsApplicationIdSubmitRouteImport } from './routes/applications.$applicationId.submit'
 import { Route as ApplicationsApplicationIdQualifiedMortgagesRouteImport } from './routes/applications.$applicationId.qualified-mortgages'
 import { Route as ApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/applications.$applicationId.property-financing'
@@ -53,6 +55,7 @@ import { Route as ApplicationsApplicationIdProductReviewConsentRouteImport } fro
 import { Route as ApplicationsApplicationIdProductPriorityRouteImport } from './routes/applications.$applicationId.product-priority'
 import { Route as ApplicationsApplicationIdMortgageRequestRouteImport } from './routes/applications.$applicationId.mortgage-request'
 import { Route as PortalApplicationsApplicationIdIndexRouteImport } from './routes/portal.applications.$applicationId.index'
+import { Route as PortalSettingsSecurityActivityRouteImport } from './routes/portal.settings.security.activity'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdOffersRouteImport } from './routes/portal.applications.$applicationId.offers'
 import { Route as PortalApplicationsApplicationIdConditionsRouteImport } from './routes/portal.applications.$applicationId.conditions'
@@ -127,6 +130,11 @@ const PortalHelpRoute = PortalHelpRouteImport.update({
 const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalDisclosuresRoute = PortalDisclosuresRouteImport.update({
+  id: '/disclosures',
+  path: '/disclosures',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalAppointmentsRoute = PortalAppointmentsRouteImport.update({
@@ -259,6 +267,11 @@ const PortalSettingsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => PortalSettingsRoute,
   } as any)
+const PortalSettingsConsentsRoute = PortalSettingsConsentsRouteImport.update({
+  id: '/consents',
+  path: '/consents',
+  getParentRoute: () => PortalSettingsRoute,
+} as any)
 const ApplicationsApplicationIdSubmitRoute =
   ApplicationsApplicationIdSubmitRouteImport.update({
     id: '/applications/$applicationId/submit',
@@ -300,6 +313,12 @@ const PortalApplicationsApplicationIdIndexRoute =
     id: '/applications/$applicationId/',
     path: '/applications/$applicationId/',
     getParentRoute: () => PortalRoute,
+  } as any)
+const PortalSettingsSecurityActivityRoute =
+  PortalSettingsSecurityActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => PortalSettingsSecurityRoute,
   } as any)
 const PortalApplicationsApplicationIdQualificationSummaryRoute =
   PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
@@ -375,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
+  '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
@@ -389,12 +409,13 @@ export interface FileRoutesByFullPath {
   '/applications/$applicationId/property-financing': typeof ApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
+  '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -418,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId/': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -430,6 +452,7 @@ export interface FileRoutesByTo {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
+  '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
@@ -444,12 +467,13 @@ export interface FileRoutesByTo {
   '/applications/$applicationId/property-financing': typeof ApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
+  '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -473,6 +497,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRoutesById {
@@ -487,6 +512,7 @@ export interface FileRoutesById {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
+  '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
   '/portal/messages': typeof PortalMessagesRoute
@@ -501,12 +527,13 @@ export interface FileRoutesById {
   '/applications/$applicationId/property-financing': typeof ApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
+  '/portal/settings/consents': typeof PortalSettingsConsentsRoute
   '/portal/settings/notifications': typeof PortalSettingsNotificationsRoute
   '/portal/settings/payment-methods': typeof PortalSettingsPaymentMethodsRoute
   '/portal/settings/preferences': typeof PortalSettingsPreferencesRoute
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
-  '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/settings/security': typeof PortalSettingsSecurityRouteWithChildren
   '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
   '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
   '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
@@ -530,6 +557,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/conditions': typeof PortalApplicationsApplicationIdConditionsRoute
   '/portal/applications/$applicationId/offers': typeof PortalApplicationsApplicationIdOffersRoute
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/settings/security/activity': typeof PortalSettingsSecurityActivityRoute
   '/portal/applications/$applicationId/': typeof PortalApplicationsApplicationIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -545,6 +573,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/appointments'
+    | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
     | '/portal/messages'
@@ -559,6 +588,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing'
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
+    | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -588,6 +618,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -600,6 +631,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/appointments'
+    | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
     | '/portal/messages'
@@ -614,6 +646,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing'
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
+    | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -643,6 +676,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId'
   id:
     | '__root__'
@@ -656,6 +690,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/appointments'
+    | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
     | '/portal/messages'
@@ -670,6 +705,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/property-financing'
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
+    | '/portal/settings/consents'
     | '/portal/settings/notifications'
     | '/portal/settings/payment-methods'
     | '/portal/settings/preferences'
@@ -699,6 +735,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/conditions'
     | '/portal/applications/$applicationId/offers'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/settings/security/activity'
     | '/portal/applications/$applicationId/'
   fileRoutesById: FileRoutesById
 }
@@ -811,6 +848,13 @@ declare module '@tanstack/react-router' {
       path: '/documents'
       fullPath: '/portal/documents'
       preLoaderRoute: typeof PortalDocumentsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/disclosures': {
+      id: '/portal/disclosures'
+      path: '/disclosures'
+      fullPath: '/portal/disclosures'
+      preLoaderRoute: typeof PortalDisclosuresRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/appointments': {
@@ -981,6 +1025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsNotificationsRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/settings/consents': {
+      id: '/portal/settings/consents'
+      path: '/consents'
+      fullPath: '/portal/settings/consents'
+      preLoaderRoute: typeof PortalSettingsConsentsRouteImport
+      parentRoute: typeof PortalSettingsRoute
+    }
     '/applications/$applicationId/submit': {
       id: '/applications/$applicationId/submit'
       path: '/applications/$applicationId/submit'
@@ -1029,6 +1080,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/applications/$applicationId/'
       preLoaderRoute: typeof PortalApplicationsApplicationIdIndexRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/portal/settings/security/activity': {
+      id: '/portal/settings/security/activity'
+      path: '/activity'
+      fullPath: '/portal/settings/security/activity'
+      preLoaderRoute: typeof PortalSettingsSecurityActivityRouteImport
+      parentRoute: typeof PortalSettingsSecurityRoute
     }
     '/portal/applications/$applicationId/qualification-summary': {
       id: '/portal/applications/$applicationId/qualification-summary'
@@ -1103,22 +1161,38 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PortalSettingsSecurityRouteChildren {
+  PortalSettingsSecurityActivityRoute: typeof PortalSettingsSecurityActivityRoute
+}
+
+const PortalSettingsSecurityRouteChildren: PortalSettingsSecurityRouteChildren =
+  {
+    PortalSettingsSecurityActivityRoute: PortalSettingsSecurityActivityRoute,
+  }
+
+const PortalSettingsSecurityRouteWithChildren =
+  PortalSettingsSecurityRoute._addFileChildren(
+    PortalSettingsSecurityRouteChildren,
+  )
+
 interface PortalSettingsRouteChildren {
+  PortalSettingsConsentsRoute: typeof PortalSettingsConsentsRoute
   PortalSettingsNotificationsRoute: typeof PortalSettingsNotificationsRoute
   PortalSettingsPaymentMethodsRoute: typeof PortalSettingsPaymentMethodsRoute
   PortalSettingsPreferencesRoute: typeof PortalSettingsPreferencesRoute
   PortalSettingsPrivacyRoute: typeof PortalSettingsPrivacyRoute
   PortalSettingsProfileRoute: typeof PortalSettingsProfileRoute
-  PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRoute
+  PortalSettingsSecurityRoute: typeof PortalSettingsSecurityRouteWithChildren
 }
 
 const PortalSettingsRouteChildren: PortalSettingsRouteChildren = {
+  PortalSettingsConsentsRoute: PortalSettingsConsentsRoute,
   PortalSettingsNotificationsRoute: PortalSettingsNotificationsRoute,
   PortalSettingsPaymentMethodsRoute: PortalSettingsPaymentMethodsRoute,
   PortalSettingsPreferencesRoute: PortalSettingsPreferencesRoute,
   PortalSettingsPrivacyRoute: PortalSettingsPrivacyRoute,
   PortalSettingsProfileRoute: PortalSettingsProfileRoute,
-  PortalSettingsSecurityRoute: PortalSettingsSecurityRoute,
+  PortalSettingsSecurityRoute: PortalSettingsSecurityRouteWithChildren,
 }
 
 const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
@@ -1161,6 +1235,7 @@ const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
 
 interface PortalRouteChildren {
   PortalAppointmentsRoute: typeof PortalAppointmentsRoute
+  PortalDisclosuresRoute: typeof PortalDisclosuresRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalHelpRoute: typeof PortalHelpRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
@@ -1178,6 +1253,7 @@ interface PortalRouteChildren {
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalAppointmentsRoute: PortalAppointmentsRoute,
+  PortalDisclosuresRoute: PortalDisclosuresRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalHelpRoute: PortalHelpRoute,
   PortalMessagesRoute: PortalMessagesRoute,
