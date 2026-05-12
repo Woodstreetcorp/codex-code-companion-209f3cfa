@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BadgeCheck, Printer, Share2, Star } from "lucide-react";
+import { toast } from "sonner";
 import {
   ApplicationShell, NotFoundApplication, getApplicationSummary,
 } from "@/components/portal/application-shell";
@@ -59,7 +60,10 @@ function OffersPage() {
               <Row label="Estimated payment" value={o.payment} />
               <Row label="Highlight" value={o.highlight} />
             </div>
-            <button className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+            <button
+              onClick={() => toast.success(`${o.lender} offer selected`, { description: "Your advisor has been notified to start instructions." })}
+              className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
               <BadgeCheck className="h-3.5 w-3.5" /> Select this offer
             </button>
           </div>
