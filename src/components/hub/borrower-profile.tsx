@@ -603,7 +603,14 @@ export function BorrowerProfilePage({
                   assets={assets}
                   none={noneAssets}
                   setNone={setNoneAssets}
-                  onAdd={() => setDrawer("asset")}
+                  onAdd={() => {
+                    setEditingAsset(null);
+                    setDrawer("asset");
+                  }}
+                  onEdit={(a) => {
+                    setEditingAsset(a);
+                    setDrawer("asset");
+                  }}
                   onRemove={(id) => setAssets((p) => p.filter((x) => x.id !== id))}
                   onMark={markSection}
                 />
