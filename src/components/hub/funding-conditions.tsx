@@ -24,13 +24,7 @@ import {
   UserCircle2,
   X,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+// Complete-condition UI is rendered as a full-page view (no side sheet)
 
 // ─── Types ───────────────────────────────────────────────────────────────
 type ConditionStatus =
@@ -1179,17 +1173,29 @@ function CompleteConditionDrawer({
     setTextResponse("");
   }
 
-  return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Complete Condition</SheetTitle>
-          <SheetDescription>
-            Submit the requested information to satisfy this funding condition.
-          </SheetDescription>
-        </SheetHeader>
+  if (!open) return null;
 
-        <div className="mt-5 space-y-5">
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <header className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-background px-6 py-4 sm:px-10">
+        <div className="mx-auto flex w-full max-w-4xl items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground sm:text-xl">Complete Condition</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Submit the requested information to satisfy this funding condition.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10">
+        <div className="mx-auto w-full max-w-4xl space-y-5">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-sm font-semibold text-foreground">{condition.name}</p>
@@ -1334,7 +1340,7 @@ function CompleteConditionDrawer({
             </button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 }
