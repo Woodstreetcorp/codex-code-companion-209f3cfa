@@ -657,8 +657,6 @@ export function BorrowerProfilePage({
           }}
         />
       )}
-        />
-      )}
       {drawer === "asset" && (
         <AddAssetDrawer
           onClose={() => setDrawer(null)}
