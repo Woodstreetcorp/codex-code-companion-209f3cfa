@@ -721,15 +721,23 @@ export function BorrowerProfilePage({
       {drawer === "asset" && (
         <AddAssetDrawer
           tx={tx}
+          initial={editingAsset}
           applicantId={applicant.id}
           applicantName={applicant.name}
-          onClose={() => setDrawer(null)}
+          onClose={() => {
+            setDrawer(null);
+            setEditingAsset(null);
+          }}
           onSave={(data) => {
-            const id = `ast-${Date.now()}`;
-            setAssets((p) => [...p, { ...data, id }]);
+            const id = editingAsset?.id ?? `ast-${Date.now()}`;
+            setAssets((p) =>
+              editingAsset
+                ? p.map((x) => (x.id === id ? { ...data, id } : x))
+                : [...p, { ...data, id }],
+            );
             // Sync down-payment contribution to localStorage so the
             // Down Payment page can auto-populate the source
-            if (typeof window !== "undefined" && data.forDownPayment > 0) {
+            if (typeof window !== "undefined") {
               try {
                 const key = "approvu:dp-contributions";
                 const raw = window.localStorage.getItem(key);
@@ -741,20 +749,24 @@ export function BorrowerProfilePage({
                   institution: string;
                   amount: number;
                 }> = raw ? JSON.parse(raw) : [];
-                list.push({
-                  assetId: id,
-                  ownerId: applicant.id,
-                  ownerName: applicant.name,
-                  type: data.type,
-                  institution: data.institution,
-                  amount: data.forDownPayment,
-                });
-                window.localStorage.setItem(key, JSON.stringify(list));
+                const filtered = list.filter((x) => x.assetId !== id);
+                if (data.forDownPayment > 0) {
+                  filtered.push({
+                    assetId: id,
+                    ownerId: applicant.id,
+                    ownerName: applicant.name,
+                    type: data.type,
+                    institution: data.institution,
+                    amount: data.forDownPayment,
+                  });
+                }
+                window.localStorage.setItem(key, JSON.stringify(filtered));
               } catch {
                 // ignore storage failures
               }
             }
             setNoneAssets(false);
+            setEditingAsset(null);
             setDrawer(null);
           }}
         />
