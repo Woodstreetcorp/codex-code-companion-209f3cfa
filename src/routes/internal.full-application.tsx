@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowRight,
@@ -17,7 +17,7 @@ import {
   Upload,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
-import { useState } from "react";
+import { z } from "zod";
 import { QualificationSummaryContent } from "./portal.applications.$applicationId.qualification-summary";
 import { PreQualifiedCertificateContent } from "@/components/hub/pre-qualified-certificate";
 import { MortgageApplicationContent } from "@/components/hub/mortgage-application";
@@ -26,17 +26,82 @@ import { LenderResponseContent } from "@/components/hub/lender-response";
 import { FundingConditionsContent } from "@/components/hub/funding-conditions";
 import { ExclusiveOffersContent } from "@/components/hub/exclusive-offers";
 
+const SECTION_SLUGS = [
+  "overview",
+  "qualification-summary",
+  "pre-qualified-certificate",
+  "mortgage-application",
+  "exclusive-offers",
+  "document-upload",
+  "lender-response",
+  "funding-conditions",
+] as const;
+type SectionSlug = (typeof SECTION_SLUGS)[number];
+
+const LABEL_TO_SLUG: Record<string, SectionSlug> = {
+  "Application Overview": "overview",
+  "Qualification Summary": "qualification-summary",
+  "Pre-Qualified Certificate": "pre-qualified-certificate",
+  "Mortgage Application": "mortgage-application",
+  "Exclusive Offers": "exclusive-offers",
+  "Document Upload": "document-upload",
+  "Lender Response": "lender-response",
+  "Funding Conditions": "funding-conditions",
+};
+const SLUG_TO_LABEL: Record<SectionSlug, string> = Object.fromEntries(
+  Object.entries(LABEL_TO_SLUG).map(([k, v]) => [v, k]),
+) as Record<SectionSlug, string>;
+
+const SECTION_META: Record<SectionSlug, { title: string; description: string }> = {
+  "overview": {
+    title: "approvU — Application Hub",
+    description:
+      "Track your mortgage application progress, complete required sections, and access your exclusive offers.",
+  },
+  "qualification-summary": {
+    title: "approvU — Qualification Summary",
+    description: "Review your qualification summary before continuing your mortgage application.",
+  },
+  "pre-qualified-certificate": {
+    title: "approvU — Pre-Qualified Certificate",
+    description: "View and download your pre-qualified certificate.",
+  },
+  "mortgage-application": {
+    title: "approvU — Mortgage Application",
+    description: "Complete your mortgage application sections to submit for lender review.",
+  },
+  "exclusive-offers": {
+    title: "approvU — Exclusive Offers",
+    description: "Explore the Home Life Bundle benefits available with your application.",
+  },
+  "document-upload": {
+    title: "approvU — Document Upload",
+    description: "Upload required supporting documents for your mortgage application.",
+  },
+  "lender-response": {
+    title: "approvU — Lender Response",
+    description: "Track lender responses and offers for your mortgage application.",
+  },
+  "funding-conditions": {
+    title: "approvU — Funding Conditions",
+    description: "Complete the final funding conditions for your mortgage.",
+  },
+};
+
 export const Route = createFileRoute("/internal/full-application")({
-  head: () => ({
-    meta: [
-      { title: "approvU — Application Hub" },
-      {
-        name: "description",
-        content:
-          "Track your mortgage application progress, complete required sections, and access your exclusive offers.",
-      },
-    ],
+  validateSearch: z.object({
+    section: z.enum(SECTION_SLUGS).optional(),
   }),
+  head: ({ match }) => {
+    const slug = (match.search as { section?: SectionSlug }).section ?? "overview";
+    const meta = SECTION_META[slug];
+    return {
+      meta: [
+        { title: meta.title },
+        { name: "description", content: meta.description },
+      ],
+    };
+  },
   component: ApplicationHub,
 });
 
@@ -139,7 +204,18 @@ const MILESTONES: {
 function ApplicationHub() {
   const appCompletion = 65;
   const sectionsComplete = "0/8";
-  const [activeTab, setActiveTab] = useState<string>("Application Overview");
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const activeSlug: SectionSlug = search.section ?? "overview";
+  const activeTab = SLUG_TO_LABEL[activeSlug];
+  const setActiveTab = (label: string) => {
+    const slug = LABEL_TO_SLUG[label];
+    if (!slug) return;
+    navigate({
+      to: "/internal/full-application",
+      search: slug === "overview" ? {} : { section: slug },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
