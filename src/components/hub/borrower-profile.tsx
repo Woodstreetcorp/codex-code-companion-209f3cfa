@@ -1392,6 +1392,15 @@ function AddIncomeDrawer({
   const [netIncome, setNetIncome] = useState("");
   const [seVerification, setSeVerification] = useState("T1 General + NOA (2 years)");
   const [gstRegistered, setGstRegistered] = useState<"yes" | "no">("no");
+  const [businessNumber, setBusinessNumber] = useState("");
+  const [employees, setEmployees] = useState("");
+  const [businessAddress, setBusinessAddress] = useState("");
+  const [incomeTrend, setIncomeTrend] = useState<"increasing" | "stable" | "declining">("stable");
+  const [twoYearAvg, setTwoYearAvg] = useState("");
+  const [addBacks, setAddBacks] = useState("");
+  const [accountantName, setAccountantName] = useState("");
+  const [accountantContact, setAccountantContact] = useState("");
+  const [seIncomeBasis, setSeIncomeBasis] = useState<"net" | "gross_up" | "stated">("net");
 
   const computedEmployedTotal =
     Number(baseSalary || 0) +
@@ -1802,6 +1811,23 @@ function AddIncomeDrawer({
                   ))}
                 </div>
               </Field>
+              <Field label="CRA business number">
+                <Input
+                  value={businessNumber}
+                  onChange={setBusinessNumber}
+                  placeholder="123456789RT0001"
+                />
+              </Field>
+              <Field label="Number of employees (incl. owner)">
+                <Input value={employees} onChange={setEmployees} placeholder="1" />
+              </Field>
+              <Field label="Business address" full>
+                <Input
+                  value={businessAddress}
+                  onChange={setBusinessAddress}
+                  placeholder="Street, City, Province"
+                />
+              </Field>
             </SubGroup>
 
             <SubGroup
@@ -1809,11 +1835,57 @@ function AddIncomeDrawer({
               title="Business Income"
               subtitle="Use figures consistent with your filed tax returns"
             >
+              <Field label="Income basis used for qualification" full>
+                <div className="flex flex-wrap items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {(
+                    [
+                      { v: "net", l: "Net (after expenses)" },
+                      { v: "gross_up", l: "Gross-up (15%)" },
+                      { v: "stated", l: "Stated income program" },
+                    ] as const
+                  ).map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        checked={seIncomeBasis === o.v}
+                        onChange={() => setSeIncomeBasis(o.v)}
+                      />
+                      {o.l}
+                    </label>
+                  ))}
+                </div>
+              </Field>
               <Field label="Gross business revenue (annual)">
                 <Input value={grossBusiness} onChange={setGrossBusiness} placeholder="$0" />
               </Field>
               <Field label="Net income after expenses (annual)" required>
                 <Input value={netIncome} onChange={setNetIncome} placeholder="$0" />
+              </Field>
+              <Field label="2-year average net income">
+                <Input value={twoYearAvg} onChange={setTwoYearAvg} placeholder="$0" />
+              </Field>
+              <Field label="Allowable add-backs (annual)">
+                <Input value={addBacks} onChange={setAddBacks} placeholder="$0" />
+              </Field>
+              <Field label="Recent income trend" full>
+                <div className="flex flex-wrap items-center gap-3 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {(
+                    [
+                      { v: "increasing", l: "Increasing" },
+                      { v: "stable", l: "Stable" },
+                      { v: "declining", l: "Declining" },
+                    ] as const
+                  ).map((o) => (
+                    <label key={o.v} className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        checked={incomeTrend === o.v}
+                        onChange={() => setIncomeTrend(o.v)}
+                      />
+                      {o.l}
+                    </label>
+                  ))}
+                </div>
               </Field>
               <Field label="Verification" full>
                 <Select
@@ -1826,6 +1898,20 @@ function AddIncomeDrawer({
                     "Stated Income",
                     "Other",
                   ]}
+                />
+              </Field>
+              <Field label="Accountant / CPA name">
+                <Input
+                  value={accountantName}
+                  onChange={setAccountantName}
+                  placeholder="Optional"
+                />
+              </Field>
+              <Field label="Accountant phone or email">
+                <Input
+                  value={accountantContact}
+                  onChange={setAccountantContact}
+                  placeholder="Optional"
                 />
               </Field>
             </SubGroup>
