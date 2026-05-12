@@ -16,12 +16,25 @@ import { Route as PortalRouteImport } from './routes/portal'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
+import { Route as PortalToolsRouteImport } from './routes/portal.tools'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
 import { Route as InternalAccountHandoffRouteImport } from './routes/internal.account-handoff'
 import { Route as PortalApplicationsIndexRouteImport } from './routes/portal.applications.index'
+import { Route as PortalToolsStressTestRouteImport } from './routes/portal.tools.stress-test'
+import { Route as PortalToolsScenarioCompareRouteImport } from './routes/portal.tools.scenario-compare'
+import { Route as PortalToolsRentVsBuyRouteImport } from './routes/portal.tools.rent-vs-buy'
+import { Route as PortalToolsRenewalComparisonRouteImport } from './routes/portal.tools.renewal-comparison'
+import { Route as PortalToolsRefinanceSavingsRouteImport } from './routes/portal.tools.refinance-savings'
+import { Route as PortalToolsPrepaymentRouteImport } from './routes/portal.tools.prepayment'
+import { Route as PortalToolsPaymentCalculatorRouteImport } from './routes/portal.tools.payment-calculator'
+import { Route as PortalToolsHomeEquityRouteImport } from './routes/portal.tools.home-equity'
+import { Route as PortalToolsDownPaymentRouteImport } from './routes/portal.tools.down-payment'
+import { Route as PortalToolsDebtConsolidationRouteImport } from './routes/portal.tools.debt-consolidation'
+import { Route as PortalToolsClosingCostsRouteImport } from './routes/portal.tools.closing-costs'
+import { Route as PortalToolsAffordabilityRouteImport } from './routes/portal.tools.affordability'
 import { Route as PortalSettingsSecurityRouteImport } from './routes/portal.settings.security'
 import { Route as PortalSettingsProfileRouteImport } from './routes/portal.settings.profile'
 import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.settings.privacy'
@@ -78,6 +91,11 @@ const PortalWalletRoute = PortalWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalToolsRoute = PortalToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalSettingsRoute = PortalSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -109,6 +127,72 @@ const PortalApplicationsIndexRoute = PortalApplicationsIndexRouteImport.update({
   path: '/applications/',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalToolsStressTestRoute = PortalToolsStressTestRouteImport.update({
+  id: '/stress-test',
+  path: '/stress-test',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsScenarioCompareRoute =
+  PortalToolsScenarioCompareRouteImport.update({
+    id: '/scenario-compare',
+    path: '/scenario-compare',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsRentVsBuyRoute = PortalToolsRentVsBuyRouteImport.update({
+  id: '/rent-vs-buy',
+  path: '/rent-vs-buy',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsRenewalComparisonRoute =
+  PortalToolsRenewalComparisonRouteImport.update({
+    id: '/renewal-comparison',
+    path: '/renewal-comparison',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsRefinanceSavingsRoute =
+  PortalToolsRefinanceSavingsRouteImport.update({
+    id: '/refinance-savings',
+    path: '/refinance-savings',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsPrepaymentRoute = PortalToolsPrepaymentRouteImport.update({
+  id: '/prepayment',
+  path: '/prepayment',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsPaymentCalculatorRoute =
+  PortalToolsPaymentCalculatorRouteImport.update({
+    id: '/payment-calculator',
+    path: '/payment-calculator',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsHomeEquityRoute = PortalToolsHomeEquityRouteImport.update({
+  id: '/home-equity',
+  path: '/home-equity',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsDownPaymentRoute = PortalToolsDownPaymentRouteImport.update({
+  id: '/down-payment',
+  path: '/down-payment',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsDebtConsolidationRoute =
+  PortalToolsDebtConsolidationRouteImport.update({
+    id: '/debt-consolidation',
+    path: '/debt-consolidation',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
+const PortalToolsClosingCostsRoute = PortalToolsClosingCostsRouteImport.update({
+  id: '/closing-costs',
+  path: '/closing-costs',
+  getParentRoute: () => PortalToolsRoute,
+} as any)
+const PortalToolsAffordabilityRoute =
+  PortalToolsAffordabilityRouteImport.update({
+    id: '/affordability',
+    path: '/affordability',
+    getParentRoute: () => PortalToolsRoute,
+  } as any)
 const PortalSettingsSecurityRoute = PortalSettingsSecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -240,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -254,6 +339,18 @@ export interface FileRoutesByFullPath {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
+  '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
+  '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
+  '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
+  '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
+  '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
+  '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
+  '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -274,6 +371,7 @@ export interface FileRoutesByTo {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -288,6 +386,18 @@ export interface FileRoutesByTo {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
+  '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
+  '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
+  '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
+  '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
+  '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
+  '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
+  '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -310,6 +420,7 @@ export interface FileRoutesById {
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
+  '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
   '/portal/': typeof PortalIndexRoute
   '/applications/$applicationId/mortgage-offers': typeof ApplicationsApplicationIdMortgageOffersRoute
@@ -324,6 +435,18 @@ export interface FileRoutesById {
   '/portal/settings/privacy': typeof PortalSettingsPrivacyRoute
   '/portal/settings/profile': typeof PortalSettingsProfileRoute
   '/portal/settings/security': typeof PortalSettingsSecurityRoute
+  '/portal/tools/affordability': typeof PortalToolsAffordabilityRoute
+  '/portal/tools/closing-costs': typeof PortalToolsClosingCostsRoute
+  '/portal/tools/debt-consolidation': typeof PortalToolsDebtConsolidationRoute
+  '/portal/tools/down-payment': typeof PortalToolsDownPaymentRoute
+  '/portal/tools/home-equity': typeof PortalToolsHomeEquityRoute
+  '/portal/tools/payment-calculator': typeof PortalToolsPaymentCalculatorRoute
+  '/portal/tools/prepayment': typeof PortalToolsPrepaymentRoute
+  '/portal/tools/refinance-savings': typeof PortalToolsRefinanceSavingsRoute
+  '/portal/tools/renewal-comparison': typeof PortalToolsRenewalComparisonRoute
+  '/portal/tools/rent-vs-buy': typeof PortalToolsRentVsBuyRoute
+  '/portal/tools/scenario-compare': typeof PortalToolsScenarioCompareRoute
+  '/portal/tools/stress-test': typeof PortalToolsStressTestRoute
   '/portal/applications/': typeof PortalApplicationsIndexRoute
   '/applications/$applicationId/property-financing/current-mortgage': typeof ApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/applications/$applicationId/property-financing/down-payment': typeof ApplicationsApplicationIdPropertyFinancingDownPaymentRoute
@@ -347,6 +470,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/tools'
     | '/portal/wallet'
     | '/portal/'
     | '/applications/$applicationId/mortgage-offers'
@@ -361,6 +485,18 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
+    | '/portal/tools/debt-consolidation'
+    | '/portal/tools/down-payment'
+    | '/portal/tools/home-equity'
+    | '/portal/tools/payment-calculator'
+    | '/portal/tools/prepayment'
+    | '/portal/tools/refinance-savings'
+    | '/portal/tools/renewal-comparison'
+    | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/scenario-compare'
+    | '/portal/tools/stress-test'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -381,6 +517,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/tools'
     | '/portal/wallet'
     | '/portal'
     | '/applications/$applicationId/mortgage-offers'
@@ -395,6 +532,18 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
+    | '/portal/tools/debt-consolidation'
+    | '/portal/tools/down-payment'
+    | '/portal/tools/home-equity'
+    | '/portal/tools/payment-calculator'
+    | '/portal/tools/prepayment'
+    | '/portal/tools/refinance-savings'
+    | '/portal/tools/renewal-comparison'
+    | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/scenario-compare'
+    | '/portal/tools/stress-test'
     | '/portal/applications'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -416,6 +565,7 @@ export interface FileRouteTypes {
     | '/internal/full-application'
     | '/internal/mortgage-offers'
     | '/portal/settings'
+    | '/portal/tools'
     | '/portal/wallet'
     | '/portal/'
     | '/applications/$applicationId/mortgage-offers'
@@ -430,6 +580,18 @@ export interface FileRouteTypes {
     | '/portal/settings/privacy'
     | '/portal/settings/profile'
     | '/portal/settings/security'
+    | '/portal/tools/affordability'
+    | '/portal/tools/closing-costs'
+    | '/portal/tools/debt-consolidation'
+    | '/portal/tools/down-payment'
+    | '/portal/tools/home-equity'
+    | '/portal/tools/payment-calculator'
+    | '/portal/tools/prepayment'
+    | '/portal/tools/refinance-savings'
+    | '/portal/tools/renewal-comparison'
+    | '/portal/tools/rent-vs-buy'
+    | '/portal/tools/scenario-compare'
+    | '/portal/tools/stress-test'
     | '/portal/applications/'
     | '/applications/$applicationId/property-financing/current-mortgage'
     | '/applications/$applicationId/property-financing/down-payment'
@@ -510,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalWalletRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/tools': {
+      id: '/portal/tools'
+      path: '/tools'
+      fullPath: '/portal/tools'
+      preLoaderRoute: typeof PortalToolsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/settings': {
       id: '/portal/settings'
       path: '/settings'
@@ -551,6 +720,90 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/applications/'
       preLoaderRoute: typeof PortalApplicationsIndexRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/portal/tools/stress-test': {
+      id: '/portal/tools/stress-test'
+      path: '/stress-test'
+      fullPath: '/portal/tools/stress-test'
+      preLoaderRoute: typeof PortalToolsStressTestRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/scenario-compare': {
+      id: '/portal/tools/scenario-compare'
+      path: '/scenario-compare'
+      fullPath: '/portal/tools/scenario-compare'
+      preLoaderRoute: typeof PortalToolsScenarioCompareRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/rent-vs-buy': {
+      id: '/portal/tools/rent-vs-buy'
+      path: '/rent-vs-buy'
+      fullPath: '/portal/tools/rent-vs-buy'
+      preLoaderRoute: typeof PortalToolsRentVsBuyRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/renewal-comparison': {
+      id: '/portal/tools/renewal-comparison'
+      path: '/renewal-comparison'
+      fullPath: '/portal/tools/renewal-comparison'
+      preLoaderRoute: typeof PortalToolsRenewalComparisonRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/refinance-savings': {
+      id: '/portal/tools/refinance-savings'
+      path: '/refinance-savings'
+      fullPath: '/portal/tools/refinance-savings'
+      preLoaderRoute: typeof PortalToolsRefinanceSavingsRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/prepayment': {
+      id: '/portal/tools/prepayment'
+      path: '/prepayment'
+      fullPath: '/portal/tools/prepayment'
+      preLoaderRoute: typeof PortalToolsPrepaymentRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/payment-calculator': {
+      id: '/portal/tools/payment-calculator'
+      path: '/payment-calculator'
+      fullPath: '/portal/tools/payment-calculator'
+      preLoaderRoute: typeof PortalToolsPaymentCalculatorRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/home-equity': {
+      id: '/portal/tools/home-equity'
+      path: '/home-equity'
+      fullPath: '/portal/tools/home-equity'
+      preLoaderRoute: typeof PortalToolsHomeEquityRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/down-payment': {
+      id: '/portal/tools/down-payment'
+      path: '/down-payment'
+      fullPath: '/portal/tools/down-payment'
+      preLoaderRoute: typeof PortalToolsDownPaymentRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/debt-consolidation': {
+      id: '/portal/tools/debt-consolidation'
+      path: '/debt-consolidation'
+      fullPath: '/portal/tools/debt-consolidation'
+      preLoaderRoute: typeof PortalToolsDebtConsolidationRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/closing-costs': {
+      id: '/portal/tools/closing-costs'
+      path: '/closing-costs'
+      fullPath: '/portal/tools/closing-costs'
+      preLoaderRoute: typeof PortalToolsClosingCostsRouteImport
+      parentRoute: typeof PortalToolsRoute
+    }
+    '/portal/tools/affordability': {
+      id: '/portal/tools/affordability'
+      path: '/affordability'
+      fullPath: '/portal/tools/affordability'
+      preLoaderRoute: typeof PortalToolsAffordabilityRouteImport
+      parentRoute: typeof PortalToolsRoute
     }
     '/portal/settings/security': {
       id: '/portal/settings/security'
@@ -717,8 +970,43 @@ const PortalSettingsRouteWithChildren = PortalSettingsRoute._addFileChildren(
   PortalSettingsRouteChildren,
 )
 
+interface PortalToolsRouteChildren {
+  PortalToolsAffordabilityRoute: typeof PortalToolsAffordabilityRoute
+  PortalToolsClosingCostsRoute: typeof PortalToolsClosingCostsRoute
+  PortalToolsDebtConsolidationRoute: typeof PortalToolsDebtConsolidationRoute
+  PortalToolsDownPaymentRoute: typeof PortalToolsDownPaymentRoute
+  PortalToolsHomeEquityRoute: typeof PortalToolsHomeEquityRoute
+  PortalToolsPaymentCalculatorRoute: typeof PortalToolsPaymentCalculatorRoute
+  PortalToolsPrepaymentRoute: typeof PortalToolsPrepaymentRoute
+  PortalToolsRefinanceSavingsRoute: typeof PortalToolsRefinanceSavingsRoute
+  PortalToolsRenewalComparisonRoute: typeof PortalToolsRenewalComparisonRoute
+  PortalToolsRentVsBuyRoute: typeof PortalToolsRentVsBuyRoute
+  PortalToolsScenarioCompareRoute: typeof PortalToolsScenarioCompareRoute
+  PortalToolsStressTestRoute: typeof PortalToolsStressTestRoute
+}
+
+const PortalToolsRouteChildren: PortalToolsRouteChildren = {
+  PortalToolsAffordabilityRoute: PortalToolsAffordabilityRoute,
+  PortalToolsClosingCostsRoute: PortalToolsClosingCostsRoute,
+  PortalToolsDebtConsolidationRoute: PortalToolsDebtConsolidationRoute,
+  PortalToolsDownPaymentRoute: PortalToolsDownPaymentRoute,
+  PortalToolsHomeEquityRoute: PortalToolsHomeEquityRoute,
+  PortalToolsPaymentCalculatorRoute: PortalToolsPaymentCalculatorRoute,
+  PortalToolsPrepaymentRoute: PortalToolsPrepaymentRoute,
+  PortalToolsRefinanceSavingsRoute: PortalToolsRefinanceSavingsRoute,
+  PortalToolsRenewalComparisonRoute: PortalToolsRenewalComparisonRoute,
+  PortalToolsRentVsBuyRoute: PortalToolsRentVsBuyRoute,
+  PortalToolsScenarioCompareRoute: PortalToolsScenarioCompareRoute,
+  PortalToolsStressTestRoute: PortalToolsStressTestRoute,
+}
+
+const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
+  PortalToolsRouteChildren,
+)
+
 interface PortalRouteChildren {
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
+  PortalToolsRoute: typeof PortalToolsRouteWithChildren
   PortalWalletRoute: typeof PortalWalletRoute
   PortalIndexRoute: typeof PortalIndexRoute
   PortalApplicationsIndexRoute: typeof PortalApplicationsIndexRoute
@@ -727,6 +1015,7 @@ interface PortalRouteChildren {
 
 const PortalRouteChildren: PortalRouteChildren = {
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
+  PortalToolsRoute: PortalToolsRouteWithChildren,
   PortalWalletRoute: PortalWalletRoute,
   PortalIndexRoute: PortalIndexRoute,
   PortalApplicationsIndexRoute: PortalApplicationsIndexRoute,
@@ -795,3 +1084,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
