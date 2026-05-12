@@ -17,6 +17,8 @@ import {
   Upload,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
+import { useState } from "react";
+import { QualificationSummaryContent } from "./portal.applications.$applicationId.qualification-summary";
 
 export const Route = createFileRoute("/internal/full-application")({
   head: () => ({
@@ -131,6 +133,7 @@ const MILESTONES: {
 function ApplicationHub() {
   const appCompletion = 65;
   const sectionsComplete = "0/8";
+  const [activeTab, setActiveTab] = useState<string>("Application Overview");
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,8 +166,10 @@ function ApplicationHub() {
                 {HUB_NAV.map((item, idx) => (
                   <li key={item.label}>
                     <button
+                      onClick={() => item.status !== "locked" && setActiveTab(item.label)}
+                      disabled={item.status === "locked"}
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
-                        idx === 0
+                        activeTab === item.label
                           ? "bg-primary text-primary-foreground"
                           : item.status === "locked"
                             ? "text-muted-foreground hover:bg-muted/60"
@@ -261,6 +266,10 @@ function ApplicationHub() {
 
           {/* Main column */}
           <section className="space-y-6">
+            {activeTab === "Qualification Summary" ? (
+              <QualificationSummaryContent />
+            ) : activeTab === "Application Overview" ? (
+              <>
             <header>
               <h1 className="text-2xl font-semibold text-primary sm:text-3xl">
                 Application Overview
@@ -357,6 +366,15 @@ function ApplicationHub() {
                 ))}
               </ol>
             </Card>
+              </>
+            ) : (
+              <Card>
+                <h2 className="text-lg font-semibold text-primary">{activeTab}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  This section is coming soon.
+                </p>
+              </Card>
+            )}
           </section>
         </div>
       </main>
