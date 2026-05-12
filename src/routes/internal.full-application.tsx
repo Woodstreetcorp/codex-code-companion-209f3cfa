@@ -24,6 +24,7 @@ import { MortgageApplicationContent } from "@/components/hub/mortgage-applicatio
 import { DocumentUploadContent } from "@/components/hub/document-upload";
 import { LenderResponseContent } from "@/components/hub/lender-response";
 import { FundingConditionsContent } from "@/components/hub/funding-conditions";
+import { ExclusiveOffersContent } from "@/components/hub/exclusive-offers";
 
 export const Route = createFileRoute("/internal/full-application")({
   head: () => ({
@@ -283,6 +284,8 @@ function ApplicationHub() {
               <LenderResponseContent />
             ) : activeTab === "Funding Conditions" ? (
               <FundingConditionsContent />
+            ) : activeTab === "Exclusive Offers" ? (
+              <ExclusiveOffersContent />
             ) : activeTab === "Application Overview" ? (
               <>
             <header>
