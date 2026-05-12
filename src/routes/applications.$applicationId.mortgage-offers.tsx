@@ -15,6 +15,9 @@ import {
   Sparkles,
   Trophy,
   X,
+  Search,
+  SlidersHorizontal,
+  Sparkle,
 } from "lucide-react";
 import {
   PageHeader,
@@ -41,6 +44,32 @@ export const Route = createFileRoute(
 
 const MAX_SELECT = 3;
 
+const SORT_OPTIONS = [
+  { value: "best", label: "Best Match" },
+  { value: "rate", label: "Lowest Rate" },
+  { value: "payment", label: "Lowest Monthly Payment" },
+  { value: "closing", label: "Lowest Closing Cost" },
+  { value: "value", label: "Best Overall Value" },
+  { value: "flexible", label: "Most Flexible" },
+  { value: "fast", label: "Fastest Approval" },
+  { value: "bundle", label: "Strongest Home Life Bundle" },
+] as const;
+
+const QUICK_FILTERS = [
+  "Fixed",
+  "Variable",
+  "Lower Payment",
+  "Lowest Rate",
+  "No Lender Fee",
+  "Cash Back",
+  "Flexible Prepayment",
+  "Lower Closing Cost",
+  "Prime Products",
+  "Alternative Products",
+] as const;
+
+type SortKey = (typeof SORT_OPTIONS)[number]["value"];
+
 type Product = {
   id: string;
   lender: string;
@@ -62,6 +91,10 @@ type Product = {
   features: string[];
   description: string;
   curated?: boolean;
+  matchReason?: string;
+  bundleValue?: number;
+  classification?: "Prime" | "Standard" | "Alternative";
+  lenderFee?: number;
 };
 
 const TOP: Product[] = [
@@ -74,6 +107,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "LOC Available", "No Penalty Payout", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Our top recommended product with excellent features and competitive rates.",
     curated: true,
+    matchReason: "Best value when benefits are included.",
+    bundleValue: 2350, classification: "Prime", lenderFee: 0,
   },
   {
     id: "ml", lender: "Merix-Lendwise", initials: "ML", product: "MERIX FN Capital Metro - Quebec | Uninsured FRM",
@@ -84,6 +119,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "LOC Available", "No Penalty Payout", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Lower rate with strong flexibility for prepayments and life changes.",
     curated: true,
+    matchReason: "Lower payment option with flexible features.",
+    bundleValue: 1900, classification: "Prime", lenderFee: 0,
   },
   {
     id: "cm", lender: "CMLS", initials: "CM", product: "CMLS Mtl - Ques O/O Uninsured Extra Quebec Funds FRM",
@@ -94,6 +131,8 @@ const TOP: Product[] = [
     features: ["Skip-a-payment", "Convertible", "Payment Increase", "Rate Drop Prior to Closing"],
     description: "Stable monoline option with strong prepayment freedom.",
     curated: true,
+    matchReason: "Strong match for your loan amount and property type.",
+    bundleValue: 1750, classification: "Prime", lenderFee: 0,
   },
   {
     id: "mc", lender: "MCAP Financial", initials: "MC", product: "MCAP Standard Fixed Rate Mortgage",
@@ -104,6 +143,8 @@ const TOP: Product[] = [
     features: ["Portable", "Rate Hold 90 Days", "Payment Increase"],
     description: "Tailored for first-time buyers needing guidance and stability.",
     curated: true,
+    matchReason: "Good fit for your down payment and credit profile.",
+    bundleValue: 1500, classification: "Standard", lenderFee: 250,
   },
   {
     id: "td", lender: "TD Bank", initials: "TD", product: "TD Fixed Rate Mortgage",
@@ -114,6 +155,8 @@ const TOP: Product[] = [
     features: ["Branch Support", "Rate Hold 120 Days", "Pre-Payment Options"],
     description: "Big-bank service with reliable in-branch support.",
     curated: true,
+    matchReason: "Trusted lender with strong service for your profile.",
+    bundleValue: 1200, classification: "Prime", lenderFee: 300,
   },
 ];
 
@@ -152,6 +195,10 @@ const ALL_OTHERS: Product[] = [
   tagline: "Reliable rate from a trusted lender.",
   features: ["Skip-a-payment", "Portable"],
   description: "Qualified product available for your application.",
+  matchReason: "Eligible for your application based on rate and payment.",
+  bundleValue: 800,
+  classification: "Standard" as const,
+  lenderFee: 250,
 }));
 
 function QualifiedProductsPage() {
@@ -164,9 +211,73 @@ function QualifiedProductsPage() {
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(true);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [sort, setSort] = useState<SortKey>("best");
+  const [activeQuick, setActiveQuick] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [maxPaymentFilter, setMaxPaymentFilter] = useState<string>("");
+  const [maxClosingFilter, setMaxClosingFilter] = useState<string>("");
+  const [classFilter, setClassFilter] = useState<string>("any");
 
   const all = useMemo(() => [...TOP, ...ALL_OTHERS], []);
   const byId = (id: string) => all.find((p) => p.id === id)!;
+
+  const matchesQuick = (p: Product, chip: string) => {
+    switch (chip) {
+      case "Fixed": return p.rateType === "Fixed";
+      case "Variable": return p.rateType === "Variable";
+      case "Lower Payment": return p.payment <= 2855;
+      case "Lowest Rate": return p.rate <= 5.34;
+      case "No Lender Fee": return (p.lenderFee ?? 0) === 0;
+      case "Cash Back": return p.features.some((f) => /cash/i.test(f));
+      case "Flexible Prepayment": return p.features.some((f) => /skip|prepay|payment increase/i.test(f));
+      case "Lower Closing Cost": return p.closingCosts <= 8500;
+      case "Prime Products": return p.classification === "Prime";
+      case "Alternative Products": return p.classification === "Alternative";
+      default: return true;
+    }
+  };
+
+  const applyFilters = (list: Product[]) => {
+    let out = list;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      out = out.filter((p) => p.lender.toLowerCase().includes(q) || p.product.toLowerCase().includes(q));
+    }
+    if (activeQuick.length > 0) {
+      out = out.filter((p) => activeQuick.every((c) => matchesQuick(p, c)));
+    }
+    const maxPay = Number(maxPaymentFilter);
+    if (maxPay > 0) out = out.filter((p) => p.payment <= maxPay);
+    const maxClose = Number(maxClosingFilter);
+    if (maxClose > 0) out = out.filter((p) => p.closingCosts <= maxClose);
+    if (classFilter !== "any") out = out.filter((p) => p.classification === classFilter);
+    return out;
+  };
+
+  const sortList = (list: Product[]) => {
+    const arr = [...list];
+    switch (sort) {
+      case "rate": arr.sort((a, b) => a.rate - b.rate); break;
+      case "payment": arr.sort((a, b) => a.payment - b.payment); break;
+      case "closing": arr.sort((a, b) => a.closingCosts - b.closingCosts); break;
+      case "value": arr.sort((a, b) => (b.bundleValue ?? 0) - (a.bundleValue ?? 0)); break;
+      case "flexible": arr.sort((a, b) => b.features.length - a.features.length); break;
+      case "fast": arr.sort((a, b) => b.rateHoldDays - a.rateHoldDays); break;
+      case "bundle": arr.sort((a, b) => (b.bundleValue ?? 0) - (a.bundleValue ?? 0)); break;
+      default: break; // Best Match keeps curated/order
+    }
+    return arr;
+  };
+
+  const topFiltered = useMemo(() => sortList(applyFilters(TOP)), [sort, activeQuick, search, maxPaymentFilter, maxClosingFilter, classFilter]);
+  const otherFiltered = useMemo(() => sortList(applyFilters(ALL_OTHERS)), [sort, activeQuick, search, maxPaymentFilter, maxClosingFilter, classFilter]);
+
+  const toggleQuick = (chip: string) =>
+    setActiveQuick((prev) => (prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]));
+  const clearAllFilters = () => {
+    setActiveQuick([]); setSearch(""); setMaxPaymentFilter(""); setMaxClosingFilter(""); setClassFilter("any");
+  };
   const isSelected = (id: string) => selected.includes(id);
   const atMax = selected.length >= MAX_SELECT;
 
@@ -177,8 +288,8 @@ function QualifiedProductsPage() {
   };
   const remove = (id: string) => setSelected((prev) => prev.filter((x) => x !== id));
 
-  const canSubmit = selected.length >= 2;
-  const progress = selected.length === 0 ? 0 : selected.length >= 2 ? 100 : 50;
+  const canSubmit = selected.length >= 1;
+  const progress = selected.length === 0 ? 0 : Math.min(100, (selected.length / MAX_SELECT) * 100);
 
   return (
     <PageShell>
@@ -186,7 +297,7 @@ function QualifiedProductsPage() {
         applicationId={applicationId}
         tx={tx}
         title="Qualified Products"
-        subtitle="Select up to 3 mortgage products to submit with your application."
+        subtitle="Select up to 3 mortgage products to include in your submission priority."
         progress={progress}
         saveStatus="saved"
       />
@@ -210,18 +321,35 @@ function QualifiedProductsPage() {
 
       <div className="pb-32">
         <div className="min-w-0">
+          <ProductControlsBar
+            sort={sort}
+            setSort={setSort}
+            activeQuick={activeQuick}
+            toggleQuick={toggleQuick}
+            search={search}
+            setSearch={setSearch}
+            onOpenAdvanced={() => setAdvancedOpen(true)}
+            onClear={clearAllFilters}
+            activeCount={activeQuick.length + (maxPaymentFilter ? 1 : 0) + (maxClosingFilter ? 1 : 0) + (classFilter !== "any" ? 1 : 0)}
+          />
+
           <div className="mb-4">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-secondary" />
-              <h2 className="text-lg font-semibold text-foreground">Top 5 Matches — Curated For You</h2>
+              <h2 className="text-lg font-semibold text-foreground">Top Recommended Matches</h2>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              These products best align with your financial goals and lifestyle needs.
+              We ranked these products based on your application, preferences, and product eligibility.
             </p>
           </div>
 
           <div className="space-y-3">
-            {TOP.map((p) => (
+            {topFiltered.length === 0 && (
+              <p className="rounded-xl border border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">
+                No top matches with the current filters. Try clearing filters to see all qualified products.
+              </p>
+            )}
+            {topFiltered.map((p) => (
               <ProductCard
                 key={p.id}
                 p={p}
@@ -241,7 +369,7 @@ function QualifiedProductsPage() {
               <div>
                 <h2 className="text-base font-semibold text-foreground">All Qualified Products</h2>
                 <p className="text-xs text-muted-foreground">
-                  {ALL_OTHERS.length} more products match your profile
+                  {otherFiltered.length} more products match your profile
                 </p>
               </div>
             </div>
@@ -249,14 +377,14 @@ function QualifiedProductsPage() {
               onClick={() => setShowAll((v) => !v)}
               className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
             >
-              {showAll ? "Hide" : `View All (${ALL_OTHERS.length})`}
+              {showAll ? "Hide" : `View All (${otherFiltered.length})`}
               <ChevronDown className={`h-3.5 w-3.5 transition ${showAll ? "rotate-180" : ""}`} />
             </button>
           </div>
 
           {showAll ? (
             <div className="space-y-3">
-              {ALL_OTHERS.map((p) => (
+              {otherFiltered.map((p) => (
                 <ProductCard
                   key={p.id}
                   p={p}
@@ -280,7 +408,7 @@ function QualifiedProductsPage() {
               </div>
               <p className="text-sm font-semibold text-foreground">Explore More Options</p>
               <p className="text-xs text-muted-foreground">
-                Click to view {ALL_OTHERS.length} additional qualified products
+                Click to view {otherFiltered.length} additional qualified products
               </p>
               <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
                 View All Products <ArrowRight className="h-3.5 w-3.5" />
@@ -327,6 +455,19 @@ function QualifiedProductsPage() {
           disabled={!isSelected(detailsId) && atMax}
           onClose={() => setDetailsId(null)}
           onToggle={() => toggle(detailsId)}
+        />
+      )}
+
+      {advancedOpen && (
+        <AdvancedFiltersDrawer
+          onClose={() => setAdvancedOpen(false)}
+          maxPayment={maxPaymentFilter}
+          setMaxPayment={setMaxPaymentFilter}
+          maxClosing={maxClosingFilter}
+          setMaxClosing={setMaxClosingFilter}
+          classification={classFilter}
+          setClassification={setClassFilter}
+          onClear={clearAllFilters}
         />
       )}
     </PageShell>
@@ -383,6 +524,11 @@ function ProductCard({
             )}
           </div>
           <p className="text-xs text-muted-foreground">{p.product}</p>
+          {p.matchReason && (
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+              <Sparkle className="h-3 w-3" /> Why this matched: <span className="font-normal text-foreground/80">{p.matchReason}</span>
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
             <div className="flex items-center gap-1.5 text-[11px]">
@@ -749,6 +895,198 @@ function Row({ k, v }: { k: string; v: string }) {
     <div className="flex justify-between gap-2">
       <span className="text-muted-foreground">{k}:</span>
       <span className="font-medium text-foreground">{v}</span>
+    </div>
+  );
+}
+function ProductControlsBar({
+  sort,
+  setSort,
+  activeQuick,
+  toggleQuick,
+  search,
+  setSearch,
+  onOpenAdvanced,
+  onClear,
+  activeCount,
+}: {
+  sort: SortKey;
+  setSort: (s: SortKey) => void;
+  activeQuick: string[];
+  toggleQuick: (c: string) => void;
+  search: string;
+  setSearch: (s: string) => void;
+  onOpenAdvanced: () => void;
+  onClear: () => void;
+  activeCount: number;
+}) {
+  return (
+    <div className="mb-5 rounded-2xl border border-border bg-card p-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px]">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by lender or product"
+            className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+        </div>
+        <label className="flex items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">Sort:</span>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            {SORT_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={onOpenAdvanced}
+          className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" /> Advanced Filters
+          {activeCount > 0 && (
+            <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+              {activeCount}
+            </span>
+          )}
+        </button>
+        {activeCount > 0 && (
+          <button onClick={onClear} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {QUICK_FILTERS.map((c) => {
+          const sel = activeQuick.includes(c);
+          return (
+            <button
+              key={c}
+              onClick={() => toggleQuick(c)}
+              className={`rounded-full border px-2.5 py-1 text-[11px] transition ${
+                sel
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-background text-foreground hover:border-primary/40"
+              }`}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AdvancedFiltersDrawer({
+  onClose,
+  maxPayment,
+  setMaxPayment,
+  maxClosing,
+  setMaxClosing,
+  classification,
+  setClassification,
+  onClear,
+}: {
+  onClose: () => void;
+  maxPayment: string;
+  setMaxPayment: (v: string) => void;
+  maxClosing: string;
+  setMaxClosing: (v: string) => void;
+  classification: string;
+  setClassification: (v: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-foreground/40" onClick={onClose}>
+      <aside
+        className="h-full w-full max-w-md overflow-auto bg-card p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-semibold">Advanced Filters</h3>
+            <p className="text-xs text-muted-foreground">Refine the products shown using plain-English filters.</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          <div>
+            <label className="text-xs font-medium text-foreground">Maximum monthly payment</label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+              <input
+                type="number"
+                value={maxPayment}
+                onChange={(e) => setMaxPayment(e.target.value)}
+                placeholder="e.g. 2900"
+                className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-foreground">Maximum closing cost</label>
+            <div className="relative mt-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+              <input
+                type="number"
+                value={maxClosing}
+                onChange={(e) => setMaxClosing(e.target.value)}
+                placeholder="e.g. 8500"
+                className="w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Estimated costs connected to closing — legal, appraisal, or lender-related costs.
+            </p>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-foreground">Product path</label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              {[
+                { v: "any", l: "Any" },
+                { v: "Prime", l: "Prime" },
+                { v: "Standard", l: "Standard" },
+                { v: "Alternative", l: "Alternative" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  onClick={() => setClassification(o.v)}
+                  className={`rounded-md border px-3 py-2 text-xs transition ${
+                    classification === o.v ? "border-primary bg-primary/5 text-primary" : "border-border bg-background"
+                  }`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-3 text-[11px] text-muted-foreground">
+            More filters — rate type, term, lender type, lender fee, prepayment, portability, cashback, HELOC,
+            amortization, product status, Home Life Bundle value — coming soon. Use the quick filters above for these.
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-2">
+          <button onClick={onClear} className="text-xs font-medium text-muted-foreground hover:text-foreground">
+            Reset all
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </aside>
     </div>
   );
 }
