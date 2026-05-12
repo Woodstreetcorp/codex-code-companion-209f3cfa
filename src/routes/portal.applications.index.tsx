@@ -13,7 +13,6 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  Wallet,
   X,
 } from "lucide-react";
 import {
@@ -536,5 +535,3 @@ function AllApplicationsTable({
     </div>
   );
 }
-
-void Wallet;
