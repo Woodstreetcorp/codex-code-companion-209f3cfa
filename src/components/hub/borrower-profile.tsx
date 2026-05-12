@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Briefcase,
@@ -670,7 +671,10 @@ function AboutSection({
       </Group>
 
       <Group title="Application Participation">
-        <YesNo label="Will this borrower be on title?" />
+        <YesNo
+          label="Will this borrower be on title?"
+          warnOnNo="Lenders strongly prefer every applicant on the mortgage to also be on title. Selecting No may disqualify this mortgage application or require lender exception approval."
+        />
         <YesNo label="Will this borrower be on the mortgage?" />
         <YesNo label="Will this borrower provide income?" />
         <YesNo label="Will this borrower provide down payment / assets?" />
@@ -1909,27 +1913,35 @@ function Select({
   );
 }
 
-function YesNo({ label }: { label: string }) {
+function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
   const [v, setV] = useState<"yes" | "no" | undefined>();
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2 sm:col-span-2">
-      <span className="text-sm text-foreground">{label}</span>
-      <div className="flex items-center gap-1.5">
-        {(["yes", "no"] as const).map((opt) => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => setV(opt)}
-            className={`rounded-md px-3 py-1 text-xs font-medium ${
-              v === opt
-                ? "bg-primary text-primary-foreground"
-                : "border border-input bg-background text-foreground hover:bg-muted"
-            }`}
-          >
-            {opt === "yes" ? "Yes" : "No"}
-          </button>
-        ))}
+    <div className="sm:col-span-2 space-y-2">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
+        <span className="text-sm text-foreground">{label}</span>
+        <div className="flex items-center gap-1.5">
+          {(["yes", "no"] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setV(opt)}
+              className={`rounded-md px-3 py-1 text-xs font-medium ${
+                v === opt
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-input bg-background text-foreground hover:bg-muted"
+              }`}
+            >
+              {opt === "yes" ? "Yes" : "No"}
+            </button>
+          ))}
+        </div>
       </div>
+      {warnOnNo && v === "no" && (
+        <div className="flex items-start gap-2 rounded-xl border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-foreground">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <p>{warnOnNo}</p>
+        </div>
+      )}
     </div>
   );
 }
