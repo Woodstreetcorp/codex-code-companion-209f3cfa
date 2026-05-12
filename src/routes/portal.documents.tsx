@@ -602,7 +602,7 @@ function MobileCaptureButton({ context }: { context: string }) {
       <input
         type="file"
         accept="image/*"
-        // @ts-expect-error capture is a valid HTML attr for file inputs
+        // @ts-ignore capture is a valid HTML attr for file inputs
         capture="environment"
         multiple
         className="hidden"
@@ -712,7 +712,7 @@ function LenderRequestsView({
                     <input
                       type="file"
                       accept="image/*"
-                      // @ts-expect-error capture is a valid HTML attr
+                      // @ts-ignore capture is a valid HTML attr
                       capture="environment"
                       multiple
                       className="hidden"
