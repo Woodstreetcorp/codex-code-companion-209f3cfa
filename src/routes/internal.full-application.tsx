@@ -23,6 +23,7 @@ import { PreQualifiedCertificateContent } from "@/components/hub/pre-qualified-c
 import { MortgageApplicationContent } from "@/components/hub/mortgage-application";
 import { DocumentUploadContent } from "@/components/hub/document-upload";
 import { LenderResponseContent } from "@/components/hub/lender-response";
+import { FundingConditionsContent } from "@/components/hub/funding-conditions";
 
 export const Route = createFileRoute("/internal/full-application")({
   head: () => ({
@@ -49,7 +50,7 @@ const HUB_NAV: { label: string; icon: ComponentType<{ className?: string }>; sta
   { label: "Exclusive Offers", icon: Gift, status: "active" },
   { label: "Document Upload", icon: Upload, status: "active" },
   { label: "Lender Response", icon: MessageCircle, status: "active" },
-  { label: "Funding Conditions", icon: Flag, status: "locked" },
+  { label: "Funding Conditions", icon: Flag, status: "active" },
 ];
 
 const OFFER = {
@@ -280,6 +281,8 @@ function ApplicationHub() {
               <DocumentUploadContent />
             ) : activeTab === "Lender Response" ? (
               <LenderResponseContent />
+            ) : activeTab === "Funding Conditions" ? (
+              <FundingConditionsContent />
             ) : activeTab === "Application Overview" ? (
               <>
             <header>
