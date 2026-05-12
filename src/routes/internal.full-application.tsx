@@ -276,8 +276,6 @@ function buildMilestones(): {
 
 // ─── Page ────────────────────────────────────────────────────────────────
 function ApplicationHub() {
-  const appCompletion = 65;
-  const sectionsComplete = "0/8";
   const search = Route.useSearch();
   const navigate = useNavigate();
   const activeSlug: SectionSlug = search.section ?? "overview";
@@ -290,6 +288,22 @@ function ApplicationHub() {
       search: slug === "overview" ? {} : { section: slug },
     });
   };
+
+  // Derive everything from the Mortgage Application hub data
+  const overview = deriveOverview();
+  const nextSteps = buildNextSteps();
+  const milestones = buildMilestones();
+  const urgentCount = nextSteps.filter((s) => s.tone === "urgent").length;
+  const totalBenefits = BUNDLE_BENEFITS.reduce(
+    (sum, b) => sum + Number(b.value.replace(/[^0-9.]/g, "")),
+    0,
+  );
+  const totalBenefitsFmt = `$${totalBenefits.toLocaleString()}`;
+  const hubNav = HUB_NAV.map((item) =>
+    item.label === "Mortgage Application"
+      ? { ...item, progress: overview.completion }
+      : item,
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -319,7 +333,7 @@ function ApplicationHub() {
                 <h2 className="text-sm font-semibold tracking-tight">Application Hub</h2>
               </div>
               <ul className="p-2">
-                {HUB_NAV.map((item, idx) => (
+                {hubNav.map((item) => (
                   <li key={item.label}>
                     <button
                       onClick={() => item.status !== "locked" && setActiveTab(item.label)}
@@ -361,35 +375,32 @@ function ApplicationHub() {
               </div>
               <div className="space-y-4 p-4">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">From</p>
-                <dl className="grid grid-cols-3 gap-2 text-xs">
+                <dl className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <dt className="text-muted-foreground">Rate</dt>
-                    <dd className="mt-0.5 text-base font-semibold text-foreground">{OFFER.rate}</dd>
+                    <dd className="mt-0.5 text-base font-semibold text-foreground">{SELECTED_OFFER.rate}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Term</dt>
-                    <dd className="mt-0.5 text-base font-semibold text-foreground">{OFFER.term}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Type</dt>
-                    <dd className="mt-0.5 text-base font-semibold text-foreground">{OFFER.type}</dd>
+                    <dt className="text-muted-foreground">Offer</dt>
+                    <dd className="mt-0.5 text-sm font-semibold text-foreground">{SELECTED_OFFER.name}</dd>
                   </div>
                 </dl>
+                <p className="text-[11px] text-muted-foreground">{SELECTED_OFFER.path}</p>
 
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                     Monthly Payment
                   </p>
-                  <p className="mt-0.5 text-xl font-semibold text-foreground">{OFFER.monthly}</p>
+                  <p className="mt-0.5 text-xl font-semibold text-foreground">{SELECTED_OFFER.monthly}</p>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground">Total Benefits</span>
-                    <span className="text-base font-semibold text-mint">{OFFER.totalBenefits}</span>
+                    <span className="text-base font-semibold text-mint">{totalBenefitsFmt}</span>
                   </div>
                   <ul className="mt-2 space-y-2">
-                    {OFFER.benefits.map((b) => (
+                    {BUNDLE_BENEFITS.map((b) => (
                       <li
                         key={b.label}
                         className="flex items-center justify-between gap-2 text-xs"
@@ -416,7 +427,7 @@ function ApplicationHub() {
 
             {/* Complete your application */}
             <Notice tone="info" icon={AlertCircle} title="Complete your application">
-              You're just a few steps away from securing your exclusive benefits worth $2,350.
+              You're just a few steps away from securing your exclusive benefits worth {totalBenefitsFmt}.
             </Notice>
           </aside>
 
@@ -455,16 +466,16 @@ function ApplicationHub() {
               </p>
               <div className="mt-5 flex items-center justify-between text-sm">
                 <span className="font-medium text-foreground">Application Completion</span>
-                <span className="font-semibold text-foreground">{appCompletion}%</span>
+                <span className="font-semibold text-foreground">{overview.completion}%</span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full bg-secondary"
-                  style={{ width: `${appCompletion}%` }}
+                  style={{ width: `${overview.completion}%` }}
                 />
               </div>
               <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                <Circle className="h-3.5 w-3.5" /> Estimated time remaining: 5–10 minutes
+                <Circle className="h-3.5 w-3.5" /> {overview.sectionsComplete} of {overview.total} sections complete · Application #{APPLICATION.id}
               </p>
             </Card>
 
@@ -474,29 +485,29 @@ function ApplicationHub() {
                 icon={BarChart3}
                 tone="secondary"
                 label="Application Progress"
-                value={`${appCompletion}%`}
-                hint="+1% this week"
+                value={`${overview.completion}%`}
+                hint={`Updated ${APPLICATION.lastUpdated}`}
               />
               <StatCard
                 icon={CheckCircle2}
                 tone="mint"
                 label="Sections Complete"
-                value={sectionsComplete}
-                hint="8 remaining"
+                value={`${overview.sectionsComplete}/${overview.total}`}
+                hint={`${overview.remaining} remaining`}
               />
               <StatCard
                 icon={DollarSign}
                 tone="primary"
                 label="Estimated Monthly"
-                value={OFFER.monthly}
-                hint={`Based on ${OFFER.rate} rate`}
+                value={SELECTED_OFFER.monthly}
+                hint={`Based on ${SELECTED_OFFER.rate} rate`}
               />
               <StatCard
                 icon={Award}
                 tone="coral"
                 label="Total Benefits"
-                value={OFFER.totalBenefits}
-                hint="Exclusive offers"
+                value={totalBenefitsFmt}
+                hint="Home Life Bundle"
               />
             </div>
 
@@ -509,13 +520,15 @@ function ApplicationHub() {
                     Priority actions to move your application forward
                   </p>
                 </div>
-                <span className="rounded-full border border-coral/30 bg-coral/10 px-2.5 py-0.5 text-xs font-semibold text-coral">
-                  1 Urgent
-                </span>
+                {urgentCount > 0 && (
+                  <span className="rounded-full border border-coral/30 bg-coral/10 px-2.5 py-0.5 text-xs font-semibold text-coral">
+                    {urgentCount} Urgent
+                  </span>
+                )}
               </div>
 
               <ul className="mt-5 space-y-3">
-                {NEXT_STEPS.map((s) => (
+                {nextSteps.map((s) => (
                   <NextStepRow
                     key={s.title}
                     step={s}
@@ -533,8 +546,8 @@ function ApplicationHub() {
               </p>
 
               <ol className="mt-6 space-y-5">
-                {MILESTONES.map((m, i) => (
-                  <Milestone key={m.title} milestone={m} isLast={i === MILESTONES.length - 1} />
+                {milestones.map((m, i) => (
+                  <Milestone key={m.title} milestone={m} isLast={i === milestones.length - 1} />
                 ))}
               </ol>
             </Card>
