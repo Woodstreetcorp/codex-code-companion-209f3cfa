@@ -287,16 +287,21 @@ function SubmittedSuccess({ applicationId }: { applicationId: string }) {
 
         <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
-            onClick={() => navigate({ to: "/internal/full-application" })}
+            onClick={() =>
+              navigate({
+                to: "/internal/full-application",
+                search: { section: "mortgage-application" },
+              })
+            }
             className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            Go to Application Hub <ArrowRight className="h-4 w-4" />
+            Go to application hub <ArrowRight className="h-4 w-4" />
           </button>
           <button
             onClick={() => navigate({ to: "/portal" })}
             className="inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted"
           >
-            <FileText className="h-4 w-4" /> Back to Portal
+            <FileText className="h-4 w-4" /> Back to portal
           </button>
         </div>
         <div className="sr-only">App {applicationId}</div>
