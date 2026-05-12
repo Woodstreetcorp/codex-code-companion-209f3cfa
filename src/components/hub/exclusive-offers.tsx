@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowLeft,
@@ -540,6 +541,36 @@ function SummaryStat({
   );
 }
 
+function UnlockCta({ fundingStage }: { fundingStage: ApplicationFundingStage }) {
+  if (fundingStage === "submitted") {
+    return (
+      <button
+        type="button"
+        disabled
+        aria-disabled="true"
+        className="mt-3 inline-flex cursor-not-allowed items-center justify-center rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground"
+      >
+        Application Submitted — Awaiting Review
+      </button>
+    );
+  }
+
+  const goToFunding = fundingStage === "approval_accepted" || fundingStage === "in_funding";
+  const label = goToFunding ? "View Funding Conditions" : "Continue Mortgage Application";
+  const section = goToFunding ? "funding-conditions" : "mortgage-application";
+
+  return (
+    <Link
+      to="/internal/full-application"
+      search={{ section }}
+      className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      {label}
+      <ArrowRight className="ml-1 h-3.5 w-3.5" />
+    </Link>
+  );
+}
+
 function BenefitCard({ benefit, onView }: { benefit: Benefit; onView: () => void }) {
   const Icon = benefit.icon;
   const isLocked = benefit.status === "Locked";
@@ -692,12 +723,7 @@ function BenefitDetailPage({
                 This benefit unlocks immediately after your mortgage is funded and closed through
                 approvU. Complete your mortgage funding to receive your secure redemption code.
               </p>
-              <button className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-                {fundingStage === "approval_accepted" || fundingStage === "in_funding"
-                  ? "View Funding Conditions"
-                  : "Continue Mortgage Application"}
-                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </button>
+              <UnlockCta fundingStage={fundingStage} />
             </div>
           </div>
         </div>
