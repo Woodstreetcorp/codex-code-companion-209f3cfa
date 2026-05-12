@@ -2894,23 +2894,27 @@ function AddLiabilityDrawer({
 
 function AddAssetDrawer({
   tx,
+  initial,
   applicantId: _applicantId,
   applicantName: _applicantName,
   onClose,
   onSave,
 }: {
   tx: "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
+  initial: Asset | null;
   applicantId: string;
   applicantName: string;
   onClose: () => void;
   onSave: (d: Omit<Asset, "id">) => void;
 }) {
-  const [type, setType] = useState("Savings account");
-  const [institution, setInstitution] = useState("");
-  const [value, setValue] = useState("");
-  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">("");
-  const [dpMode, setDpMode] = useState<"amount" | "pct">("amount");
-  const [dpInput, setDpInput] = useState("");
+  const [type, setType] = useState(initial?.type ?? "Savings account");
+  const [institution, setInstitution] = useState(initial?.institution ?? "");
+  const [value, setValue] = useState(initial ? String(initial.value) : "");
+  const [useForDP, setUseForDP] = useState<"yes" | "no" | "">(
+    initial ? (initial.forDownPayment > 0 ? "yes" : "no") : "",
+  );
+  const [dpMode, setDpMode] = useState<"amount" | "pct">(initial?.dpMode ?? "amount");
+  const [dpInput, setDpInput] = useState(initial?.dpInput ?? "");
 
   const valueNum = Number(value) || 0;
   const dpInputNum = Number(dpInput) || 0;
@@ -2931,7 +2935,7 @@ function AddAssetDrawer({
 
   return (
     <DrawerShell
-      title="Add Asset"
+      title={initial ? "Edit Asset" : "Add Asset"}
       subtitle="Add bank, investment, gift, or other asset records for this borrower."
       onClose={onClose}
       footer={
@@ -2960,7 +2964,7 @@ function AddAssetDrawer({
                 : "cursor-not-allowed bg-muted text-muted-foreground"
             }`}
           >
-            Save Asset
+            {initial ? "Save Changes" : "Save Asset"}
           </button>
         </div>
       }
