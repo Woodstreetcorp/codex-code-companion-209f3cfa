@@ -28,6 +28,7 @@ import { Route as PortalSettingsPrivacyRouteImport } from './routes/portal.setti
 import { Route as PortalSettingsPreferencesRouteImport } from './routes/portal.settings.preferences'
 import { Route as PortalSettingsPaymentMethodsRouteImport } from './routes/portal.settings.payment-methods'
 import { Route as PortalSettingsNotificationsRouteImport } from './routes/portal.settings.notifications'
+import { Route as PortalApplicationsApplicationIdSubmitRouteImport } from './routes/portal.applications.$applicationId.submit'
 import { Route as PortalApplicationsApplicationIdQualificationSummaryRouteImport } from './routes/portal.applications.$applicationId.qualification-summary'
 import { Route as PortalApplicationsApplicationIdPropertyFinancingRouteImport } from './routes/portal.applications.$applicationId.property-financing'
 import { Route as PortalApplicationsApplicationIdProductReviewConsentRouteImport } from './routes/portal.applications.$applicationId.product-review-consent'
@@ -139,6 +140,12 @@ const PortalSettingsNotificationsRoute =
     id: '/notifications',
     path: '/notifications',
     getParentRoute: () => PortalSettingsRoute,
+  } as any)
+const PortalApplicationsApplicationIdSubmitRoute =
+  PortalApplicationsApplicationIdSubmitRouteImport.update({
+    id: '/applications/$applicationId/submit',
+    path: '/applications/$applicationId/submit',
+    getParentRoute: () => PortalRoute,
   } as any)
 const PortalApplicationsApplicationIdQualificationSummaryRoute =
   PortalApplicationsApplicationIdQualificationSummaryRouteImport.update({
@@ -256,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -288,6 +296,7 @@ export interface FileRoutesByTo {
   '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -322,6 +331,7 @@ export interface FileRoutesById {
   '/portal/applications/$applicationId/product-review-consent': typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   '/portal/applications/$applicationId/property-financing': typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   '/portal/applications/$applicationId/qualification-summary': typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  '/portal/applications/$applicationId/submit': typeof PortalApplicationsApplicationIdSubmitRoute
   '/portal/applications/$applicationId/property-financing/current-mortgage': typeof PortalApplicationsApplicationIdPropertyFinancingCurrentMortgageRoute
   '/portal/applications/$applicationId/property-financing/down-payment': typeof PortalApplicationsApplicationIdPropertyFinancingDownPaymentRoute
   '/portal/applications/$applicationId/property-financing/property': typeof PortalApplicationsApplicationIdPropertyFinancingPropertyRoute
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -422,6 +434,7 @@ export interface FileRouteTypes {
     | '/portal/applications/$applicationId/product-review-consent'
     | '/portal/applications/$applicationId/property-financing'
     | '/portal/applications/$applicationId/qualification-summary'
+    | '/portal/applications/$applicationId/submit'
     | '/portal/applications/$applicationId/property-financing/current-mortgage'
     | '/portal/applications/$applicationId/property-financing/down-payment'
     | '/portal/applications/$applicationId/property-financing/property'
@@ -578,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsNotificationsRouteImport
       parentRoute: typeof PortalSettingsRoute
     }
+    '/portal/applications/$applicationId/submit': {
+      id: '/portal/applications/$applicationId/submit'
+      path: '/applications/$applicationId/submit'
+      fullPath: '/portal/applications/$applicationId/submit'
+      preLoaderRoute: typeof PortalApplicationsApplicationIdSubmitRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/applications/$applicationId/qualification-summary': {
       id: '/portal/applications/$applicationId/qualification-summary'
       path: '/applications/$applicationId/qualification-summary'
@@ -730,6 +750,7 @@ interface PortalRouteChildren {
   PortalApplicationsApplicationIdProductReviewConsentRoute: typeof PortalApplicationsApplicationIdProductReviewConsentRoute
   PortalApplicationsApplicationIdPropertyFinancingRoute: typeof PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren
   PortalApplicationsApplicationIdQualificationSummaryRoute: typeof PortalApplicationsApplicationIdQualificationSummaryRoute
+  PortalApplicationsApplicationIdSubmitRoute: typeof PortalApplicationsApplicationIdSubmitRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
@@ -747,6 +768,8 @@ const PortalRouteChildren: PortalRouteChildren = {
     PortalApplicationsApplicationIdPropertyFinancingRouteWithChildren,
   PortalApplicationsApplicationIdQualificationSummaryRoute:
     PortalApplicationsApplicationIdQualificationSummaryRoute,
+  PortalApplicationsApplicationIdSubmitRoute:
+    PortalApplicationsApplicationIdSubmitRoute,
 }
 
 const PortalRouteWithChildren =
