@@ -350,12 +350,21 @@ export function ActiveCard({ app }: { app: ActiveApp }) {
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Next step</p>
         <p className="mt-0.5 text-sm text-foreground">{app.nextStep}</p>
       </div>
-      <Link
-        to="/internal/full-application"
-        className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-      >
-        Continue Application <ArrowRight className="ml-1 h-4 w-4" />
-      </Link>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          to="/portal/applications/$applicationId"
+          params={{ applicationId: app.id }}
+          className="inline-flex flex-1 items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Open Application Hub <ArrowRight className="ml-1 h-4 w-4" />
+        </Link>
+        <Link
+          to="/internal/full-application"
+          className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          Continue
+        </Link>
+      </div>
     </article>
   );
 }
@@ -396,6 +405,13 @@ export function SubmittedCard({ app }: { app: SubmittedApp }) {
         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Next step</p>
         <p className="mt-0.5 text-sm text-foreground">{app.nextStep}</p>
       </div>
+      <Link
+        to="/portal/applications/$applicationId"
+        params={{ applicationId: app.id }}
+        className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      >
+        Open Application Hub <ArrowRight className="ml-1 h-4 w-4" />
+      </Link>
     </article>
   );
 }
@@ -443,6 +459,13 @@ export function CompletedCard({ app }: { app: CompletedApp }) {
         <Stat2 label="Rate" value={app.rateType} />
         <Stat2 label="Maturity" value={app.maturityDate} />
       </dl>
+      <Link
+        to="/portal/applications/$applicationId"
+        params={{ applicationId: app.id }}
+        className="mt-4 inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+      >
+        View funded mortgage details
+      </Link>
     </article>
   );
 }
