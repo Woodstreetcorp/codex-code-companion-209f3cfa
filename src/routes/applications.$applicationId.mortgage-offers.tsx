@@ -524,6 +524,11 @@ function ProductCard({
             )}
           </div>
           <p className="text-xs text-muted-foreground">{p.product}</p>
+          {p.matchReason && (
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-primary">
+              <Sparkle className="h-3 w-3" /> Why this matched: <span className="font-normal text-foreground/80">{p.matchReason}</span>
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-3">
             <div className="flex items-center gap-1.5 text-[11px]">
