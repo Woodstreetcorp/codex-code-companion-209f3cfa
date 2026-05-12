@@ -73,7 +73,10 @@ function PrivacyPage() {
                 <ConsentBadge status={c.status} />
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
-                <button className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+                <button
+                  onClick={() => toast(`${c.name} — opening details`, { description: "Full document opens in a new tab in production." })}
+                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                >
                   <FileText className="h-3.5 w-3.5" /> View details
                 </button>
                 {c.status === "Not signed" ? (
