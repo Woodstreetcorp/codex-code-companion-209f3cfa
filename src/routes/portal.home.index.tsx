@@ -53,6 +53,7 @@ function fmt(n: number) {
 
 function MyMortgagePage() {
   const [linked, setLinked] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
   const daysToMaturity = daysUntil(MORTGAGE.maturityDate);
   const monthsToMaturity = Math.round(daysToMaturity / 30);
   const paidPct = Math.round(((MORTGAGE.originalAmount - MORTGAGE.balance) / MORTGAGE.originalAmount) * 100);
