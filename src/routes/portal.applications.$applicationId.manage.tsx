@@ -186,9 +186,8 @@ function ManagePage() {
               />
             )}
           </div>
-        </section>
-
         </div>
+      </section>
     </ApplicationShell>
   );
 }
