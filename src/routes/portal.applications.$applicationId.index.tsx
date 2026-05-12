@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BadgeCheck, FileText, ListChecks, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowRight, BadgeCheck, FileText, History, ListChecks, MessageSquare, Sparkles, Users } from "lucide-react";
 import {
   ApplicationShell,
   NotFoundApplication,
@@ -45,6 +45,20 @@ function SnapshotPage() {
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Application timeline</p>
+          <p className="mt-1 text-sm text-muted-foreground">Every milestone, document request, and lender update — in chronological order.</p>
+          <Link to="/portal/applications/$applicationId/timeline" params={{ applicationId }} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
+            <History className="h-3.5 w-3.5" /> Open timeline
+          </Link>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Co-applicants</p>
+          <p className="mt-1 text-sm text-muted-foreground">Invite a spouse, partner, guarantor, or co-signer and track their consent status.</p>
+          <a href={`/applications/${applicationId}/co-borrower`} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80">
+            <Users className="h-3.5 w-3.5" /> Manage co-borrowers
+          </a>
+        </div>
         <div className="rounded-2xl border border-border bg-card p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-secondary">Qualification summary</p>
           <p className="mt-1 text-sm text-muted-foreground">A friendly overview of your initial path, selected offer, and what we still need to verify.</p>
