@@ -159,9 +159,10 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
     type: "Credit Card",
     balance: 2480,
     monthlyPayment: 75,
-    ownership: "Individual",
-    payOffAtClose: false,
-    include: true,
+    shared: false,
+    sharedWith: [],
+    paymentHistory: "R1",
+    payoffPlan: "leave_open",
   },
   {
     id: "lia-2",
@@ -169,9 +170,10 @@ const SEED_LIABILITIES_PRIMARY: Liability[] = [
     type: "Auto Loan",
     balance: 14900,
     monthlyPayment: 412,
-    ownership: "Individual",
-    payOffAtClose: false,
-    include: true,
+    shared: false,
+    sharedWith: [],
+    paymentHistory: "R1",
+    payoffPlan: "leave_open",
   },
 ];
 
