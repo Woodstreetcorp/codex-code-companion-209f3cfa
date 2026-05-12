@@ -79,7 +79,12 @@ plus `/saved` (list) and `/portal/tools` (index).
 
 ## Admin Frontend
 
-❌ **Not yet built.** The following surfaces from the QA brief have no routes in `src/routes/`:
+> **Note:** Admin routes are intentionally **not part of this borrower/frontend project**.
+> The admin panel is being built in a **separate Lovable project** and will be merged
+> by Codex later. See [`project-boundary.md`](./project-boundary.md).
+
+The following surfaces from the QA brief have no routes in `src/routes/` here
+because they belong to the separate Admin Lovable project:
 
 - Admin Dashboard, Sidebar, Top nav
 - Partner Growth Engine, Partners, Offer Partners, Marketing Attribution
@@ -93,4 +98,5 @@ plus `/saved` (list) and `/portal/tools` (index).
 - Condition Engine, Document Vault, Task Center, Property Intelligence
 - Lenders, Products, Rate/Pricing profiles, Settings, Roles & Permissions
 
-Recommendation: scope admin as a separate build phase before Codex wiring.
+Recommendation: do not build admin surfaces in this project. Codex will merge
+the borrower frontend with the separate Admin Lovable project before backend wiring.

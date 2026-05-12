@@ -2,6 +2,22 @@
 
 _Last updated: 2026-05-12. Tells Codex what to wire next._
 
+## Important Codex Merge Context
+
+- This Lovable project is the **borrower / frontend project only**.
+- It should **not** be expected to contain admin routes.
+- **Do not treat missing admin routes here as bugs.** They live in a separate
+  Admin Lovable project.
+- The admin frontend code will arrive from a **separate Lovable project**.
+- Codex must **merge both Lovable projects first**, then perform final database
+  wiring against the unified codebase.
+- Borrower routes must remain under `/`, `/qualification`, `/portal`, and
+  `/applications`.
+- Admin routes (from the other project) should later live under `/admin` or
+  `/internal/admin` after the merge.
+- See [`project-boundary.md`](./project-boundary.md) for the full in-scope /
+  out-of-scope breakdown.
+
 ## 1. Tables needed (Lovable Cloud / Supabase)
 
 - `profiles` (1:1 `auth.users`) — name, phone, addresses, KYC status
@@ -106,4 +122,8 @@ _Last updated: 2026-05-12. Tells Codex what to wire next._
 
 ## 7. Out-of-scope for Codex (needs design + build first)
 
-The entire admin surface (see `frontend-inventory.md` § Admin Frontend). Codex should not invent these — the build phase needs to scaffold the admin shell, partner directory, offer builder, application command centre, etc. before any backend wiring on the admin side.
+The entire admin surface (see `frontend-inventory.md` § Admin Frontend) is
+**out of scope for this project**. Codex should not invent admin routes here
+and should not flag their absence as a bug. The admin shell, partner directory,
+offer builder, application command centre, etc. are being built in a separate
+Lovable project and will be merged in before backend wiring on the admin side.
