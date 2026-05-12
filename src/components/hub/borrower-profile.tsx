@@ -19,6 +19,7 @@ import {
   Pencil,
   PiggyBank,
   Plus,
+  Search,
   ShieldCheck,
   Trash2,
   User,
@@ -700,7 +701,7 @@ function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) =
     <div className="space-y-6">
       <Group title="Current Address">
         <Field label="Street address" required full>
-          <Input placeholder="123 Main Street" />
+          <AddressAutocompleteInput placeholder="Start typing your address…" />
         </Field>
         <Field label="Unit / Suite">
           <Input />
