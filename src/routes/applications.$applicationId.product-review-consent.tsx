@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Lock, Mail, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Mail, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   CompletionSummaryPanel,
@@ -237,7 +237,16 @@ function ProductReviewConsentPage() {
         </div>
 
         <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Per-borrower consent</p>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold uppercase text-muted-foreground">Per-borrower consent</p>
+            <Link
+              to="/applications/$applicationId/co-borrower"
+              params={{ applicationId }}
+              className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-2.5 py-1 text-[11px] font-medium hover:bg-muted"
+            >
+              <Users className="h-3 w-3" /> Manage co-borrowers
+            </Link>
+          </div>
           <ul className="divide-y divide-border rounded-xl border border-border">
             {BORROWERS.map((b) => (
               <li key={b.name} className="flex items-center justify-between px-3 py-2.5 text-sm">
