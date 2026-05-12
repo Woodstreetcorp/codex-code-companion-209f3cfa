@@ -36,6 +36,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { BorrowerProfilePage } from "./borrower-profile";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 type TxType = "Purchase" | "Pre-Purchase" | "Refinance" | "Renewal";
@@ -353,6 +354,7 @@ export function MortgageApplicationContent() {
   const [applicants, setApplicants] = useState<Applicant[]>(INITIAL_APPLICANTS);
   const [addOpen, setAddOpen] = useState(false);
   const [accessFor, setAccessFor] = useState<Applicant | null>(null);
+  const [profileFor, setProfileFor] = useState<Applicant | null>(null);
 
   const widgets = useMemo(() => {
     if (tx === "Pre-Purchase") return PRE_PURCHASE_WIDGETS;
@@ -396,6 +398,15 @@ export function MortgageApplicationContent() {
   const handleRemove = (id: string) => {
     setApplicants((prev) => prev.filter((a) => a.id !== id));
   };
+
+  if (profileFor) {
+    return (
+      <BorrowerProfilePage
+        applicant={profileFor}
+        onBack={() => setProfileFor(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -541,6 +552,7 @@ export function MortgageApplicationContent() {
               onResend={() => handleResend(a.id)}
               onManageAccess={() => setAccessFor(a)}
               onRemove={() => handleRemove(a.id)}
+              onOpen={() => setProfileFor(a)}
             />
           ))}
         </div>
@@ -720,11 +732,13 @@ function BorrowerWidgetCard({
   onResend,
   onManageAccess,
   onRemove,
+  onOpen,
 }: {
   applicant: Applicant;
   onResend: () => void;
   onManageAccess: () => void;
   onRemove: () => void;
+  onOpen: () => void;
 }) {
   const isInvitePending =
     applicant.inviteStatus === "Invite Sent" ||
@@ -773,7 +787,10 @@ function BorrowerWidgetCard({
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {applicant.isPrimary ? (
-            <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted">
+            <button
+              onClick={onOpen}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
               Review <ArrowRight className="h-3.5 w-3.5" />
             </button>
           ) : isInvitePending ? (
@@ -784,7 +801,10 @@ function BorrowerWidgetCard({
               <Mail className="h-3.5 w-3.5" /> Resend Invite
             </button>
           ) : (
-            <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
+            <button
+              onClick={onOpen}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
               Continue <ArrowRight className="h-3.5 w-3.5" />
             </button>
           )}
