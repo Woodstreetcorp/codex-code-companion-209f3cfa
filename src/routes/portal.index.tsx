@@ -1,14 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowRight,
+  Bell,
+  BellRing,
   Calculator,
+  CalendarClock,
   CheckCircle2,
   Clock,
   FileText,
   Inbox,
   Lock,
+  MessageSquare,
+  Phone,
   Plus,
+  ShieldCheck,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import {
@@ -32,6 +43,7 @@ import {
   SubmittedCard,
   SummaryCard,
 } from "@/components/portal/ui";
+import { useSavedScenarios } from "@/components/portal/tools-shared";
 
 export const Route = createFileRoute("/portal/")({
   head: () => ({
@@ -48,6 +60,49 @@ export const Route = createFileRoute("/portal/")({
 });
 
 const FIRST_NAME = "Alex";
+
+// ─── Stage rail (mirrors ApplicationShell) ──────────────────────────────
+const STAGES = [
+  "Snapshot",
+  "Application",
+  "Submitted",
+  "Lender Review",
+  "Approved",
+  "Conditions",
+  "Closing",
+] as const;
+
+function stageFromStatus(status: string): number {
+  const s = status.toLowerCase();
+  if (s.includes("closing") || s.includes("ready for closing")) return 6;
+  if (s.includes("conditions")) return 5;
+  if (s.includes("approved")) return 4;
+  if (s.includes("lender") || s.includes("review")) return 3;
+  if (s.includes("submitted")) return 2;
+  if (s.includes("snapshot")) return 0;
+  return 1;
+}
+
+// ─── Rate watch (mock current rates) ────────────────────────────────────
+const RATES = {
+  fiveYrFixed: { rate: 4.79, prev: 4.84, ts: "May 12, 2026" },
+  fiveYrVariable: { rate: 5.20, prev: 5.20, ts: "May 12, 2026" },
+};
+
+// ─── Advisor (mock) ─────────────────────────────────────────────────────
+const ADVISOR = {
+  name: "Jordan Lee",
+  title: "Mortgage Advisor",
+  initials: "JL",
+  responseTime: "Usually responds within 1 business hour",
+};
+
+// ─── Disclosures (mock state) ───────────────────────────────────────────
+const DISCLOSURES = [
+  { id: "d1", name: "Privacy & Information Collection", reviewed: true },
+  { id: "d2", name: "Credit Bureau Consent", reviewed: true },
+  { id: "d3", name: "Cost of Borrowing Disclosure", reviewed: false },
+];
 
 const ACTIVITY = [
   { date: "May 11", text: "You selected the Best Value Fixed Offer" },
@@ -67,6 +122,19 @@ function PortalDashboard() {
   const atLimit = counts.active >= MAX_ACTIVE_APPLICATIONS;
   const hasFunded = COMPLETED.length > 0;
   const activeIncomplete = ACTIVE[0];
+  const submittedFirst = SUBMITTED[0];
+  const fundedFirst = COMPLETED[0];
+  const fundedMaturityMonths = fundedFirst ? monthsUntil(fundedFirst.maturityDate) : null;
+  const showRenewalNudge = fundedMaturityMonths !== null && fundedMaturityMonths <= 6 && fundedMaturityMonths >= 0;
+
+  // Build the strongest single next-best-action
+  const nba = buildNextBestAction({
+    activeIncomplete, submittedFirst,
+    docsPending: counts.docsPending,
+    conditionsOutstanding: counts.conditions,
+    showRenewalNudge,
+    fundedMaturityMonths,
+  });
 
   return (
     <div className="space-y-8">
@@ -118,41 +186,27 @@ function PortalDashboard() {
         </Alert>
       )}
 
-      {/* Next Best Action */}
-      {activeIncomplete && (
-        <section
-          aria-label="Next best action"
-          className="rounded-3xl border border-secondary/30 bg-card p-5 shadow-sm sm:p-6"
-        >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-4">
-              <span className="rounded-2xl bg-secondary/15 p-3 text-secondary">
-                <Sparkles className="h-6 w-6" />
-              </span>
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
-                  Next best action
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground">
-                  Continue your purchase application
-                </p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  APP-{activeIncomplete.id.replace(/^APP-/, "")} · {activeIncomplete.property}
-                </p>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-yellow/30 px-2.5 py-1 text-xs font-medium text-foreground">
-                  <Clock className="h-3.5 w-3.5" /> Expires in {activeIncomplete.daysToExpiry} days
-                </div>
-              </div>
-            </div>
-            <Link
-              to="/internal/full-application"
-              className="inline-flex shrink-0 items-center justify-center rounded-md bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90"
-            >
-              Continue Application <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Link>
-          </div>
-        </section>
+      {/* Next Best Action (enhanced) */}
+      {nba && <NextBestActionCard nba={nba} />}
+
+      {/* Application progress (stage 1–7) */}
+      {(activeIncomplete || submittedFirst) && (
+        <ApplicationProgressWidget
+          appId={(submittedFirst ?? activeIncomplete!).id}
+          property={(submittedFirst ?? activeIncomplete!).property}
+          status={submittedFirst ? submittedFirst.stage : activeIncomplete!.status}
+          progress={submittedFirst ? submittedFirst.progress : activeIncomplete!.completion}
+          eta={submittedFirst ? "Est. funding May 30" : `Expires in ${activeIncomplete!.daysToExpiry} days`}
+        />
       )}
+
+      {/* Renewal countdown (if mortgage on file and within 6 months) */}
+      {showRenewalNudge && fundedFirst && fundedMaturityMonths !== null && (
+        <RenewalCountdownCard funded={fundedFirst} months={fundedMaturityMonths} />
+      )}
+
+      {/* Disclosure status pill */}
+      <DisclosureStatusRow />
 
       {/* Summary cards */}
       <section aria-label="Summary">
@@ -195,6 +249,15 @@ function PortalDashboard() {
           </p>
         )}
       </section>
+
+      {/* Rate watch + Advisor */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <RateWatchCard />
+        <AdvisorCard />
+      </section>
+
+      {/* Saved scenarios from tools */}
+      <SavedScenariosCard />
 
       {/* Two-column: Documents/Conditions + Offers */}
       <section className="grid gap-6 lg:grid-cols-2">
