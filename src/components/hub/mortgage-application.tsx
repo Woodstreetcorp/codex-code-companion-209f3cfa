@@ -431,6 +431,7 @@ export function MortgageApplicationContent() {
       <BorrowerProfilePage
         applicant={profileFor}
         coApplicants={applicants.filter((a) => a.id !== profileFor.id)}
+        tx={tx}
         liabilities={liabilities}
         onUpsertLiability={upsertLiability}
         onRemoveLiability={removeLiability}
