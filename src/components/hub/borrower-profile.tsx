@@ -79,13 +79,27 @@ type IncomeSource = {
 
 type Liability = {
   id: string;
-  creditor: string;
-  type: string;
+  creditor: string; // Name of lender
+  type: string; // Type of debt
   balance: number;
   monthlyPayment: number;
-  ownership: "Individual" | "Joint" | "Shared";
-  payOffAtClose: boolean;
-  include: boolean;
+  shared: boolean;
+  sharedWith: string[];
+  paymentHistory:
+    | ""
+    | "R1"
+    | "R2"
+    | "R3"
+    | "R4"
+    | "R5"
+    | "R7"
+    | "R8"
+    | "R9";
+  payoffPlan:
+    | ""
+    | "payoff_before_closing"
+    | "leave_open"
+    | "include_in_loan";
 };
 
 type Asset = {
