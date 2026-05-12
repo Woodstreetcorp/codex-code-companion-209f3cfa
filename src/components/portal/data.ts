@@ -1,9 +1,12 @@
 import {
   Calculator,
+  CalendarDays,
   Clock,
   FileText,
+  HelpCircle,
   Home,
   Inbox,
+  MessageSquare,
   RefreshCw,
   Settings,
   Wallet,
@@ -374,6 +377,10 @@ export type PortalRoutePath =
   | "/portal"
   | "/portal/applications"
   | "/portal/documents"
+  | "/portal/messages"
+  | "/portal/notifications"
+  | "/portal/appointments"
+  | "/portal/help"
   | "/portal/wallet"
   | "/portal/tools"
   | "/portal/settings";
@@ -387,6 +394,10 @@ export const PORTAL_NAV: {
   { to: "/portal", label: "Overview", icon: Home, exact: true },
   { to: "/portal/applications", label: "Applications", icon: Inbox },
   { to: "/portal/documents", label: "Document Vault", icon: FileText },
+  { to: "/portal/messages", label: "Messages", icon: MessageSquare },
+  { to: "/portal/notifications", label: "Notifications", icon: Bell },
+  { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
+  { to: "/portal/help", label: "Help Center", icon: HelpCircle },
   { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
   { to: "/portal/settings", label: "Settings", icon: Settings },

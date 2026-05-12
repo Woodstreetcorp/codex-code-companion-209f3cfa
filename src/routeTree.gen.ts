@@ -18,7 +18,11 @@ import { Route as PortalIndexRouteImport } from './routes/portal.index'
 import { Route as PortalWalletRouteImport } from './routes/portal.wallet'
 import { Route as PortalToolsRouteImport } from './routes/portal.tools'
 import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
+import { Route as PortalNotificationsRouteImport } from './routes/portal.notifications'
+import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalHelpRouteImport } from './routes/portal.help'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
+import { Route as PortalAppointmentsRouteImport } from './routes/portal.appointments'
 import { Route as InternalMortgageOffersRouteImport } from './routes/internal.mortgage-offers'
 import { Route as InternalFullApplicationRouteImport } from './routes/internal.full-application'
 import { Route as InternalBorrowerDashboardRouteImport } from './routes/internal.borrower-dashboard'
@@ -105,9 +109,29 @@ const PortalSettingsRoute = PortalSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalMessagesRoute = PortalMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalHelpRoute = PortalHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
   id: '/documents',
   path: '/documents',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalAppointmentsRoute = PortalAppointmentsRouteImport.update({
+  id: '/appointments',
+  path: '/appointments',
   getParentRoute: () => PortalRoute,
 } as any)
 const InternalMortgageOffersRoute = InternalMortgageOffersRouteImport.update({
@@ -350,7 +374,11 @@ export interface FileRoutesByFullPath {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
+  '/portal/messages': typeof PortalMessagesRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -401,7 +429,11 @@ export interface FileRoutesByTo {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
+  '/portal/messages': typeof PortalMessagesRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -454,7 +486,11 @@ export interface FileRoutesById {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/documents': typeof PortalDocumentsRoute
+  '/portal/help': typeof PortalHelpRoute
+  '/portal/messages': typeof PortalMessagesRoute
+  '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/settings': typeof PortalSettingsRouteWithChildren
   '/portal/tools': typeof PortalToolsRouteWithChildren
   '/portal/wallet': typeof PortalWalletRoute
@@ -508,7 +544,11 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
+    | '/portal/messages'
+    | '/portal/notifications'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -559,7 +599,11 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
+    | '/portal/messages'
+    | '/portal/notifications'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -611,7 +655,11 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/appointments'
     | '/portal/documents'
+    | '/portal/help'
+    | '/portal/messages'
+    | '/portal/notifications'
     | '/portal/settings'
     | '/portal/tools'
     | '/portal/wallet'
@@ -737,11 +785,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalSettingsRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/notifications': {
+      id: '/portal/notifications'
+      path: '/notifications'
+      fullPath: '/portal/notifications'
+      preLoaderRoute: typeof PortalNotificationsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/messages': {
+      id: '/portal/messages'
+      path: '/messages'
+      fullPath: '/portal/messages'
+      preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/help': {
+      id: '/portal/help'
+      path: '/help'
+      fullPath: '/portal/help'
+      preLoaderRoute: typeof PortalHelpRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/documents': {
       id: '/portal/documents'
       path: '/documents'
       fullPath: '/portal/documents'
       preLoaderRoute: typeof PortalDocumentsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/appointments': {
+      id: '/portal/appointments'
+      path: '/appointments'
+      fullPath: '/portal/appointments'
+      preLoaderRoute: typeof PortalAppointmentsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/internal/mortgage-offers': {
@@ -1084,7 +1160,11 @@ const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
 )
 
 interface PortalRouteChildren {
+  PortalAppointmentsRoute: typeof PortalAppointmentsRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
+  PortalHelpRoute: typeof PortalHelpRoute
+  PortalMessagesRoute: typeof PortalMessagesRoute
+  PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalSettingsRoute: typeof PortalSettingsRouteWithChildren
   PortalToolsRoute: typeof PortalToolsRouteWithChildren
   PortalWalletRoute: typeof PortalWalletRoute
@@ -1097,7 +1177,11 @@ interface PortalRouteChildren {
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalAppointmentsRoute: PortalAppointmentsRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
+  PortalHelpRoute: PortalHelpRoute,
+  PortalMessagesRoute: PortalMessagesRoute,
+  PortalNotificationsRoute: PortalNotificationsRoute,
   PortalSettingsRoute: PortalSettingsRouteWithChildren,
   PortalToolsRoute: PortalToolsRouteWithChildren,
   PortalWalletRoute: PortalWalletRoute,

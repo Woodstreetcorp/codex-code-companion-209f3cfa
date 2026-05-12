@@ -30,13 +30,14 @@ export function PortalShell({ children }: { children: ReactNode }) {
             <span className="font-semibold tracking-tight">approvU</span>
           </Link>
           <div className="flex items-center gap-2">
-            <button
+            <Link
+              to="/portal/notifications"
               aria-label="Notifications"
               className="relative rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <Bell className="h-5 w-5" />
               <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-coral" />
-            </button>
+            </Link>
             <Link
               to="/portal/settings/profile"
               aria-label="Account"
