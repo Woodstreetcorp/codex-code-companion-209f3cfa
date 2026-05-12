@@ -314,7 +314,10 @@ function QualifiedProductsPage() {
             </p>
           </div>
         </div>
-        <button className="hidden shrink-0 items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted sm:inline-flex">
+        <button
+          onClick={() => window.open("https://docs.lovable.dev", "_blank", "noopener")}
+          className="hidden shrink-0 items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted sm:inline-flex"
+        >
           <Info className="h-3.5 w-3.5" /> Learn More
         </button>
       </div>

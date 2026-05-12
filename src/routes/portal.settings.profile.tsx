@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   AtSign,
   BadgeCheck,
@@ -310,10 +311,20 @@ function ProfilePage() {
           Download a copy of your data, or permanently close your account. Closing removes access; we may retain records required by law.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+          <button
+            onClick={() => toast.success("Data export requested", { description: "We'll email a download link within 24 hours." })}
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
             Download my data
           </button>
-          <button className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90">
+          <button
+            onClick={() => {
+              if (window.confirm("Close your account? This removes access. Some records are retained as required by law.")) {
+                toast.success("Account closure request submitted");
+              }
+            }}
+            className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
+          >
             Close account
           </button>
         </div>
@@ -349,7 +360,12 @@ function VerifyRow({
           <CheckCircle2 className="h-3 w-3" /> Verified
         </span>
       ) : (
-        <button className="text-xs font-medium text-primary hover:underline">Verify</button>
+        <button
+          onClick={() => toast(`Verification link sent for ${label.toLowerCase()}`)}
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          Verify
+        </button>
       )}
     </div>
   );

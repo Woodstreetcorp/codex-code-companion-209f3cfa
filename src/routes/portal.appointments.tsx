@@ -128,7 +128,10 @@ function AppointmentsPage() {
                   <span className="inline-flex items-center gap-1"><ModeIcon mode={a.mode} /> {a.mode}</span>
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <button className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                  <button
+                    onClick={() => toast("Reschedule request sent", { description: "Your advisor will reach out with new times." })}
+                    className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                  >
                     Reschedule
                   </button>
                   <button
