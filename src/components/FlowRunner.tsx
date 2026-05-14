@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MortgageSnapshot } from "@/components/MortgageSnapshot";
 import {
+  storeQualificationHandoff,
+  submitQualification,
+  type BorrowerQualificationResponse,
+  type QualificationContact,
+} from "@/lib/api/borrowerQualificationApi";
+import {
   calculateMinimumDownPayment,
   formatCAD,
   ltv,
@@ -21,6 +27,8 @@ import { classifyLane, getMinimumDownPaymentPolicy, mapUsage } from "@/lib/polic
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
 
+type ContactState = QualificationContact;
+
 function formatCurrency(v: string) {
   const digits = v.replace(/[^0-9]/g, "");
   if (!digits) return "";
@@ -34,6 +42,17 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
   const [validatedAddresses, setValidatedAddresses] = useState<Record<string, boolean>>({});
+  const [contact, setContact] = useState<ContactState>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    consentAccepted: false,
+  });
+  const [qualificationResult, setQualificationResult] =
+    useState<BorrowerQualificationResponse | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [savingQualification, setSavingQualification] = useState(false);
 
   const visible = useMemo(
     () => flow.questions.filter((q) => !q.showIf || q.showIf(answers)),
@@ -192,9 +211,45 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
     nextRef.current = next;
   });
   const back = () => {
-    if (done) setDone(false);
+    if (done) {
+      setDone(false);
+      setQualificationResult(null);
+      setSubmitError(null);
+    }
     else if (index > 0) setIndex((i) => i - 1);
     else navigate({ to: "/" });
+  };
+
+  const submitForSnapshot = async () => {
+    if (!contact.firstName.trim() || !contact.lastName.trim() || !contact.email.trim()) {
+      setSubmitError("Please add your first name, last name, and email before continuing.");
+      return;
+    }
+    if (!contact.email.includes("@")) {
+      setSubmitError("Please enter a valid email address.");
+      return;
+    }
+    if (!contact.consentAccepted) {
+      setSubmitError("Please confirm consent so we can save your qualification.");
+      return;
+    }
+
+    setSavingQualification(true);
+    setSubmitError(null);
+
+    try {
+      const result = await submitQualification(flowKey, answers, contact);
+      storeQualificationHandoff(result);
+      setQualificationResult(result);
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "We could not save your qualification right now. Please try again.",
+      );
+    } finally {
+      setSavingQualification(false);
+    }
   };
 
   return (
@@ -400,19 +455,143 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
           </div>
         )}
 
-        {done && (
-          <MortgageSnapshot
-            flowKey={flowKey}
-            answers={answers}
-            visible={visible}
-            onEdit={back}
+        {done && !qualificationResult && (
+          <QualificationSubmitStep
+            contact={contact}
+            onContactChange={setContact}
+            error={submitError}
+            saving={savingQualification}
+            onBack={back}
+            onSubmit={submitForSnapshot}
           />
+        )}
+
+        {done && qualificationResult && (
+          <>
+            <div className="mb-5 rounded-2xl border border-secondary/30 bg-secondary/5 p-4 text-sm text-foreground">
+              <p className="font-semibold">Your qualification was saved.</p>
+              <p className="mt-1 text-muted-foreground">
+                Reference {qualificationResult.public_reference}. Your snapshot below still uses
+                the current local preview calculations until the server-side Snapshot API is added.
+              </p>
+            </div>
+            <MortgageSnapshot
+              flowKey={flowKey}
+              answers={answers}
+              visible={visible}
+              onEdit={back}
+            />
+          </>
         )}
       </main>
 
       <footer className="mx-auto max-w-3xl px-4 pb-10 text-center text-xs text-muted-foreground">
         Information shown helps us understand your situation — it is not a mortgage approval.
       </footer>
+    </div>
+  );
+}
+
+function QualificationSubmitStep({
+  contact,
+  onContactChange,
+  error,
+  saving,
+  onBack,
+  onSubmit,
+}: {
+  contact: ContactState;
+  onContactChange: (next: ContactState) => void;
+  error: string | null;
+  saving: boolean;
+  onBack: () => void;
+  onSubmit: () => void;
+}) {
+  const update = (patch: Partial<ContactState>) => {
+    onContactChange({ ...contact, ...patch });
+  };
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <p className="text-xs font-medium uppercase tracking-widest text-secondary">
+        Almost there
+      </p>
+      <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
+        Save your qualification before viewing your snapshot.
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        We'll save your answers securely so an approvU team member can follow up if you
+        choose to continue after your preview.
+      </p>
+
+      <div className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="First name">
+            <Input
+              value={contact.firstName}
+              onChange={(e) => update({ firstName: e.target.value })}
+              autoComplete="given-name"
+              disabled={saving}
+            />
+          </Field>
+          <Field label="Last name">
+            <Input
+              value={contact.lastName}
+              onChange={(e) => update({ lastName: e.target.value })}
+              autoComplete="family-name"
+              disabled={saving}
+            />
+          </Field>
+          <Field label="Email address">
+            <Input
+              type="email"
+              value={contact.email}
+              onChange={(e) => update({ email: e.target.value })}
+              autoComplete="email"
+              disabled={saving}
+            />
+          </Field>
+          <Field label="Phone (optional)">
+            <Input
+              type="tel"
+              value={contact.phone ?? ""}
+              onChange={(e) => update({ phone: e.target.value })}
+              autoComplete="tel"
+              disabled={saving}
+            />
+          </Field>
+        </div>
+
+        <label className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={contact.consentAccepted}
+            onChange={(e) => update({ consentAccepted: e.target.checked })}
+            disabled={saving}
+            className="mt-1 h-4 w-4 rounded border-border"
+          />
+          <span>
+            I agree that approvU may save my qualification answers and contact me about my
+            mortgage options. This is not a mortgage approval and does not affect my credit.
+          </span>
+        </label>
+
+        {error && (
+          <div className="mt-4 rounded-xl border border-accent/40 bg-accent/10 p-3 text-sm text-accent">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+          <Button variant="ghost" onClick={onBack} disabled={saving}>
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back
+          </Button>
+          <Button onClick={onSubmit} disabled={saving} size="lg">
+            {saving ? "Saving your qualification..." : "Save and view snapshot"}
+            {!saving && <ArrowRight className="ml-1 h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
