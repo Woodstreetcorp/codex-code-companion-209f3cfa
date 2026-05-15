@@ -631,9 +631,9 @@ function getQualificationPublicReference(): string | null {
 function DocumentStatusPill({ status }: { status?: string | null }) {
   const normalized = (status ?? "").toLowerCase();
   const map: Record<string, { label: string; tone: string }> = {
-    uploaded: { label: "Uploaded", tone: "bg-secondary/15 text-secondary" },
+    uploaded: { label: "Under Review", tone: "bg-secondary/15 text-secondary" },
     reviewed: { label: "Reviewed", tone: "bg-mint/25 text-foreground" },
-    rejected: { label: "Needs attention", tone: "bg-coral/15 text-coral" },
+    rejected: { label: "Needs Attention", tone: "bg-coral/15 text-coral" },
   };
   const resolved = map[normalized] ?? {
     label: status ?? "Unknown",
@@ -1011,11 +1011,11 @@ function isOverdue(due?: string | null): boolean {
 function DocumentRequestStatusPill({ status }: { status?: string | null }) {
   const normalized = (status ?? "").toLowerCase();
   const map: Record<string, { label: string; tone: string }> = {
-    requested: { label: "Requested", tone: "bg-yellow/20 text-foreground" },
-    uploaded: { label: "Uploaded", tone: "bg-secondary/15 text-secondary" },
-    reviewed: { label: "Reviewed", tone: "bg-mint/25 text-foreground" },
-    rejected: { label: "Needs attention", tone: "bg-coral/15 text-coral" },
-    waived: { label: "Waived", tone: "bg-muted text-muted-foreground" },
+    requested: { label: "Needs Action", tone: "bg-yellow/20 text-foreground" },
+    uploaded: { label: "Waiting for Review", tone: "bg-secondary/15 text-secondary" },
+    reviewed: { label: "Complete", tone: "bg-mint/25 text-foreground" },
+    rejected: { label: "Needs Attention", tone: "bg-coral/15 text-coral" },
+    waived: { label: "Not Required", tone: "bg-muted text-muted-foreground" },
   };
   const resolved = map[normalized] ?? {
     label: status ?? "Unknown",
@@ -1026,6 +1026,50 @@ function DocumentRequestStatusPill({ status }: { status?: string | null }) {
       {resolved.label}
     </span>
   );
+}
+
+// ─── Requested Documents config & helpers ────────────
+
+const REQUEST_STATUS_CONFIG: Record<
+  string,
+  { label: string; message: string; pillTone: string }
+> = {
+  requested: {
+    label: "Needs Action",
+    message:
+      "Please upload this document so our team can continue reviewing your file.",
+    pillTone: "bg-yellow/20 text-foreground",
+  },
+  rejected: {
+    label: "Needs Attention",
+    message:
+      "This document needs attention. Please upload a replacement or contact the approvU team.",
+    pillTone: "bg-coral/15 text-coral",
+  },
+  uploaded: {
+    label: "Waiting for Review",
+    message: "Uploaded. Our team will review this document shortly.",
+    pillTone: "bg-secondary/15 text-secondary",
+  },
+  reviewed: {
+    label: "Complete",
+    message: "Reviewed by the approvU team.",
+    pillTone: "bg-mint/25 text-foreground",
+  },
+  waived: {
+    label: "Not Required",
+    message: "This document is no longer required.",
+    pillTone: "bg-muted text-muted-foreground",
+  },
+};
+
+function fulfilledDocStatusLabel(status?: string | null): string {
+  const map: Record<string, string> = {
+    uploaded: "Waiting for review",
+    reviewed: "Reviewed",
+    rejected: "Needs attention",
+  };
+  return map[(status ?? "").toLowerCase()] ?? status ?? "Uploaded";
 }
 
 // ─── Requested Documents (API-connected) ─────────────
@@ -1065,7 +1109,6 @@ function RequestedDocumentsView() {
     if (openRef === ref) {
       setOpenRef(null);
     } else {
-      // Opening a different card — reset form state
       setOpenRef(ref);
       setUploadFile(null);
       setUploadNotes("");
@@ -1103,17 +1146,285 @@ function RequestedDocumentsView() {
       setUploadFile(null);
       setUploadNotes("");
       if (fileInputRef.current) fileInputRef.current.value = "";
-      // Refresh the list so the card reflects the new status
       void fetchRequests();
     } catch (err) {
       setUploadError(
         err instanceof Error
           ? err.message
-          : "We could not upload this document for the request. Please check the file and try again.",
+          : "We could not upload this document. Please check the file and try again.",
       );
     } finally {
       setUploading(false);
     }
+  }
+
+  // Group requests into sections
+  const actionable = docRequests.filter((r) => r.status === "requested");
+  const rejected = docRequests.filter((r) => r.status === "rejected");
+  const inReview = docRequests.filter((r) => r.status === "uploaded");
+  const complete = docRequests.filter(
+    (r) => r.status === "reviewed" || r.status === "waived",
+  );
+
+  function RequestCard({ req }: { req: BorrowerDocumentRequest }) {
+    const ref = req.public_reference ?? "";
+    const isOpen = openRef === ref;
+    const canUpload = req.status === "requested" || req.status === "rejected";
+    const isRejected = req.status === "rejected";
+    const isComplete = req.status === "reviewed" || req.status === "waived";
+    const overdue = isOverdue(req.due_at);
+    const dueSoon = isDueSoon(req.due_at);
+    const config = REQUEST_STATUS_CONFIG[req.status ?? ""] ?? null;
+
+    return (
+      <article
+        className={`rounded-2xl border bg-card shadow-sm ${
+          isComplete
+            ? "border-border opacity-75"
+            : isRejected
+              ? "border-coral/40"
+              : overdue
+                ? "border-coral/40"
+                : "border-border"
+        }`}
+      >
+        <div className="p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            {/* Left: title + meta */}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-foreground">
+                  {req.title ?? documentTypeLabel(req.document_type)}
+                </p>
+                <DocumentRequestStatusPill status={req.status} />
+                {req.required === true && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Required
+                  </span>
+                )}
+                {req.required === false && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Optional
+                  </span>
+                )}
+              </div>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {documentTypeLabel(req.document_type)}
+              </p>
+
+              {/* Per-status contextual message */}
+              {config && (
+                <p className="mt-1.5 text-sm text-muted-foreground">{config.message}</p>
+              )}
+
+              {req.description && (
+                <p className="mt-1.5 text-sm text-muted-foreground">{req.description}</p>
+              )}
+
+              {/* Dates */}
+              <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                {req.due_at && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                      overdue
+                        ? "bg-coral/15 text-coral"
+                        : dueSoon
+                          ? "bg-yellow/20 text-foreground"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    <Clock className="h-3 w-3" />
+                    {overdue ? "Overdue · " : "Due "}
+                    {formatShortDate(req.due_at)}
+                  </span>
+                )}
+                {req.requested_at && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                    Requested {formatShortDate(req.requested_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right: upload / re-upload button */}
+            {canUpload && (
+              <button
+                type="button"
+                onClick={() => toggleUploadForm(ref)}
+                className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-md px-3 py-2 text-sm font-medium ${
+                  isRejected
+                    ? "bg-coral/10 text-coral ring-1 ring-inset ring-coral/30 hover:bg-coral/20"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                }`}
+              >
+                <Upload className="h-4 w-4" />
+                {isRejected ? "Re-upload" : "Upload"}
+                {isOpen ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
+          </div>
+
+          {/* Fulfilled document summary */}
+          {req.fulfilled_document && (
+            <div
+              className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+                isRejected
+                  ? "border-coral/20 bg-coral/5"
+                  : "border-secondary/20 bg-secondary/5"
+              }`}
+            >
+              {isRejected ? (
+                <AlertCircle className="h-4 w-4 shrink-0 text-coral" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary" />
+              )}
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-foreground">
+                  {req.fulfilled_document.original_filename ?? "Document uploaded"}
+                </span>
+                {req.fulfilled_document.uploaded_at && (
+                  <span className="ml-1.5 text-muted-foreground">
+                    · {formatShortDate(req.fulfilled_document.uploaded_at)}
+                  </span>
+                )}
+                <span className="ml-1.5 text-muted-foreground">
+                  · {fulfilledDocStatusLabel(req.fulfilled_document.status)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Inline upload form */}
+        {canUpload && isOpen && (
+          <div className="border-t border-border bg-muted/30 p-4">
+            {/* Rejection warning banner */}
+            {isRejected && (
+              <div className="mb-3 flex items-start gap-2 rounded-lg border border-coral/30 bg-coral/5 p-3 text-sm text-coral">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  The previous upload was not accepted. Please upload a new version or{" "}
+                  <span className="font-medium">contact the approvU team</span> if you have
+                  questions.
+                </span>
+              </div>
+            )}
+
+            <p className="mb-3 text-xs font-semibold text-foreground">
+              Uploading for:{" "}
+              <span className="font-normal text-secondary">
+                {req.title ?? documentTypeLabel(req.document_type)}
+              </span>
+            </p>
+
+            <div className="space-y-3">
+              {/* File picker */}
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
+                  <Upload className="h-4 w-4" /> Choose file
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => {
+                      setUploadFile(e.target.files?.[0] ?? null);
+                      setUploadError(null);
+                      setUploadSuccess(false);
+                    }}
+                  />
+                </label>
+                {uploadFile ? (
+                  <span className="truncate text-sm text-foreground" title={uploadFile.name}>
+                    {uploadFile.name}{" "}
+                    <span className="text-muted-foreground">
+                      ({formatFileSize(uploadFile.size)})
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No file selected</span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                PDF, JPG, JPEG, or PNG · max 10 MB
+              </p>
+
+              {/* Optional notes */}
+              <textarea
+                value={uploadNotes}
+                onChange={(e) => setUploadNotes(e.target.value)}
+                maxLength={2000}
+                rows={2}
+                placeholder="Optional notes…"
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary sm:max-w-sm"
+              />
+
+              {/* Error banner */}
+              {uploadError && (
+                <div className="flex items-start gap-2 rounded-lg border border-coral/30 bg-coral/5 p-3 text-sm text-coral">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {/* Success banner */}
+              {uploadSuccess && !uploadError && (
+                <div className="flex items-start gap-2 rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-sm text-secondary">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    Document uploaded for this request. Our team will review it shortly.
+                  </span>
+                </div>
+              )}
+
+              {/* Submit */}
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => void handleRequestUpload(req)}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Uploading…
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Upload document
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </article>
+    );
+  }
+
+  function SectionHeading({
+    label,
+    count,
+    tone,
+  }: {
+    label: string;
+    count: number;
+    tone: string;
+  }) {
+    return (
+      <div className="flex items-center gap-2">
+        <h3 className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</h3>
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          {count}
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -1168,217 +1479,75 @@ function RequestedDocumentsView() {
 
       {/* Empty */}
       {!loading && !error && docRequests.length === 0 && (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+        <div className="rounded-2xl border border-border bg-card p-10 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <ListChecks className="h-6 w-6 text-muted-foreground" />
           </div>
           <p className="mt-3 text-sm font-medium text-foreground">No document requests yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Your advisor or lender has not requested any specific documents yet.
+          <p className="mt-1 text-sm text-muted-foreground">
+            When our team needs documents from you, they will appear here.
           </p>
         </div>
       )}
 
-      {/* Request cards */}
+      {/* Grouped sections */}
       {!loading && !error && docRequests.length > 0 && (
-        <div className="space-y-3">
-          {docRequests.map((req) => {
-            const ref = req.public_reference ?? "";
-            const isOpen = openRef === ref;
-            const canUpload = req.status === "requested" || req.status === "rejected";
-            const isComplete = req.status === "reviewed" || req.status === "waived";
-            const overdue = isOverdue(req.due_at);
-            const dueSoon = isDueSoon(req.due_at);
+        <div className="space-y-6">
+          {/* Needs Action */}
+          {actionable.length > 0 && (
+            <section className="space-y-3">
+              <SectionHeading
+                label="Needs Action"
+                count={actionable.length}
+                tone="text-yellow-700 dark:text-yellow-400"
+              />
+              {actionable.map((req) => (
+                <RequestCard key={req.public_reference ?? req.title} req={req} />
+              ))}
+            </section>
+          )}
 
-            return (
-              <article
-                key={ref || req.title}
-                className={`rounded-2xl border bg-card shadow-sm ${isComplete ? "border-border opacity-75" : overdue ? "border-coral/40" : "border-border"}`}
-              >
-                {/* Card body */}
-                <div className="p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    {/* Left: title + meta */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground">
-                          {req.title ?? documentTypeLabel(req.document_type)}
-                        </p>
-                        <DocumentRequestStatusPill status={req.status} />
-                        {req.required === true && (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Required
-                          </span>
-                        )}
-                        {req.required === false && (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Optional
-                          </span>
-                        )}
-                      </div>
+          {/* Needs Attention (rejected) */}
+          {rejected.length > 0 && (
+            <section className="space-y-3">
+              <SectionHeading
+                label="Needs Attention"
+                count={rejected.length}
+                tone="text-coral"
+              />
+              {rejected.map((req) => (
+                <RequestCard key={req.public_reference ?? req.title} req={req} />
+              ))}
+            </section>
+          )}
 
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {documentTypeLabel(req.document_type)}
-                      </p>
+          {/* Waiting for Review */}
+          {inReview.length > 0 && (
+            <section className="space-y-3">
+              <SectionHeading
+                label="Waiting for Review"
+                count={inReview.length}
+                tone="text-secondary"
+              />
+              {inReview.map((req) => (
+                <RequestCard key={req.public_reference ?? req.title} req={req} />
+              ))}
+            </section>
+          )}
 
-                      {req.description && (
-                        <p className="mt-1.5 text-sm text-muted-foreground">{req.description}</p>
-                      )}
-
-                      {/* Dates */}
-                      <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
-                        {req.due_at && (
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                              overdue
-                                ? "bg-coral/15 text-coral"
-                                : dueSoon
-                                  ? "bg-yellow/20 text-foreground"
-                                  : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            <Clock className="h-3 w-3" />
-                            {overdue ? "Overdue · " : "Due "}
-                            {formatShortDate(req.due_at)}
-                          </span>
-                        )}
-                        {req.requested_at && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-                            Requested {formatShortDate(req.requested_at)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: upload button for actionable requests */}
-                    {canUpload && (
-                      <button
-                        type="button"
-                        onClick={() => toggleUploadForm(ref)}
-                        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Upload
-                        {isOpen ? (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Fulfilled document summary */}
-                  {req.fulfilled_document && (
-                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-secondary/20 bg-secondary/5 px-3 py-2 text-xs">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary" />
-                      <div>
-                        <span className="font-medium text-foreground">
-                          {req.fulfilled_document.original_filename ?? "Document uploaded"}
-                        </span>
-                        {req.fulfilled_document.uploaded_at && (
-                          <span className="ml-1.5 text-muted-foreground">
-                            · {formatShortDate(req.fulfilled_document.uploaded_at)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Inline upload form — expands when card is open */}
-                {canUpload && isOpen && (
-                  <div className="border-t border-border bg-muted/30 p-4">
-                    <p className="mb-3 text-xs font-semibold text-foreground">
-                      Uploading for:{" "}
-                      <span className="font-normal text-secondary">
-                        {req.title ?? documentTypeLabel(req.document_type)}
-                      </span>
-                    </p>
-
-                    <div className="space-y-3">
-                      {/* File picker */}
-                      <div className="flex flex-wrap items-center gap-3">
-                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
-                          <Upload className="h-4 w-4" /> Choose file
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
-                            onChange={(e) => {
-                              setUploadFile(e.target.files?.[0] ?? null);
-                              setUploadError(null);
-                              setUploadSuccess(false);
-                            }}
-                          />
-                        </label>
-                        {uploadFile ? (
-                          <span
-                            className="truncate text-sm text-foreground"
-                            title={uploadFile.name}
-                          >
-                            {uploadFile.name}{" "}
-                            <span className="text-muted-foreground">
-                              ({formatFileSize(uploadFile.size)})
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">No file selected</span>
-                        )}
-                      </div>
-
-                      {/* Optional notes */}
-                      <textarea
-                        value={uploadNotes}
-                        onChange={(e) => setUploadNotes(e.target.value)}
-                        maxLength={2000}
-                        rows={2}
-                        placeholder="Optional notes…"
-                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary sm:max-w-sm"
-                      />
-
-                      {/* Error banner */}
-                      {uploadError && (
-                        <div className="flex items-start gap-2 rounded-lg border border-coral/30 bg-coral/5 p-3 text-sm text-coral">
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                          <span>{uploadError}</span>
-                        </div>
-                      )}
-
-                      {/* Success banner */}
-                      {uploadSuccess && !uploadError && (
-                        <div className="flex items-start gap-2 rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-sm text-secondary">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                          <span>Document uploaded for this request.</span>
-                        </div>
-                      )}
-
-                      {/* Submit */}
-                      <button
-                        type="button"
-                        disabled={uploading}
-                        onClick={() => void handleRequestUpload(req)}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                      >
-                        {uploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Uploading…
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4" />
-                            Upload document
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </article>
-            );
-          })}
+          {/* Complete */}
+          {complete.length > 0 && (
+            <section className="space-y-3">
+              <SectionHeading
+                label="Complete"
+                count={complete.length}
+                tone="text-muted-foreground"
+              />
+              {complete.map((req) => (
+                <RequestCard key={req.public_reference ?? req.title} req={req} />
+              ))}
+            </section>
+          )}
         </div>
       )}
     </div>
