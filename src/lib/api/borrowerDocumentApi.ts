@@ -12,10 +12,42 @@ export type BorrowerDocument = {
   uploaded_at?: string | null;
 };
 
+/** Summary of the document that fulfilled a document request. */
+export type FulfilledDocumentSummary = {
+  id?: number | null;
+  document_type?: string | null;
+  original_filename?: string | null;
+  status?: string | null;
+  uploaded_at?: string | null;
+};
+
+/**
+ * A document request created by an admin on behalf of a lead/session.
+ * All fields are nullable — do not assume presence.
+ *
+ * Statuses: requested | uploaded | reviewed | rejected | waived
+ */
+export type BorrowerDocumentRequest = {
+  public_reference?: string | null;
+  document_type?: string | null;
+  title?: string | null;
+  description?: string | null;
+  status?: string | null;
+  required?: boolean | null;
+  qualification_public_reference?: string | null;
+  requested_at?: string | null;
+  due_at?: string | null;
+  fulfilled_at?: string | null;
+  notes?: string | null;
+  fulfilled_document?: FulfilledDocumentSummary | null;
+};
+
 export type UploadDocumentPayload = {
   file: File;
   document_type: string;
   qualification_public_reference?: string | null;
+  /** When supplied, links this upload to a specific document request. */
+  document_request_public_reference?: string | null;
   notes?: string | null;
 };
 
@@ -29,6 +61,12 @@ export type UploadDocumentResult = {
   ok?: boolean;
   status?: string;
   document?: BorrowerDocument;
+};
+
+export type ListDocumentRequestsResult = {
+  ok?: boolean;
+  count?: number;
+  requests?: BorrowerDocumentRequest[];
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +120,20 @@ async function parseUploadResponse(response: Response): Promise<UploadDocumentRe
   return body;
 }
 
+async function parseListRequestsResponse(response: Response): Promise<ListDocumentRequestsResult> {
+  const body = (await response.json().catch(() => ({}))) as ListDocumentRequestsResult & {
+    message?: string;
+    errors?: Record<string, string[]>;
+  };
+
+  if (!response.ok) {
+    const firstError = body.errors ? Object.values(body.errors)[0]?.[0] : undefined;
+    throw new Error(firstError ?? body.message ?? "Your document requests could not be loaded.");
+  }
+
+  return body;
+}
+
 // ─── API functions ────────────────────────────────────────────────────────────
 
 /**
@@ -110,10 +162,28 @@ export async function listBorrowerDocuments(filters?: {
 }
 
 /**
+ * List document requests (checklist) for the authenticated borrower.
+ *
+ * GET /v2/borrower/document-requests
+ */
+export async function listBorrowerDocumentRequests(): Promise<ListDocumentRequestsResult> {
+  const response = await fetch(endpoint("/v2/borrower/document-requests"), {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+
+  return parseListRequestsResponse(response);
+}
+
+/**
  * Upload a document for the authenticated borrower.
  * Sends a multipart/form-data POST — do NOT set Content-Type manually.
  *
  * POST /v2/borrower/documents
+ *
+ * When document_request_public_reference is supplied, the backend will
+ * link this upload to the matching document request and mark it fulfilled.
  */
 export async function uploadBorrowerDocument(
   payload: UploadDocumentPayload,
@@ -124,6 +194,9 @@ export async function uploadBorrowerDocument(
 
   if (payload.qualification_public_reference) {
     form.append("qualification_public_reference", payload.qualification_public_reference);
+  }
+  if (payload.document_request_public_reference) {
+    form.append("document_request_public_reference", payload.document_request_public_reference);
   }
   if (payload.notes) {
     form.append("notes", payload.notes);

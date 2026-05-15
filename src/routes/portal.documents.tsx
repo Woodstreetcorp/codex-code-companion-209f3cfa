@@ -38,8 +38,10 @@ import {
 } from "lucide-react";
 import {
   listBorrowerDocuments,
+  listBorrowerDocumentRequests,
   uploadBorrowerDocument,
   type BorrowerDocument,
+  type BorrowerDocumentRequest,
 } from "@/lib/api/borrowerDocumentApi";
 import {
   ACTIVE,
@@ -562,17 +564,7 @@ function DocumentVaultPage() {
           binderApp={binderApp}
         />
       )}
-      {tab === "requests" && (
-        <LenderRequestsView
-          scope={scope}
-          binderApp={binderApp}
-          requests={scopedRequests}
-          onUpload={handleUploadFor}
-          hasBankConnection={connections.some(
-            (c) => c.category === "Banking" && c.status === "Connected",
-          )}
-        />
-      )}
+      {tab === "requests" && <RequestedDocumentsView />}
       {tab === "esign" && <EsignInboxView envelopes={scopedEnvelopes} />}
       {tab === "connections" && (
         <ConnectionsView connections={connections} onConnect={connect} onDisconnect={disconnect} />
@@ -970,6 +962,425 @@ function UploadsView() {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+// ─── Module-level upload validation (shared between UploadsView and RequestedDocumentsView) ───
+
+function validateUploadFile(f: File): string | null {
+  const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return "Only PDF, JPG, JPEG, and PNG files are accepted.";
+  }
+  if (f.size > MAX_FILE_BYTES) {
+    return "File must not exceed 10 MB.";
+  }
+  return null;
+}
+
+// ─── Date helpers for document requests ──────────────
+
+function parseDateSafe(s?: string | null): Date | null {
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatShortDate(s?: string | null): string {
+  const d = parseDateSafe(s);
+  if (!d) return "";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function isDueSoon(due?: string | null): boolean {
+  const d = parseDateSafe(due);
+  if (!d) return false;
+  const daysLeft = (d.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  return daysLeft >= 0 && daysLeft <= 7;
+}
+
+function isOverdue(due?: string | null): boolean {
+  const d = parseDateSafe(due);
+  if (!d) return false;
+  return d.getTime() < Date.now();
+}
+
+// ─── Document request status pill ───────────────────
+
+function DocumentRequestStatusPill({ status }: { status?: string | null }) {
+  const normalized = (status ?? "").toLowerCase();
+  const map: Record<string, { label: string; tone: string }> = {
+    requested: { label: "Requested", tone: "bg-yellow/20 text-foreground" },
+    uploaded: { label: "Uploaded", tone: "bg-secondary/15 text-secondary" },
+    reviewed: { label: "Reviewed", tone: "bg-mint/25 text-foreground" },
+    rejected: { label: "Needs attention", tone: "bg-coral/15 text-coral" },
+    waived: { label: "Waived", tone: "bg-muted text-muted-foreground" },
+  };
+  const resolved = map[normalized] ?? {
+    label: status ?? "Unknown",
+    tone: "bg-muted text-muted-foreground",
+  };
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${resolved.tone}`}>
+      {resolved.label}
+    </span>
+  );
+}
+
+// ─── Requested Documents (API-connected) ─────────────
+
+function RequestedDocumentsView() {
+  const [docRequests, setDocRequests] = useState<BorrowerDocumentRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Upload-against-request state — shared across expanded card
+  const [openRef, setOpenRef] = useState<string | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadNotes, setUploadNotes] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await listBorrowerDocumentRequests();
+      setDocRequests(result.requests ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load your document requests.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRequests();
+  }, [fetchRequests]);
+
+  function toggleUploadForm(ref: string) {
+    if (openRef === ref) {
+      setOpenRef(null);
+    } else {
+      // Opening a different card — reset form state
+      setOpenRef(ref);
+      setUploadFile(null);
+      setUploadNotes("");
+      setUploadError(null);
+      setUploadSuccess(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleRequestUpload(req: BorrowerDocumentRequest) {
+    setUploadError(null);
+    setUploadSuccess(false);
+
+    if (!uploadFile) {
+      setUploadError("Please select a file.");
+      return;
+    }
+    const fileErr = validateUploadFile(uploadFile);
+    if (fileErr) {
+      setUploadError(fileErr);
+      return;
+    }
+
+    setUploading(true);
+    try {
+      await uploadBorrowerDocument({
+        file: uploadFile,
+        document_type: req.document_type ?? "other",
+        document_request_public_reference: req.public_reference ?? undefined,
+        qualification_public_reference:
+          req.qualification_public_reference ?? getQualificationPublicReference(),
+        notes: uploadNotes.trim() || undefined,
+      });
+      setUploadSuccess(true);
+      setUploadFile(null);
+      setUploadNotes("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      // Refresh the list so the card reflects the new status
+      void fetchRequests();
+    } catch (err) {
+      setUploadError(
+        err instanceof Error
+          ? err.message
+          : "We could not upload this document for the request. Please check the file and try again.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-foreground">
+          Document Checklist
+          {docRequests.length > 0 && (
+            <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {docRequests.length}
+            </span>
+          )}
+        </h2>
+        <button
+          type="button"
+          onClick={() => void fetchRequests()}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+          aria-label="Refresh document requests"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading your document requests…</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {!loading && error && (
+        <div className="flex items-start gap-3 rounded-2xl border border-coral/30 bg-coral/5 p-5">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Could not load document requests</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{error}</p>
+            <button
+              type="button"
+              onClick={() => void fetchRequests()}
+              className="mt-2 text-xs font-medium text-secondary underline-offset-2 hover:underline"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Empty */}
+      {!loading && !error && docRequests.length === 0 && (
+        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <ListChecks className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="mt-3 text-sm font-medium text-foreground">No document requests yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your advisor or lender has not requested any specific documents yet.
+          </p>
+        </div>
+      )}
+
+      {/* Request cards */}
+      {!loading && !error && docRequests.length > 0 && (
+        <div className="space-y-3">
+          {docRequests.map((req) => {
+            const ref = req.public_reference ?? "";
+            const isOpen = openRef === ref;
+            const canUpload = req.status === "requested" || req.status === "rejected";
+            const isComplete = req.status === "reviewed" || req.status === "waived";
+            const overdue = isOverdue(req.due_at);
+            const dueSoon = isDueSoon(req.due_at);
+
+            return (
+              <article
+                key={ref || req.title}
+                className={`rounded-2xl border bg-card shadow-sm ${isComplete ? "border-border opacity-75" : overdue ? "border-coral/40" : "border-border"}`}
+              >
+                {/* Card body */}
+                <div className="p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Left: title + meta */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">
+                          {req.title ?? documentTypeLabel(req.document_type)}
+                        </p>
+                        <DocumentRequestStatusPill status={req.status} />
+                        {req.required === true && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Required
+                          </span>
+                        )}
+                        {req.required === false && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                            Optional
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {documentTypeLabel(req.document_type)}
+                      </p>
+
+                      {req.description && (
+                        <p className="mt-1.5 text-sm text-muted-foreground">{req.description}</p>
+                      )}
+
+                      {/* Dates */}
+                      <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                        {req.due_at && (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                              overdue
+                                ? "bg-coral/15 text-coral"
+                                : dueSoon
+                                  ? "bg-yellow/20 text-foreground"
+                                  : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            <Clock className="h-3 w-3" />
+                            {overdue ? "Overdue · " : "Due "}
+                            {formatShortDate(req.due_at)}
+                          </span>
+                        )}
+                        {req.requested_at && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                            Requested {formatShortDate(req.requested_at)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right: upload button for actionable requests */}
+                    {canUpload && (
+                      <button
+                        type="button"
+                        onClick={() => toggleUploadForm(ref)}
+                        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload
+                        {isOpen ? (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Fulfilled document summary */}
+                  {req.fulfilled_document && (
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-secondary/20 bg-secondary/5 px-3 py-2 text-xs">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-secondary" />
+                      <div>
+                        <span className="font-medium text-foreground">
+                          {req.fulfilled_document.original_filename ?? "Document uploaded"}
+                        </span>
+                        {req.fulfilled_document.uploaded_at && (
+                          <span className="ml-1.5 text-muted-foreground">
+                            · {formatShortDate(req.fulfilled_document.uploaded_at)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Inline upload form — expands when card is open */}
+                {canUpload && isOpen && (
+                  <div className="border-t border-border bg-muted/30 p-4">
+                    <p className="mb-3 text-xs font-semibold text-foreground">
+                      Uploading for:{" "}
+                      <span className="font-normal text-secondary">
+                        {req.title ?? documentTypeLabel(req.document_type)}
+                      </span>
+                    </p>
+
+                    <div className="space-y-3">
+                      {/* File picker */}
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
+                          <Upload className="h-4 w-4" /> Choose file
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={(e) => {
+                              setUploadFile(e.target.files?.[0] ?? null);
+                              setUploadError(null);
+                              setUploadSuccess(false);
+                            }}
+                          />
+                        </label>
+                        {uploadFile ? (
+                          <span
+                            className="truncate text-sm text-foreground"
+                            title={uploadFile.name}
+                          >
+                            {uploadFile.name}{" "}
+                            <span className="text-muted-foreground">
+                              ({formatFileSize(uploadFile.size)})
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">No file selected</span>
+                        )}
+                      </div>
+
+                      {/* Optional notes */}
+                      <textarea
+                        value={uploadNotes}
+                        onChange={(e) => setUploadNotes(e.target.value)}
+                        maxLength={2000}
+                        rows={2}
+                        placeholder="Optional notes…"
+                        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary sm:max-w-sm"
+                      />
+
+                      {/* Error banner */}
+                      {uploadError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-coral/30 bg-coral/5 p-3 text-sm text-coral">
+                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>{uploadError}</span>
+                        </div>
+                      )}
+
+                      {/* Success banner */}
+                      {uploadSuccess && !uploadError && (
+                        <div className="flex items-start gap-2 rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-sm text-secondary">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>Document uploaded for this request.</span>
+                        </div>
+                      )}
+
+                      {/* Submit */}
+                      <button
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => void handleRequestUpload(req)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                      >
+                        {uploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Uploading…
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Upload document
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
