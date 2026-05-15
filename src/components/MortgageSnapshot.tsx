@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import type { BorrowerMortgageSnapshot } from "@/lib/api/borrowerMortgageSnapshotApi";
 import { type FlowKey, type MortgageEntry, type Question, flows } from "@/lib/flows";
 import { formatCAD, ltv, parseCurrency } from "@/lib/calculations";
 import {
@@ -261,16 +262,147 @@ export function MortgageSnapshot({
   answers,
   visible,
   onEdit,
+  serverSnapshot,
 }: {
   flowKey: FlowKey;
   answers: Answers;
   visible: Question[];
   onEdit: () => void;
+  serverSnapshot?: BorrowerMortgageSnapshot | null;
 }) {
+  const snapshotSummary = serverSnapshot ? (
+    <ServerSnapshotSummary snapshot={serverSnapshot} />
+  ) : null;
+
   if (flowKey === "refinance") {
-    return <RefinanceSnapshot answers={answers} visible={visible} onEdit={onEdit} />;
+    return (
+      <>
+        {snapshotSummary}
+        <RefinanceSnapshot answers={answers} visible={visible} onEdit={onEdit} />
+      </>
+    );
   }
-  return <PurchaseSnapshot flowKey={flowKey} answers={answers} visible={visible} onEdit={onEdit} />;
+  return (
+    <>
+      {snapshotSummary}
+      <PurchaseSnapshot flowKey={flowKey} answers={answers} visible={visible} onEdit={onEdit} />
+    </>
+  );
+}
+
+function ServerSnapshotSummary({ snapshot }: { snapshot: BorrowerMortgageSnapshot }) {
+  const pathLabel = {
+    prime: "Prime path",
+    alternative: "Alternative path",
+    manual_review: "Tailored review",
+  }[snapshot.preliminary_lending_path ?? ""] ?? "Tailored review";
+
+  const readinessLabel = {
+    ready_to_review: "Ready for review",
+    needs_more_information: "Needs more information",
+    not_enough_data: "Not enough data",
+  }[snapshot.readiness_status ?? ""] ?? "Needs review";
+
+  const propertyValue =
+    snapshot.property_value ?? snapshot.target_property_value ?? undefined;
+  const location = [snapshot.city, snapshot.province].filter(Boolean).join(", ");
+
+  return (
+    <section className="mb-6 rounded-2xl border border-secondary/30 bg-secondary/5 p-5 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-secondary">
+            Server Mortgage Snapshot
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-foreground">{pathLabel}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {readinessLabel}
+            {snapshot.public_reference ? ` · Reference ${snapshot.public_reference}` : ""}
+          </p>
+        </div>
+        {snapshot.generated_at && (
+          <p className="text-xs text-muted-foreground">
+            Prepared {new Date(snapshot.generated_at).toLocaleString()}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <ServerSnapshotStat
+          label="Property value"
+          value={propertyValue ? formatCAD(propertyValue) : "—"}
+          tone="primary"
+        />
+        <ServerSnapshotStat
+          label="Mortgage amount"
+          value={snapshot.mortgage_amount ? formatCAD(snapshot.mortgage_amount) : "—"}
+          tone="secondary"
+        />
+        <ServerSnapshotStat label="Location" value={location || "—"} tone="accent" />
+      </div>
+
+      {snapshot.key_insights && snapshot.key_insights.length > 0 && (
+        <div className="mt-5 rounded-xl border border-border bg-background p-4">
+          <p className="text-sm font-semibold text-foreground">Key insights</p>
+          <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+            {snapshot.key_insights.map((insight) => (
+              <li key={insight} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+                <span>{insight}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {snapshot.missing_items && snapshot.missing_items.length > 0 && (
+        <div className="mt-4 rounded-xl border border-yellow/40 bg-yellow/10 p-4">
+          <p className="text-sm font-semibold text-foreground">Missing information</p>
+          <ul className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            {snapshot.missing_items.map((item) => (
+              <li key={item} className="rounded-full border border-yellow/40 bg-background px-3 py-1">
+                {item.replace(/_/g, " ")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {snapshot.next_step && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Next step: <span className="font-medium text-foreground">{snapshot.next_step.replace(/_/g, " ")}</span>
+        </p>
+      )}
+      {snapshot.disclaimer && (
+        <p className="mt-3 text-xs text-muted-foreground">{snapshot.disclaimer}</p>
+      )}
+    </section>
+  );
+}
+
+function ServerSnapshotStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "primary" | "secondary" | "accent";
+}) {
+  const toneCls = {
+    primary: "bg-primary/10 text-primary",
+    secondary: "bg-secondary/15 text-secondary",
+    accent: "bg-accent/15 text-accent",
+  }[tone];
+
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${toneCls}`}>
+        {label}
+      </span>
+      <p className="mt-2 text-lg font-semibold text-foreground">{value}</p>
+    </div>
+  );
 }
 
 // ---------- Purchase / Pre-purchase ----------

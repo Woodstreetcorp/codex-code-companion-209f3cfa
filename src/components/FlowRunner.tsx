@@ -12,6 +12,11 @@ import {
   type QualificationContact,
 } from "@/lib/api/borrowerQualificationApi";
 import {
+  generateMortgageSnapshot,
+  storeMortgageSnapshotHandoff,
+  type BorrowerMortgageSnapshot,
+} from "@/lib/api/borrowerMortgageSnapshotApi";
+import {
   calculateMinimumDownPayment,
   formatCAD,
   ltv,
@@ -51,6 +56,9 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   });
   const [qualificationResult, setQualificationResult] =
     useState<BorrowerQualificationResponse | null>(null);
+  const [serverSnapshot, setServerSnapshot] = useState<BorrowerMortgageSnapshot | null>(null);
+  const [snapshotError, setSnapshotError] = useState<string | null>(null);
+  const [generatingSnapshot, setGeneratingSnapshot] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [savingQualification, setSavingQualification] = useState(false);
 
@@ -214,6 +222,8 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
     if (done) {
       setDone(false);
       setQualificationResult(null);
+      setServerSnapshot(null);
+      setSnapshotError(null);
       setSubmitError(null);
     }
     else if (index > 0) setIndex((i) => i - 1);
@@ -241,6 +251,25 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const result = await submitQualification(flowKey, answers, contact);
       storeQualificationHandoff(result);
       setQualificationResult(result);
+      setGeneratingSnapshot(true);
+      setSnapshotError(null);
+
+      try {
+        const snapshot = await generateMortgageSnapshot({
+          qualification_session_token: result.qualification_session_token,
+          public_reference: result.public_reference,
+        });
+        storeMortgageSnapshotHandoff(snapshot);
+        setServerSnapshot(snapshot);
+      } catch (snapshotFailure) {
+        setSnapshotError(
+          snapshotFailure instanceof Error
+            ? snapshotFailure.message
+            : "We saved your qualification, but could not prepare the server Snapshot yet.",
+        );
+      } finally {
+        setGeneratingSnapshot(false);
+      }
     } catch (error) {
       setSubmitError(
         error instanceof Error
@@ -471,15 +500,35 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
             <div className="mb-5 rounded-2xl border border-secondary/30 bg-secondary/5 p-4 text-sm text-foreground">
               <p className="font-semibold">Your qualification was saved.</p>
               <p className="mt-1 text-muted-foreground">
-                Reference {qualificationResult.public_reference}. Your snapshot below still uses
-                the current local preview calculations until the server-side Snapshot API is added.
+                Reference {serverSnapshot?.public_reference ?? qualificationResult.public_reference}
+                .{" "}
+                {serverSnapshot
+                  ? "Your Snapshot was prepared from your saved qualification."
+                  : "Your snapshot below uses the current local preview calculations while the server Snapshot is unavailable."}
               </p>
             </div>
+            {generatingSnapshot && (
+              <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
+                <p className="font-semibold">Preparing your Mortgage Snapshot...</p>
+                <p className="mt-1 text-muted-foreground">
+                  We are generating the server-side version from your saved answers.
+                </p>
+              </div>
+            )}
+            {snapshotError && (
+              <div className="mb-5 rounded-2xl border border-yellow/40 bg-yellow/10 p-4 text-sm text-foreground">
+                <p className="font-semibold">Server Snapshot is temporarily unavailable.</p>
+                <p className="mt-1 text-muted-foreground">
+                  {snapshotError} You can still review the local preview below.
+                </p>
+              </div>
+            )}
             <MortgageSnapshot
               flowKey={flowKey}
               answers={answers}
               visible={visible}
               onEdit={back}
+              serverSnapshot={serverSnapshot}
             />
           </>
         )}

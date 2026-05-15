@@ -50,6 +50,30 @@ On success, the frontend stores the returned `qualification_session_token` and `
 
 The existing Mortgage Snapshot UI and calculations remain local in this PR. Server-side Snapshot rendering is deferred.
 
+## Mortgage Snapshot API Rendering
+
+After qualification intake succeeds, the frontend now calls:
+
+```text
+POST /v2/borrower/qualification/snapshot
+```
+
+using the returned `qualification_session_token` and `public_reference`. The adapter lives at:
+
+```text
+src/lib/api/borrowerMortgageSnapshotApi.ts
+```
+
+It exposes:
+
+- `generateMortgageSnapshot`
+- `getMortgageSnapshot`
+- `storeMortgageSnapshotHandoff`
+
+When the API returns a Snapshot, the existing Mortgage Snapshot page shows the server-generated path, readiness status, key insights, missing items, next step, and public reference. The local browser calculation remains visible as a fallback/preview layer and is still used if the server Snapshot call fails.
+
+The Snapshot public reference is stored temporarily in `sessionStorage` under `approvu:mortgage-snapshot` for future save/resume and account handoff work. This is handoff storage only; the Laravel Snapshot record remains the source of truth.
+
 ## Deferred
 
 - Server-side Mortgage Snapshot rendering.
