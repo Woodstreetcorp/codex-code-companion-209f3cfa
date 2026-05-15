@@ -206,7 +206,9 @@ function BorrowerPortalHome() {
           icon={FileText}
           section={summary.portal_sections?.documents}
           fallbackLabel="Documents"
-          fallbackMessage="Document upload will be available in the next step."
+          fallbackMessage="Upload and manage your mortgage documents securely."
+          actionHref="/portal/documents"
+          actionLabel="Go to Document Vault"
         />
         <PlaceholderCard
           icon={CheckCircle2}
@@ -308,11 +310,15 @@ function PlaceholderCard({
   section,
   fallbackLabel,
   fallbackMessage,
+  actionHref,
+  actionLabel,
 }: {
   icon: LucideIcon;
   section?: BorrowerPortalSection | null;
   fallbackLabel: string;
   fallbackMessage: string;
+  actionHref?: string;
+  actionLabel?: string;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -330,6 +336,15 @@ function PlaceholderCard({
         </div>
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{section?.message ?? fallbackMessage}</p>
+      {actionHref && actionLabel && (
+        <Link
+          to={actionHref}
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-secondary hover:underline"
+        >
+          {actionLabel}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      )}
     </div>
   );
 }
