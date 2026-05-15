@@ -221,6 +221,8 @@ function BorrowerPortalHome() {
           section={summary.portal_sections?.application}
           fallbackLabel="Application"
           fallbackMessage="Your application workspace is being prepared."
+          actionHref="/portal/application"
+          actionLabel="Continue Application"
         />
       </section>
     </div>
