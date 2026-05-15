@@ -215,6 +215,8 @@ function BorrowerPortalHome() {
           section={summary.portal_sections?.offers}
           fallbackLabel="Offers"
           fallbackMessage="Your options will be reviewed after your application details are complete."
+          actionHref="/portal/offers"
+          actionLabel="View Review Status"
         />
         <PlaceholderCard
           icon={FolderOpen}
