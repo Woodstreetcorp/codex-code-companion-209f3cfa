@@ -103,7 +103,7 @@ function LoginPage() {
       <AuthShell
         eyebrow="Signed in"
         title={`Welcome back, ${session.user.name}`}
-        description="Your borrower session is active. Full portal routing is coming in the next launch step."
+        description="Your borrower session is active. Continue to your portal to see your saved Mortgage Snapshot and next steps."
         footer={
           <SessionReference
             reference={ref ?? session.latest_qualification?.public_reference ?? undefined}

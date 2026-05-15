@@ -1,835 +1,393 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
-  Bell,
-  BellRing,
-  Calculator,
-  CalendarClock,
   CheckCircle2,
-  Clock,
   FileText,
-  Inbox,
-  Lock,
-  MessageSquare,
-  Phone,
-  Plus,
+  FolderOpen,
+  Loader2,
+  LogOut,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
-  TrendingDown,
-  TrendingUp,
-  Trash2,
-  Wallet,
+  type LucideIcon,
 } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { clearBorrowerSession, logoutBorrower } from "@/lib/api/borrowerAuthApi";
 import {
-  ACTIVE,
-  COMPLETED,
-  CONDITIONS,
-  DOCUMENTS,
-  EXPIRED,
-  MAX_ACTIVE_APPLICATIONS,
-  SUBMITTED,
-  TOOLS,
-  getCounts,
-} from "@/components/portal/data";
-import {
-  ActiveCard,
-  Alert,
-  Card,
-  CardHeader,
-  PageHeader,
-  StatusPill,
-  SubmittedCard,
-  SummaryCard,
-} from "@/components/portal/ui";
-import { useSavedScenarios } from "@/components/portal/tools-shared";
+  getBorrowerPortalSummary,
+  storeBorrowerPortalSummary,
+  type BorrowerPortalSection,
+  type BorrowerPortalSummary,
+} from "@/lib/api/borrowerPortalApi";
 
 export const Route = createFileRoute("/portal/")({
   head: () => ({
     meta: [
-      { title: "Your Mortgage & Home Portal — approvU" },
+      { title: "Your approvU Portal" },
       {
         name: "description",
-        content:
-          "Track your applications, review your mortgage offers, upload documents, and access your Home Life benefits in one place.",
+        content: "View your saved Mortgage Snapshot and continue your approvU borrower journey.",
       },
     ],
   }),
-  component: PortalDashboard,
+  component: BorrowerPortalHome,
 });
 
-const FIRST_NAME = "Alex";
+function BorrowerPortalHome() {
+  const navigate = useNavigate();
+  const [summary, setSummary] = useState<BorrowerPortalSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-// ─── Stage rail (mirrors ApplicationShell) ──────────────────────────────
-const STAGES = [
-  "Snapshot",
-  "Application",
-  "Submitted",
-  "Lender Review",
-  "Approved",
-  "Conditions",
-  "Closing",
-] as const;
+  useEffect(() => {
+    let active = true;
 
-function stageFromStatus(status: string): number {
-  const s = status.toLowerCase();
-  if (s.includes("closing") || s.includes("ready for closing")) return 6;
-  if (s.includes("conditions")) return 5;
-  if (s.includes("approved")) return 4;
-  if (s.includes("lender") || s.includes("review")) return 3;
-  if (s.includes("submitted")) return 2;
-  if (s.includes("snapshot")) return 0;
-  return 1;
-}
+    async function loadPortal() {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getBorrowerPortalSummary();
+        if (!active) return;
+        storeBorrowerPortalSummary(result);
+        setSummary(result);
+      } catch (failure) {
+        if (!active) return;
+        setError(
+          failure instanceof Error ? failure.message : "Your borrower portal could not be loaded.",
+        );
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
 
-// ─── Rate watch (mock current rates) ────────────────────────────────────
-const RATES = {
-  fiveYrFixed: { rate: 4.79, prev: 4.84, ts: "May 12, 2026" },
-  fiveYrVariable: { rate: 5.20, prev: 5.20, ts: "May 12, 2026" },
-};
+    void loadPortal();
 
-// ─── Advisor (mock) ─────────────────────────────────────────────────────
-const ADVISOR = {
-  name: "Jordan Lee",
-  title: "Mortgage Advisor",
-  initials: "JL",
-  responseTime: "Usually responds within 1 business hour",
-};
+    return () => {
+      active = false;
+    };
+  }, []);
 
-// ─── Disclosures (mock state) ───────────────────────────────────────────
-const DISCLOSURES = [
-  { id: "d1", name: "Privacy & Information Collection", reviewed: true },
-  { id: "d2", name: "Credit Bureau Consent", reviewed: true },
-  { id: "d3", name: "Cost of Borrowing Disclosure", reviewed: false },
-];
+  const signOut = async () => {
+    setSigningOut(true);
+    setError(null);
+    try {
+      await logoutBorrower();
+      clearBorrowerSession();
+      await navigate({ to: "/login" });
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "We could not sign you out.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
-const ACTIVITY = [
-  { date: "May 11", text: "You selected the Best Value Fixed Offer" },
-  { date: "May 10", text: "Mortgage snapshot completed" },
-  { date: "May 9", text: "Application APP-2041 started" },
-  { date: "May 9", text: "Income document requested by your broker" },
-];
-
-const OFFERS_PREVIEW = [
-  { name: "Best Value Fixed Offer", rate: "4.89%", payment: "$2,358/mo", benefit: "$2,350", selected: true },
-  { name: "Lowest Payment Variable", rate: "5.10%", payment: "$2,294/mo", benefit: "$1,950", selected: false },
-  { name: "Flexible Open Term", rate: "5.45%", payment: "$2,461/mo", benefit: "$1,400", selected: false },
-];
-
-function PortalDashboard() {
-  const counts = getCounts();
-  const atLimit = counts.active >= MAX_ACTIVE_APPLICATIONS;
-  const hasFunded = COMPLETED.length > 0;
-  const activeIncomplete = ACTIVE[0];
-  const submittedFirst = SUBMITTED[0];
-  const fundedFirst = COMPLETED[0];
-  const fundedMaturityMonths = fundedFirst ? monthsUntil(fundedFirst.maturityDate) : null;
-  const showRenewalNudge = fundedMaturityMonths !== null && fundedMaturityMonths <= 6 && fundedMaturityMonths >= 0;
-
-  // Build the strongest single next-best-action
-  const nba = buildNextBestAction({
-    activeIncomplete, submittedFirst,
-    docsPending: counts.docsPending,
-    conditionsOutstanding: counts.conditions,
-    showRenewalNudge,
-    fundedMaturityMonths,
-  });
-
-  return (
-    <div className="space-y-8">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary via-primary to-secondary p-6 text-primary-foreground shadow-sm sm:p-8">
-        <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-secondary/40 blur-3xl" aria-hidden />
-        <div className="relative">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-foreground/70">
-            Welcome back, {FIRST_NAME}
-          </p>
-          <h1 className="mt-2 max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            Your Mortgage &amp; Home Portal
+  if (loading) {
+    return (
+      <PortalPanel>
+        <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-foreground">
+            Loading your borrower portal
           </h1>
-          <p className="mt-3 max-w-2xl text-sm text-primary-foreground/80 sm:text-base">
-            Track your applications, review your mortgage offers, upload documents, and access your
-            Home Life benefits in one place.
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            We are pulling your saved Mortgage Snapshot and next steps from approvU.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {activeIncomplete ? (
-              <Link
-                to="/internal/full-application"
-                className="inline-flex items-center justify-center rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-white/90"
-              >
-                Continue Application <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
+        </div>
+      </PortalPanel>
+    );
+  }
+
+  if (error || !summary?.ok) {
+    return (
+      <PortalPanel>
+        <div className="space-y-5">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-coral/10 text-coral">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Sign in required
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+              We could not load your portal
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+              {error ??
+                "Your borrower session may have expired. Sign in again to continue your saved journey."}
+            </p>
+          </div>
+          <Link
+            to="/login"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Sign in
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        </div>
+      </PortalPanel>
+    );
+  }
+
+  const userName = summary.user?.name || "there";
+  const qualification = summary.latest_qualification;
+  const snapshot = summary.latest_snapshot;
+  const primaryAction = normalizeAction(summary.primary_action?.action);
+  const primaryRoute = routeForAction(primaryAction, snapshot?.public_reference);
+
+  return (
+    <div className="space-y-6">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-7">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+              Borrower portal
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Welcome back, {firstName(userName)}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+              {summary.message ??
+                "Your saved Mortgage Snapshot and next steps are ready when you are."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={signOut}
+            disabled={signingOut}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+          >
+            {signingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <button
-                disabled={atLimit}
-                className="inline-flex items-center justify-center rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Plus className="mr-1.5 h-4 w-4" /> Start a New Mortgage Snapshot
-              </button>
+              <LogOut className="h-4 w-4" />
             )}
-            <Link
-              to="/portal/applications"
-              className="inline-flex items-center justify-center rounded-md border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-primary-foreground backdrop-blur transition hover:bg-white/20"
-            >
-              View Applications
-            </Link>
-          </div>
+            Sign out
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <SummaryTile label="Name" value={summary.user?.name ?? "Not available"} />
+          <SummaryTile label="Email" value={summary.user?.email ?? "Not available"} />
         </div>
       </section>
 
-      {atLimit && (
-        <Alert tone="warning">
-          You have reached the maximum of {MAX_ACTIVE_APPLICATIONS} active applications. Complete,
-          submit, cancel, or let one expire before starting another.
-        </Alert>
-      )}
-
-      {/* Next Best Action (enhanced) */}
-      {nba && <NextBestActionCard nba={nba} />}
-
-      {/* Application progress (stage 1–7) */}
-      {(activeIncomplete || submittedFirst) && (
-        <ApplicationProgressWidget
-          appId={(submittedFirst ?? activeIncomplete!).id}
-          property={(submittedFirst ?? activeIncomplete!).property}
-          status={submittedFirst ? submittedFirst.stage : activeIncomplete!.status}
-          progress={submittedFirst ? submittedFirst.progress : activeIncomplete!.completion}
-          eta={submittedFirst ? "Est. funding May 30" : `Expires in ${activeIncomplete!.daysToExpiry} days`}
-        />
-      )}
-
-      {/* Renewal countdown (if mortgage on file and within 6 months) */}
-      {showRenewalNudge && fundedFirst && fundedMaturityMonths !== null && (
-        <RenewalCountdownCard funded={fundedFirst} months={fundedMaturityMonths} />
-      )}
-
-      {/* Disclosure status pill */}
-      <DisclosureStatusRow />
-
-      {/* Summary cards */}
-      <section aria-label="Summary">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <SummaryCard icon={Inbox} label="Active" value={`${counts.active} of ${MAX_ACTIVE_APPLICATIONS}`} tone="primary" />
-          <SummaryCard icon={CheckCircle2} label="Submitted" value={String(counts.submitted)} tone="secondary" />
-          <SummaryCard icon={FileText} label="Documents" value={`${counts.docsPending} pending`} tone="yellow" />
-          <SummaryCard icon={Clock} label="Conditions" value={`${counts.conditions} outstanding`} tone="coral" />
-          <SummaryCard icon={Wallet} label="Wallet" value={hasFunded ? `${counts.walletAvailable} available` : "Locked"} tone="secondary" />
-        </div>
-      </section>
-
-      {/* Applications */}
-      <section aria-label="Your applications" className="space-y-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <PageHeaderLite title="Your Applications" subtitle="Active and recently submitted" />
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+        <SnapshotCard summary={summary} />
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+            <Sparkles className="h-5 w-5" />
           </div>
-          <Link
-            to="/portal/applications"
-            className="text-sm font-medium text-secondary hover:underline"
-          >
-            View all <ArrowRight className="ml-0.5 inline h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {ACTIVE.slice(0, 2).map((a) => (
-            <ActiveCard key={a.id} app={a} />
-          ))}
-          {SUBMITTED.slice(0, 1).map((a) => (
-            <SubmittedCard key={a.id} app={a} />
-          ))}
-        </div>
-        {EXPIRED.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {EXPIRED.length} expired application{EXPIRED.length > 1 ? "s" : ""} can still be reactivated.{" "}
-            <Link to="/portal/applications" className="font-medium text-secondary hover:underline">
-              Review
-            </Link>
+          <h2 className="mt-4 text-lg font-semibold text-foreground">Continue your journey</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {summary.primary_action?.label ??
+              (snapshot ? "View Mortgage Snapshot" : "Start qualification")}
           </p>
-        )}
-      </section>
-
-      {/* Rate watch + Advisor */}
-      <section className="grid gap-6 lg:grid-cols-2">
-        <RateWatchCard />
-        <AdvisorCard />
-      </section>
-
-      {/* Saved scenarios from tools */}
-      <SavedScenariosCard />
-
-      {/* Two-column: Documents/Conditions + Offers */}
-      <section className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader
-            title="Documents & Conditions"
-            right={
-              <Link to="/portal/applications" className="text-xs font-medium text-secondary hover:underline">
-                View all
-              </Link>
-            }
-          />
-          <ul className="mt-4 divide-y divide-border">
-            {[...DOCUMENTS.slice(0, 3), ...CONDITIONS.slice(0, 2).map((c) => ({ ...c, kind: "Condition" }))].slice(0, 5).map((row, i) => (
-              <li key={i} className="flex items-start justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{row.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {row.app} · Due {row.due}
-                  </p>
-                </div>
-                <StatusPill status={row.status} />
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title="Mortgage Offers"
-            right={
-              <span className="text-xs text-muted-foreground">From your latest snapshot</span>
-            }
-          />
-          <div className="mt-4 space-y-3">
-            {OFFERS_PREVIEW.map((o) => (
-              <div
-                key={o.name}
-                className={`rounded-xl border p-3.5 ${
-                  o.selected ? "border-primary/40 bg-primary/5" : "border-border bg-background"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-foreground">{o.name}</p>
-                  {o.selected && (
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                      Selected
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Rate</p>
-                    <p className="font-semibold text-foreground">{o.rate}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Payment</p>
-                    <p className="font-semibold text-foreground">{o.payment}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Benefits</p>
-                    <p className="font-semibold text-foreground">{o.benefit}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
           <Link
-            to="/internal/full-application"
-            className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            to={primaryRoute}
+            className="mt-5 inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            Continue with Selected Offer <ArrowRight className="ml-1.5 h-4 w-4" />
+            {summary.primary_action?.label ?? "Continue"}
+            <ArrowRight className="ml-1.5 h-4 w-4" />
           </Link>
-        </Card>
-      </section>
-
-      {/* Wallet preview */}
-      <section>
-        {hasFunded ? (
-          <Card className="bg-gradient-to-br from-card to-mint/10">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="rounded-2xl bg-mint/30 p-3 text-foreground">
-                  <Wallet className="h-6 w-6" />
-                </span>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">
-                    Home Life Wallet
-                  </p>
-                  <p className="mt-0.5 text-base font-semibold text-foreground">
-                    HomeStrategy Advantage™
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {counts.walletAvailable} benefits available · $2,350 total value
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/portal/wallet"
-                className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/90"
-              >
-                View Wallet <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </div>
-          </Card>
-        ) : (
-          <Card>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span className="rounded-2xl bg-muted p-3 text-muted-foreground">
-                  <Lock className="h-6 w-6" />
-                </span>
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    Home Life Wallet
-                  </p>
-                  <p className="mt-0.5 text-base font-semibold text-foreground">
-                    Unlocks after your mortgage is funded
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Get legal fee rebates, moving credits, inspection credits, and more.
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/portal/wallet"
-                className="inline-flex items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
-              >
-                Learn More
-              </Link>
-            </div>
-          </Card>
-        )}
-      </section>
-
-      {/* Tools */}
-      <section aria-label="Mortgage Tools" className="space-y-4">
-        <PageHeaderLite title="Mortgage Tools" subtitle="Quick calculators to plan your next move" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {TOOLS.map((t) => (
-            <div
-              key={t.key}
-              className="group flex items-start gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-secondary/40 hover:shadow-md"
-            >
-              <span className="rounded-xl bg-secondary/10 p-2.5 text-secondary">
-                <t.icon className="h-4 w-4" />
+          {qualification?.public_reference && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Reference{" "}
+              <span className="font-semibold text-foreground">
+                {qualification.public_reference}
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{t.blurb}</p>
-              </div>
-              <Calculator className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
-            </div>
-          ))}
+            </p>
+          )}
         </div>
       </section>
 
-      {/* Activity */}
-      <section>
-        <Card>
-          <CardHeader title="Recent Activity" />
-          <ul className="mt-4 space-y-3">
-            {ACTIVITY.map((a, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" aria-hidden />
-                <div className="flex-1">
-                  <p className="text-sm text-foreground">{a.text}</p>
-                  <p className="text-xs text-muted-foreground">{a.date}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+      <section aria-label="Portal sections" className="grid gap-4 md:grid-cols-3">
+        <PlaceholderCard
+          icon={FileText}
+          section={summary.portal_sections?.documents}
+          fallbackLabel="Documents"
+          fallbackMessage="Document upload will be available in the next step."
+        />
+        <PlaceholderCard
+          icon={CheckCircle2}
+          section={summary.portal_sections?.offers}
+          fallbackLabel="Offers"
+          fallbackMessage="Your options will be reviewed after your application details are complete."
+        />
+        <PlaceholderCard
+          icon={FolderOpen}
+          section={summary.portal_sections?.application}
+          fallbackLabel="Application"
+          fallbackMessage="Your application workspace is being prepared."
+        />
       </section>
     </div>
   );
 }
 
-function PageHeaderLite({ title, subtitle }: { title: string; subtitle?: string }) {
-  // Lightweight inline header (PageHeader is reserved for top-of-page hero use)
-  void PageHeader;
+function PortalPanel({ children }: { children: ReactNode }) {
   return (
-    <div>
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
-      {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">{children}</section>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
-function monthsUntil(dateStr: string): number {
-  const target = new Date(dateStr);
-  if (isNaN(target.getTime())) return 999;
-  const now = new Date();
-  return Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-}
+function SnapshotCard({ summary }: { summary: BorrowerPortalSummary }) {
+  const qualification = summary.latest_qualification;
+  const snapshot = summary.latest_snapshot;
 
-type Nba = {
-  eyebrow: string;
-  title: string;
-  subtitle: string;
-  meta?: string;
-  ctaLabel: string;
-  ctaTo: "/portal/applications" | "/internal/full-application" | "/portal/documents" | "/portal/tools/renewal-comparison";
-  ctaParams?: Record<string, string>;
-  tone: "secondary" | "primary" | "amber";
-};
-
-function buildNextBestAction(args: {
-  activeIncomplete?: { id: string; property: string; daysToExpiry: number };
-  submittedFirst?: { id: string; property: string; conditionsOutstanding: number };
-  docsPending: number;
-  conditionsOutstanding: number;
-  showRenewalNudge: boolean;
-  fundedMaturityMonths: number | null;
-}): Nba | null {
-  const { activeIncomplete, submittedFirst, docsPending, conditionsOutstanding, showRenewalNudge, fundedMaturityMonths } = args;
-
-  if (submittedFirst && conditionsOutstanding > 0) {
-    return {
-      eyebrow: "Next best action",
-      title: `Clear ${conditionsOutstanding} outstanding condition${conditionsOutstanding === 1 ? "" : "s"}`,
-      subtitle: `${submittedFirst.id} · ${submittedFirst.property}`,
-      meta: "Lender is waiting on you",
-      ctaLabel: "View conditions",
-      ctaTo: "/portal/applications",
-      tone: "amber",
-    };
-  }
-  if (docsPending > 0) {
-    return {
-      eyebrow: "Next best action",
-      title: `Upload ${docsPending} requested document${docsPending === 1 ? "" : "s"}`,
-      subtitle: "Keep your application moving forward",
-      ctaLabel: "Open Document Vault",
-      ctaTo: "/portal/documents",
-      tone: "secondary",
-    };
-  }
-  if (activeIncomplete) {
-    return {
-      eyebrow: "Next best action",
-      title: "Continue your purchase application",
-      subtitle: `${activeIncomplete.id} · ${activeIncomplete.property}`,
-      meta: `Expires in ${activeIncomplete.daysToExpiry} days`,
-      ctaLabel: "Continue Application",
-      ctaTo: "/internal/full-application",
-      tone: activeIncomplete.daysToExpiry <= 3 ? "amber" : "secondary",
-    };
-  }
-  if (showRenewalNudge && fundedMaturityMonths !== null) {
-    return {
-      eyebrow: "Renewal coming up",
-      title: "Start your renewal review",
-      subtitle: `Maturity in ~${fundedMaturityMonths} month${fundedMaturityMonths === 1 ? "" : "s"}`,
-      ctaLabel: "Plan renewal",
-      ctaTo: "/portal/tools/renewal-comparison",
-      tone: "primary",
-    };
-  }
-  return null;
-}
-
-// ─── Next Best Action Card ──────────────────────────────────────────────
-function NextBestActionCard({ nba }: { nba: Nba }) {
-  const toneCls =
-    nba.tone === "amber" ? "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
-    : nba.tone === "primary" ? "border-primary/30 bg-gradient-to-br from-primary/8 via-card to-primary/5"
-    : "border-secondary/30 bg-card";
-  const iconCls = nba.tone === "amber" ? "bg-amber-200/40 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"
-    : nba.tone === "primary" ? "bg-primary/15 text-primary"
-    : "bg-secondary/15 text-secondary";
   return (
-    <section aria-label="Next best action" className={`rounded-3xl border p-5 shadow-sm sm:p-6 ${toneCls}`}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
-          <span className={`rounded-2xl p-3 ${iconCls}`}><Sparkles className="h-6 w-6" /></span>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary">{nba.eyebrow}</p>
-            <p className="mt-1 text-lg font-semibold text-foreground">{nba.title}</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">{nba.subtitle}</p>
-            {nba.meta && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-yellow/30 px-2.5 py-1 text-xs font-medium text-foreground">
-                <Clock className="h-3.5 w-3.5" /> {nba.meta}
-              </div>
-            )}
-          </div>
-        </div>
-        <Link
-          to={nba.ctaTo}
-          className="inline-flex shrink-0 items-center justify-center rounded-md bg-secondary px-4 py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90"
-        >
-          {nba.ctaLabel} <ArrowRight className="ml-1.5 h-4 w-4" />
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-// ─── Application Progress (stage 1–7) ───────────────────────────────────
-function ApplicationProgressWidget({
-  appId, property, status, progress, eta,
-}: { appId: string; property: string; status: string; progress: number; eta: string }) {
-  const stageIdx = stageFromStatus(status);
-  return (
-    <section aria-label="Application progress" className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-secondary">Application progress</p>
-          <h3 className="mt-0.5 text-base font-semibold text-foreground">{property}</h3>
-          <p className="text-xs text-muted-foreground">#{appId} · {status} · {eta}</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Mortgage Snapshot
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-foreground">
+            {snapshot ? "Snapshot ready" : qualification ? "Snapshot pending" : "No snapshot yet"}
+          </h2>
         </div>
-        <Link
-          to="/portal/applications/$applicationId"
-          params={{ applicationId: appId }}
-          className="inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80"
-        >
-          Open application hub <ArrowRight className="ml-1 h-3.5 w-3.5" />
-        </Link>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+          {snapshot ? <CheckCircle2 className="h-5 w-5" /> : <RefreshCw className="h-5 w-5" />}
+        </div>
       </div>
-      <div className="mb-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${progress}%` }} />
-      </div>
-      <ol className="flex items-center justify-between gap-1 overflow-x-auto pb-1">
-        {STAGES.map((label, i) => {
-          const done = i < stageIdx;
-          const active = i === stageIdx;
-          return (
-            <li key={label} className="flex flex-1 flex-col items-center min-w-[60px]">
-              <div className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
-                done ? "bg-primary text-primary-foreground"
-                : active ? "border border-secondary bg-secondary/15 text-secondary"
-                : "border border-border bg-background text-muted-foreground"
-              }`}>
-                {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
-              </div>
-              <span className={`mt-1 whitespace-nowrap text-[10px] ${
-                active ? "font-semibold text-secondary" : done ? "text-foreground" : "text-muted-foreground"
-              }`}>
-                {label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
+
+      {qualification ? (
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <SummaryTile
+            label="Reference"
+            value={qualification.public_reference ?? "Not available"}
+          />
+          <SummaryTile label="Path" value={formatValue(qualification.transaction_type)} />
+          <SummaryTile label="Status" value={formatValue(qualification.state)} />
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Start a borrower qualification to generate your first Mortgage Snapshot.
+        </p>
+      )}
+
+      {snapshot && (
+        <div className="mt-5 space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SummaryTile
+              label="Lending path"
+              value={formatValue(snapshot.preliminary_lending_path)}
+            />
+            <SummaryTile label="Readiness" value={formatValue(snapshot.readiness_status)} />
+          </div>
+
+          <InsightList
+            title="Key insights"
+            items={snapshot.key_insights}
+            empty="No insights yet."
+          />
+          <InsightList
+            title="Missing items"
+            items={snapshot.missing_items}
+            empty="No missing items listed."
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
-// ─── Renewal Countdown ──────────────────────────────────────────────────
-function RenewalCountdownCard({ funded, months }: {
-  funded: { id: string; property: string; lender: string; maturityDate: string; rateType: string };
-  months: number;
+function PlaceholderCard({
+  icon: Icon,
+  section,
+  fallbackLabel,
+  fallbackMessage,
+}: {
+  icon: LucideIcon;
+  section?: BorrowerPortalSection | null;
+  fallbackLabel: string;
+  fallbackMessage: string;
 }) {
   return (
-    <section aria-label="Renewal countdown" className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/8 via-card to-secondary/5 p-5 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="rounded-2xl bg-primary/15 p-3 text-primary"><CalendarClock className="h-5 w-5" /></span>
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Renewal coming up</p>
-            <p className="mt-0.5 text-base font-semibold text-foreground">
-              {months} month{months === 1 ? "" : "s"} until your mortgage matures
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {funded.lender} · {funded.rateType} · matures {funded.maturityDate}
-            </p>
-          </div>
-        </div>
-        <Link
-          to="/portal/tools/renewal-comparison"
-          className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          Start renewal review <ArrowRight className="ml-1.5 h-4 w-4" />
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-// ─── Disclosure Status Row ──────────────────────────────────────────────
-function DisclosureStatusRow() {
-  const reviewed = DISCLOSURES.filter((d) => d.reviewed).length;
-  const total = DISCLOSURES.length;
-  const allDone = reviewed === total;
-  return (
-    <section
-      aria-label="Disclosure status"
-      className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${
-        allDone ? "border-mint bg-mint/15" : "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
-      }`}
-    >
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <span className={`rounded-xl p-2.5 ${allDone ? "bg-mint/40 text-mint-foreground" : "bg-amber-200/50 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"}`}>
-          <ShieldCheck className="h-5 w-5" />
-        </span>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-foreground/70">Required disclosures</p>
-          <p className="mt-0.5 text-sm font-semibold text-foreground">
-            {allDone ? "All disclosures reviewed" : `${total - reviewed} disclosure${total - reviewed === 1 ? "" : "s"} need your review`}
+          <h2 className="text-base font-semibold text-foreground">
+            {section?.label ?? fallbackLabel}
+          </h2>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {formatValue(section?.status ?? "not_started")}
           </p>
-          <p className="text-xs text-muted-foreground">{reviewed} of {total} acknowledged</p>
         </div>
       </div>
-      <Link
-        to="/portal/settings/privacy"
-        className={`inline-flex items-center justify-center rounded-md px-3.5 py-2 text-xs font-semibold ${
-          allDone ? "border border-mint bg-background text-foreground hover:bg-muted" : "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:text-amber-950"
-        }`}
-      >
-        {allDone ? "View disclosures" : "Review now"} <ArrowRight className="ml-1 h-3.5 w-3.5" />
-      </Link>
-    </section>
-  );
-}
-
-// ─── Rate Watch ─────────────────────────────────────────────────────────
-function RateWatchCard() {
-  const [alertOn, setAlertOn] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("approvu:rate-alert") === "1";
-  });
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("approvu:rate-alert", alertOn ? "1" : "0");
-    }
-  }, [alertOn]);
-
-  const fixed = RATES.fiveYrFixed;
-  const variable = RATES.fiveYrVariable;
-  const fixedDelta = +(fixed.rate - fixed.prev).toFixed(2);
-  const varDelta = +(variable.rate - variable.prev).toFixed(2);
-
-  return (
-    <Card>
-      <CardHeader
-        title="Rate watch"
-        right={<span className="text-[11px] text-muted-foreground">Updated {fixed.ts}</span>}
-      />
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <RateTile label="5-yr fixed" rate={fixed.rate} delta={fixedDelta} />
-        <RateTile label="5-yr variable" rate={variable.rate} delta={varDelta} />
-      </div>
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
-        <div className="flex items-start gap-2">
-          <span className={`mt-0.5 rounded-md p-1.5 ${alertOn ? "bg-secondary/15 text-secondary" : "bg-muted text-muted-foreground"}`}>
-            {alertOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-foreground">Rate-drop alerts</p>
-            <p className="text-[11px] text-muted-foreground">
-              {alertOn ? "We'll email you when 5-yr fixed drops by 0.10%+" : "Get notified when rates drop in your favour."}
-            </p>
-          </div>
-        </div>
-        <button
-          role="switch"
-          aria-checked={alertOn}
-          onClick={() => {
-            setAlertOn((v) => !v);
-            toast.success(alertOn ? "Rate alerts turned off" : "Rate alerts turned on");
-          }}
-          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${alertOn ? "bg-secondary" : "bg-muted"}`}
-        >
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${alertOn ? "translate-x-4" : "translate-x-0.5"}`} />
-        </button>
-      </div>
-      <Link to="/portal/tools/renewal-comparison" className="mt-3 inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80">
-        Run a rate scenario <ArrowRight className="ml-1 h-3.5 w-3.5" />
-      </Link>
-    </Card>
-  );
-}
-
-function RateTile({ label, rate, delta }: { label: string; rate: number; delta: number }) {
-  const dropped = delta < 0;
-  const flat = delta === 0;
-  return (
-    <div className="rounded-xl border border-border bg-background p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-foreground">{rate.toFixed(2)}%</p>
-      <div className={`mt-1 inline-flex items-center gap-1 text-[11px] font-medium ${
-        flat ? "text-muted-foreground" : dropped ? "text-mint-foreground" : "text-coral"
-      }`}>
-        {flat ? "—" : dropped ? <TrendingDown className="h-3 w-3" /> : <TrendingUp className="h-3 w-3" />}
-        {flat ? "no change" : `${dropped ? "" : "+"}${delta.toFixed(2)}% vs last week`}
-      </div>
+      <p className="mt-4 text-sm text-muted-foreground">{section?.message ?? fallbackMessage}</p>
     </div>
   );
 }
 
-// ─── Advisor card ───────────────────────────────────────────────────────
-function AdvisorCard() {
+function InsightList({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items?: string[] | null;
+  empty: string;
+}) {
+  const visibleItems = items?.filter(Boolean) ?? [];
+
   return (
-    <Card>
-      <CardHeader title="Your advisor" />
-      <div className="mt-4 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-sm font-semibold text-primary-foreground shadow">
-          {ADVISOR.initials}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">{ADVISOR.name}</p>
-          <p className="text-xs text-muted-foreground">{ADVISOR.title}</p>
-          <p className="text-[11px] text-muted-foreground">{ADVISOR.responseTime}</p>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          onClick={() => toast.success("Opening calendar to book a 15-minute call")}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          <Phone className="h-3.5 w-3.5" /> Book 15-min call
-        </button>
-        <button
-          onClick={() => toast.success("Message thread opened")}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-        >
-          <MessageSquare className="h-3.5 w-3.5" /> Message
-        </button>
-      </div>
-    </Card>
+    <div>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      {visibleItems.length > 0 ? (
+        <ul className="mt-2 space-y-2">
+          {visibleItems.slice(0, 3).map((item) => (
+            <li key={item} className="flex gap-2 text-sm text-muted-foreground">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">{empty}</p>
+      )}
+    </div>
   );
 }
 
-// ─── Saved Scenarios ────────────────────────────────────────────────────
-function SavedScenariosCard() {
-  const { list, remove } = useSavedScenarios();
-  return (
-    <section aria-label="Saved scenarios">
-      <Card>
-        <CardHeader
-          title="Saved scenarios"
-          right={
-            <Link to="/portal/tools" className="text-xs font-medium text-secondary hover:underline">
-              Open Mortgage Tools <ArrowRight className="ml-0.5 inline h-3 w-3" />
-            </Link>
-          }
-        />
-        {list.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-border bg-background p-6 text-center">
-            <Calculator className="mx-auto h-6 w-6 text-muted-foreground" />
-            <p className="mt-2 text-sm font-semibold text-foreground">No saved scenarios yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use the calculators to estimate payments, savings and equity — save any scenario to revisit it here.
-            </p>
-            <Link to="/portal/tools" className="mt-3 inline-flex items-center text-xs font-semibold text-primary hover:text-primary/80">
-              Browse tools <ArrowRight className="ml-1 h-3 w-3" />
-            </Link>
-          </div>
-        ) : (
-          <ul className="mt-4 divide-y divide-border">
-            {list.slice(0, 4).map((s) => (
-              <li key={s.id} className="flex items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-secondary">{s.tool}</p>
-                  <p className="truncate text-sm font-medium text-foreground">{s.name}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Saved {new Date(s.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <button
-                  onClick={() => { remove(s.id); toast.message("Scenario removed"); }}
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-coral"
-                  aria-label="Remove scenario"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </section>
-  );
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] || "there";
+}
+
+function formatValue(value?: string | null): string {
+  if (!value) return "Not available";
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function normalizeAction(
+  action?: string | null,
+): "start_qualification" | "generate_snapshot" | "view_snapshot" {
+  if (action === "generate_snapshot" || action === "view_snapshot") return action;
+  return "start_qualification";
+}
+
+function routeForAction(
+  action: "start_qualification" | "generate_snapshot" | "view_snapshot",
+  snapshotReference?: string | null,
+): "/purchase" | "/portal" {
+  if (action === "start_qualification") return "/purchase";
+  if (action === "view_snapshot" && snapshotReference) return "/portal";
+  return "/portal";
 }
