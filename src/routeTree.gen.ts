@@ -20,6 +20,7 @@ import { Route as PrePurchaseRouteImport } from './routes/pre-purchase'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as CreateAccountRouteImport } from './routes/create-account'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as R500RouteImport } from './routes/500'
 import { Route as IndexRouteImport } from './routes/index'
@@ -148,6 +149,11 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateAccountRoute = CreateAccountRouteImport.update({
+  id: '/create-account',
+  path: '/create-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CookiesRoute = CookiesRouteImport.update({
@@ -567,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
+  '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
@@ -654,6 +661,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
+  '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/pre-purchase': typeof PrePurchaseRoute
@@ -740,6 +748,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/500': typeof R500Route
   '/cookies': typeof CookiesRoute
+  '/create-account': typeof CreateAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
@@ -829,6 +838,7 @@ export interface FileRouteTypes {
     | '/'
     | '/500'
     | '/cookies'
+    | '/create-account'
     | '/forgot-password'
     | '/login'
     | '/portal'
@@ -916,6 +926,7 @@ export interface FileRouteTypes {
     | '/'
     | '/500'
     | '/cookies'
+    | '/create-account'
     | '/forgot-password'
     | '/login'
     | '/pre-purchase'
@@ -1001,6 +1012,7 @@ export interface FileRouteTypes {
     | '/'
     | '/500'
     | '/cookies'
+    | '/create-account'
     | '/forgot-password'
     | '/login'
     | '/portal'
@@ -1089,6 +1101,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   R500Route: typeof R500Route
   CookiesRoute: typeof CookiesRoute
+  CreateAccountRoute: typeof CreateAccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
@@ -1190,6 +1203,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create-account': {
+      id: '/create-account'
+      path: '/create-account'
+      fullPath: '/create-account'
+      preLoaderRoute: typeof CreateAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cookies': {
@@ -1918,6 +1938,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   R500Route: R500Route,
   CookiesRoute: CookiesRoute,
+  CreateAccountRoute: CreateAccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
