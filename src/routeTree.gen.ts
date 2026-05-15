@@ -32,6 +32,7 @@ import { Route as PortalNotificationsRouteImport } from './routes/portal.notific
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
 import { Route as PortalHomeRouteImport } from './routes/portal.home'
 import { Route as PortalHelpRouteImport } from './routes/portal.help'
+import { Route as PortalApplicationRouteImport } from './routes/portal.application'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
 import { Route as PortalDisclosuresRouteImport } from './routes/portal.disclosures'
 import { Route as PortalAppointmentsRouteImport } from './routes/portal.appointments'
@@ -209,6 +210,11 @@ const PortalHomeRoute = PortalHomeRouteImport.update({
 const PortalHelpRoute = PortalHelpRouteImport.update({
   id: '/help',
   path: '/help',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalApplicationRoute = PortalApplicationRouteImport.update({
+  id: '/application',
+  path: '/application',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalDocumentsRoute = PortalDocumentsRouteImport.update({
@@ -589,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/application': typeof PortalApplicationRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
@@ -676,6 +683,7 @@ export interface FileRoutesByTo {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/application': typeof PortalApplicationRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
@@ -764,6 +772,7 @@ export interface FileRoutesById {
   '/internal/borrower-dashboard': typeof InternalBorrowerDashboardRoute
   '/internal/full-application': typeof InternalFullApplicationRoute
   '/internal/mortgage-offers': typeof InternalMortgageOffersRoute
+  '/portal/application': typeof PortalApplicationRoute
   '/portal/appointments': typeof PortalAppointmentsRoute
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
@@ -854,6 +863,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/application'
     | '/portal/appointments'
     | '/portal/disclosures'
     | '/portal/documents'
@@ -941,6 +951,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/application'
     | '/portal/appointments'
     | '/portal/disclosures'
     | '/portal/documents'
@@ -1028,6 +1039,7 @@ export interface FileRouteTypes {
     | '/internal/borrower-dashboard'
     | '/internal/full-application'
     | '/internal/mortgage-offers'
+    | '/portal/application'
     | '/portal/appointments'
     | '/portal/disclosures'
     | '/portal/documents'
@@ -1287,6 +1299,13 @@ declare module '@tanstack/react-router' {
       path: '/help'
       fullPath: '/portal/help'
       preLoaderRoute: typeof PortalHelpRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/application': {
+      id: '/portal/application'
+      path: '/application'
+      fullPath: '/portal/application'
+      preLoaderRoute: typeof PortalApplicationRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/documents': {
@@ -1836,6 +1855,7 @@ const PortalToolsRouteWithChildren = PortalToolsRoute._addFileChildren(
 )
 
 interface PortalRouteChildren {
+  PortalApplicationRoute: typeof PortalApplicationRoute
   PortalAppointmentsRoute: typeof PortalAppointmentsRoute
   PortalDisclosuresRoute: typeof PortalDisclosuresRoute
   PortalDocumentsRoute: typeof PortalDocumentsRoute
@@ -1862,6 +1882,7 @@ interface PortalRouteChildren {
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalApplicationRoute: PortalApplicationRoute,
   PortalAppointmentsRoute: PortalAppointmentsRoute,
   PortalDisclosuresRoute: PortalDisclosuresRoute,
   PortalDocumentsRoute: PortalDocumentsRoute,
