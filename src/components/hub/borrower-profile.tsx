@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
   AlertCircle,
@@ -26,6 +26,10 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import {
+  getBorrowerApplicationSection,
+  saveBorrowerApplicationSection,
+} from "@/lib/api/borrowerApplicationSectionsApi";
 
 // ─── Types ─────────────────────────────────────────────────────────
 export type BorrowerProfileApplicant = {
@@ -40,14 +44,7 @@ export type BorrowerProfileApplicant = {
   invitedAgo?: string;
 };
 
-type SectionKey =
-  | "about"
-  | "address"
-  | "income"
-  | "credit"
-  | "assets"
-  | "properties"
-  | "review";
+type SectionKey = "about" | "address" | "income" | "credit" | "assets" | "properties" | "review";
 
 type SectionState =
   | "Not Started"
@@ -55,6 +52,127 @@ type SectionState =
   | "Complete"
   | "Needs Review"
   | "Missing Required Info";
+
+type SaveStatus = "saved" | "unsaved" | "saving";
+type RestoreSource = "saved" | "prefill" | "none";
+
+type CreditDetails = {
+  creditScore: string;
+  scoreSource: string;
+  bankruptcy: "yes" | "no" | "";
+  bankruptcyType: "bankruptcy" | "consumer_proposal" | "";
+  bankruptcyActive: "yes" | "no" | "";
+  dischargedWhen: string;
+};
+
+const EMPTY_CREDIT_DETAILS: CreditDetails = {
+  creditScore: "",
+  scoreSource: "",
+  bankruptcy: "",
+  bankruptcyType: "",
+  bankruptcyActive: "",
+  dischargedWhen: "",
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasSectionData(value: unknown): value is Record<string, unknown> {
+  return isRecord(value) && Object.keys(value).length > 0;
+}
+
+function toIncomeSource(value: unknown, index: number): IncomeSource | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    id: typeof value.id === "string" ? value.id : `restored-income-${index}`,
+    type: typeof value.type === "string" ? value.type : "",
+    source: typeof value.source === "string" ? value.source : "",
+    jobTitle: typeof value.jobTitle === "string" ? value.jobTitle : undefined,
+    startDate: typeof value.startDate === "string" ? value.startDate : "",
+    grossIncome:
+      typeof value.grossIncome === "number" ? value.grossIncome : Number(value.grossIncome ?? 0),
+    frequency: isIncomeFrequency(value.frequency) ? value.frequency : "Annual",
+    verification: typeof value.verification === "string" ? value.verification : "",
+    include: typeof value.include === "boolean" ? value.include : true,
+  };
+}
+
+function isIncomeFrequency(value: unknown): value is IncomeSource["frequency"] {
+  return (
+    value === "Annual" ||
+    value === "Monthly" ||
+    value === "Bi-Weekly" ||
+    value === "Weekly" ||
+    value === "Hourly"
+  );
+}
+
+function toCreditDetails(value: unknown): CreditDetails {
+  if (!isRecord(value)) return EMPTY_CREDIT_DETAILS;
+
+  return {
+    creditScore:
+      typeof value.creditScore === "string" ? value.creditScore : String(value.creditScore ?? ""),
+    scoreSource: typeof value.scoreSource === "string" ? value.scoreSource : "",
+    bankruptcy: value.bankruptcy === "yes" || value.bankruptcy === "no" ? value.bankruptcy : "",
+    bankruptcyType:
+      value.bankruptcyType === "bankruptcy" || value.bankruptcyType === "consumer_proposal"
+        ? value.bankruptcyType
+        : "",
+    bankruptcyActive:
+      value.bankruptcyActive === "yes" || value.bankruptcyActive === "no"
+        ? value.bankruptcyActive
+        : "",
+    dischargedWhen: typeof value.dischargedWhen === "string" ? value.dischargedWhen : "",
+  };
+}
+
+function toLiability(value: unknown, fallbackOwnerId: string, index: number): Liability | null {
+  if (!isRecord(value)) return null;
+
+  return {
+    id: typeof value.id === "string" ? value.id : `restored-liability-${index}`,
+    ownerId: typeof value.ownerId === "string" ? value.ownerId : fallbackOwnerId,
+    creditor: typeof value.creditor === "string" ? value.creditor : "",
+    type: typeof value.type === "string" ? value.type : "",
+    balance: typeof value.balance === "number" ? value.balance : Number(value.balance ?? 0),
+    monthlyPayment:
+      typeof value.monthlyPayment === "number"
+        ? value.monthlyPayment
+        : Number(value.monthlyPayment ?? 0),
+    shared: typeof value.shared === "boolean" ? value.shared : false,
+    sharedWith: Array.isArray(value.sharedWith)
+      ? value.sharedWith.filter((id): id is string => typeof id === "string")
+      : [],
+    paymentHistory: isPaymentHistory(value.paymentHistory) ? value.paymentHistory : "",
+    payoffPlan: isPayoffPlan(value.payoffPlan) ? value.payoffPlan : "",
+  };
+}
+
+function isPaymentHistory(value: unknown): value is Liability["paymentHistory"] {
+  return (
+    value === "" ||
+    value === "R1" ||
+    value === "R2" ||
+    value === "R3" ||
+    value === "R4" ||
+    value === "R5" ||
+    value === "R7" ||
+    value === "R8" ||
+    value === "R9"
+  );
+}
+
+function isPayoffPlan(value: unknown): value is Liability["payoffPlan"] {
+  return (
+    value === "" ||
+    value === "payoff_before_closing" ||
+    value === "leave_open" ||
+    value === "include_in_loan"
+  );
+}
 
 type Section = {
   key: SectionKey;
@@ -86,21 +204,8 @@ export type Liability = {
   monthlyPayment: number;
   shared: boolean;
   sharedWith: string[]; // applicant IDs the debt is shared with
-  paymentHistory:
-    | ""
-    | "R1"
-    | "R2"
-    | "R3"
-    | "R4"
-    | "R5"
-    | "R7"
-    | "R8"
-    | "R9";
-  payoffPlan:
-    | ""
-    | "payoff_before_closing"
-    | "leave_open"
-    | "include_in_loan";
+  paymentHistory: "" | "R1" | "R2" | "R3" | "R4" | "R5" | "R7" | "R8" | "R9";
+  payoffPlan: "" | "payoff_before_closing" | "leave_open" | "include_in_loan";
 };
 
 type Asset = {
@@ -157,13 +262,55 @@ type PropertyMortgage = {
 
 // ─── Mock seeds ────────────────────────────────────────────────────
 const SECTIONS_BASE: Omit<Section, "state">[] = [
-  { key: "about", shortLabel: "About", label: "About the Borrower", description: "Personal, identity, and contact details", icon: User },
-  { key: "address", shortLabel: "Address", label: "Borrower Address", description: "Current & previous address history", icon: MapPin },
-  { key: "income", shortLabel: "Income", label: "Employment & Income", description: "Employment, business, and other income", icon: Briefcase },
-  { key: "credit", shortLabel: "Credit", label: "Credit & Liabilities", description: "Credit profile and monthly debts", icon: CreditCard },
-  { key: "assets", shortLabel: "Assets", label: "Assets", description: "Down payment, reserves, and net worth", icon: PiggyBank },
-  { key: "properties", shortLabel: "Properties", label: "Other Properties", description: "Properties owned outside this application", icon: Building2 },
-  { key: "review", shortLabel: "Review", label: "Review & Consent", description: "Confirm details and sign required consents", icon: FileSignature },
+  {
+    key: "about",
+    shortLabel: "About",
+    label: "About the Borrower",
+    description: "Personal, identity, and contact details",
+    icon: User,
+  },
+  {
+    key: "address",
+    shortLabel: "Address",
+    label: "Borrower Address",
+    description: "Current & previous address history",
+    icon: MapPin,
+  },
+  {
+    key: "income",
+    shortLabel: "Income",
+    label: "Employment & Income",
+    description: "Employment, business, and other income",
+    icon: Briefcase,
+  },
+  {
+    key: "credit",
+    shortLabel: "Credit",
+    label: "Credit & Liabilities",
+    description: "Credit profile and monthly debts",
+    icon: CreditCard,
+  },
+  {
+    key: "assets",
+    shortLabel: "Assets",
+    label: "Assets",
+    description: "Down payment, reserves, and net worth",
+    icon: PiggyBank,
+  },
+  {
+    key: "properties",
+    shortLabel: "Properties",
+    label: "Other Properties",
+    description: "Properties owned outside this application",
+    icon: Building2,
+  },
+  {
+    key: "review",
+    shortLabel: "Review",
+    label: "Review & Consent",
+    description: "Confirm details and sign required consents",
+    icon: FileSignature,
+  },
 ];
 
 const SEED_INCOME_PRIMARY: IncomeSource[] = [
@@ -346,6 +493,18 @@ export function BorrowerProfilePage({
   const [noneLiab, setNoneLiab] = useState(false);
   const [noneAssets, setNoneAssets] = useState(false);
   const [noneProps, setNoneProps] = useState(false);
+  const [creditDetails, setCreditDetails] = useState<CreditDetails>(EMPTY_CREDIT_DETAILS);
+  const [incomeSaveStatus, setIncomeSaveStatus] = useState<SaveStatus>("saved");
+  const [liabilitiesSaveStatus, setLiabilitiesSaveStatus] = useState<SaveStatus>("saved");
+  const [sectionSaveError, setSectionSaveError] = useState<string | null>(null);
+  const [loadingIncomeRestore, setLoadingIncomeRestore] = useState(true);
+  const [loadingLiabilitiesRestore, setLoadingLiabilitiesRestore] = useState(true);
+  const [incomeRestoreSource, setIncomeRestoreSource] = useState<RestoreSource>("none");
+  const [liabilitiesRestoreSource, setLiabilitiesRestoreSource] = useState<RestoreSource>("none");
+  const [incomeRestoreError, setIncomeRestoreError] = useState<string | null>(null);
+  const [liabilitiesRestoreError, setLiabilitiesRestoreError] = useState<string | null>(null);
+  const incomeEditedRef = useRef(false);
+  const liabilitiesEditedRef = useRef(false);
 
   // Drawers
   const [drawer, setDrawer] = useState<null | "income" | "liab" | "asset" | "property">(null);
@@ -356,11 +515,16 @@ export function BorrowerProfilePage({
   // Visible liabilities for this applicant: own + any shared FROM others where this applicant is included
   const visibleLiabilities = useMemo(
     () =>
-      liabilities.filter(
-        (l) => l.ownerId === applicant.id || l.sharedWith.includes(applicant.id),
-      ),
+      liabilities.filter((l) => l.ownerId === applicant.id || l.sharedWith.includes(applicant.id)),
     [liabilities, applicant.id],
   );
+  const visibleLiabilitiesRef = useRef<Liability[]>(visibleLiabilities);
+  const onRemoveLiabilityRef = useRef(onRemoveLiability);
+  const onUpsertLiabilityRef = useRef(onUpsertLiability);
+  visibleLiabilitiesRef.current = visibleLiabilities;
+  onRemoveLiabilityRef.current = onRemoveLiability;
+  onUpsertLiabilityRef.current = onUpsertLiability;
+
   const applicantNameById = useMemo(() => {
     const map: Record<string, string> = { [applicant.id]: applicant.name };
     coApplicants.forEach((c) => {
@@ -386,6 +550,72 @@ export function BorrowerProfilePage({
   const markSection = (key: SectionKey, state: SectionState) =>
     setSections((prev) => prev.map((s) => (s.key === key ? { ...s, state } : s)));
 
+  const markIncomeDirty = () => {
+    incomeEditedRef.current = true;
+    setIncomeSaveStatus("unsaved");
+    setSectionSaveError(null);
+  };
+
+  const markLiabilitiesDirty = () => {
+    liabilitiesEditedRef.current = true;
+    setLiabilitiesSaveStatus("unsaved");
+    setSectionSaveError(null);
+  };
+
+  const buildIncomeSectionData = () => ({
+    borrower_id: applicant.id,
+    borrower_name: applicant.name,
+    no_income_declared: noneIncome,
+    income_sources: income.map(({ id, ...source }) => ({ id, ...source })),
+  });
+
+  const buildLiabilitiesSectionData = () => ({
+    borrower_id: applicant.id,
+    borrower_name: applicant.name,
+    no_liabilities_declared: noneLiab,
+    credit_details: creditDetails,
+    liabilities: visibleLiabilities.map((liability) => ({ ...liability })),
+  });
+
+  const saveIncomeSection = async (status: "in_progress" | "complete", continueNext = false) => {
+    setIncomeSaveStatus("saving");
+    setSectionSaveError(null);
+    try {
+      await saveBorrowerApplicationSection("income", {
+        data: buildIncomeSectionData(),
+        status,
+        current_step: "income",
+      });
+      setIncomeSaveStatus("saved");
+      markSection("income", status === "complete" ? "Complete" : "In Progress");
+      if (continueNext) goNext();
+    } catch {
+      setIncomeSaveStatus("unsaved");
+      setSectionSaveError("We could not save this section right now. Please try again.");
+    }
+  };
+
+  const saveLiabilitiesSection = async (
+    status: "in_progress" | "complete",
+    continueNext = false,
+  ) => {
+    setLiabilitiesSaveStatus("saving");
+    setSectionSaveError(null);
+    try {
+      await saveBorrowerApplicationSection("liabilities", {
+        data: buildLiabilitiesSectionData(),
+        status,
+        current_step: "liabilities",
+      });
+      setLiabilitiesSaveStatus("saved");
+      markSection("credit", status === "complete" ? "Complete" : "In Progress");
+      if (continueNext) goNext();
+    } catch {
+      setLiabilitiesSaveStatus("unsaved");
+      setSectionSaveError("We could not save this section right now. Please try again.");
+    }
+  };
+
   const goNext = () => {
     const idx = sections.findIndex((s) => s.key === active);
     if (idx < sections.length - 1) setActive(sections[idx + 1].key);
@@ -395,8 +625,130 @@ export function BorrowerProfilePage({
     if (idx > 0) setActive(sections[idx - 1].key);
   };
 
-  const consentsComplete =
-    consents.accuracy && consents.use && consents.each && consents.authorize;
+  const saveActiveSectionAndContinue = () => {
+    if (active === "income") {
+      void saveIncomeSection("complete", true);
+      return;
+    }
+
+    if (active === "credit") {
+      void saveLiabilitiesSection("complete", true);
+      return;
+    }
+
+    markSection(active, "Complete");
+    goNext();
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoadingIncomeRestore(true);
+    setIncomeRestoreError(null);
+    setIncomeRestoreSource("none");
+
+    getBorrowerApplicationSection("income")
+      .then((res) => {
+        if (cancelled || incomeEditedRef.current) return;
+
+        const section = res.section;
+        const effective = section?.effective_data;
+        if (!hasSectionData(effective)) {
+          setIncomeRestoreSource("none");
+          return;
+        }
+
+        const restoredSources = Array.isArray(effective.income_sources)
+          ? effective.income_sources
+              .map((source, index) => toIncomeSource(source, index))
+              .filter((source): source is IncomeSource => source !== null)
+          : [];
+
+        if (Array.isArray(effective.income_sources)) {
+          setIncome(restoredSources);
+        }
+        if (typeof effective.no_income_declared === "boolean") {
+          setNoneIncome(effective.no_income_declared);
+        }
+
+        setIncomeSaveStatus("saved");
+        setIncomeRestoreSource(hasSectionData(section?.data) ? "saved" : "prefill");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIncomeRestoreError(
+            "We could not restore your saved income details. You can continue entering them manually.",
+          );
+          setIncomeRestoreSource("none");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingIncomeRestore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applicant.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoadingLiabilitiesRestore(true);
+    setLiabilitiesRestoreError(null);
+    setLiabilitiesRestoreSource("none");
+
+    getBorrowerApplicationSection("liabilities")
+      .then((res) => {
+        if (cancelled || liabilitiesEditedRef.current) return;
+
+        const section = res.section;
+        const effective = section?.effective_data;
+        if (!hasSectionData(effective)) {
+          setLiabilitiesRestoreSource("none");
+          return;
+        }
+
+        const restoredLiabilities = Array.isArray(effective.liabilities)
+          ? effective.liabilities
+              .map((liability, index) => toLiability(liability, applicant.id, index))
+              .filter((liability): liability is Liability => liability !== null)
+          : [];
+
+        if (Array.isArray(effective.liabilities)) {
+          visibleLiabilitiesRef.current
+            .filter((liability) => liability.ownerId === applicant.id)
+            .forEach((liability) => onRemoveLiabilityRef.current(liability.id));
+          restoredLiabilities.forEach(onUpsertLiabilityRef.current);
+        }
+        if (typeof effective.no_liabilities_declared === "boolean") {
+          setNoneLiab(effective.no_liabilities_declared);
+        }
+        if (isRecord(effective.credit_details)) {
+          setCreditDetails(toCreditDetails(effective.credit_details));
+        }
+
+        setLiabilitiesSaveStatus("saved");
+        setLiabilitiesRestoreSource(hasSectionData(section?.data) ? "saved" : "prefill");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLiabilitiesRestoreError(
+            "We could not restore your saved liabilities details. You can continue entering them manually.",
+          );
+          setLiabilitiesRestoreSource("none");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLiabilitiesRestore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applicant.id]);
+
+  const consentsComplete = consents.accuracy && consents.use && consents.each && consents.authorize;
 
   const handleComplete = () => {
     if (!consentsComplete) return;
@@ -458,9 +810,8 @@ export function BorrowerProfilePage({
             <div className="min-w-0">
               <p className="font-semibold">Completing on behalf of {applicant.name}</p>
               <p className="text-xs text-primary-foreground/75">
-                As the account holder you have full access to fill out this co-applicant's
-                profile. Invite sent to {applicant.email ?? "borrower"} · Status:{" "}
-                {applicant.inviteStatus}
+                As the account holder you have full access to fill out this co-applicant's profile.
+                Invite sent to {applicant.email ?? "borrower"} · Status: {applicant.inviteStatus}
               </p>
             </div>
             <button className="inline-flex items-center gap-1.5 rounded-md bg-primary-foreground px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-foreground/90">
@@ -521,30 +872,28 @@ export function BorrowerProfilePage({
         </ol>
       </nav>
 
-      {(ownProfileOnly || true) && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {ownProfileOnly && (
-            <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 text-xs">
-              <div className="flex items-center gap-2 font-semibold text-secondary">
-                <ShieldCheck className="h-4 w-4" /> Own Profile Only
-              </div>
-              <p className="mt-1.5 text-foreground/80">
-                You can view and complete your own profile. Other borrower profiles and full
-                application details are private.
-              </p>
-            </div>
-          )}
-          <div className="rounded-2xl border border-yellow/40 bg-yellow/15 p-4 text-xs">
-            <div className="flex items-center gap-2 font-semibold">
-              <Info className="h-4 w-4" /> Compliance
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ownProfileOnly && (
+          <div className="rounded-2xl border border-secondary/30 bg-secondary/10 p-4 text-xs">
+            <div className="flex items-center gap-2 font-semibold text-secondary">
+              <ShieldCheck className="h-4 w-4" /> Own Profile Only
             </div>
             <p className="mt-1.5 text-foreground/80">
-              Each adult borrower must complete their own consent, credit authorization, and
-              declarations.
+              You can view and complete your own profile. Other borrower profiles and full
+              application details are private.
             </p>
           </div>
+        )}
+        <div className="rounded-2xl border border-yellow/40 bg-yellow/15 p-4 text-xs">
+          <div className="flex items-center gap-2 font-semibold">
+            <Info className="h-4 w-4" /> Compliance
+          </div>
+          <p className="mt-1.5 text-foreground/80">
+            Each adult borrower must complete their own consent, credit authorization, and
+            declarations.
+          </p>
         </div>
-      )}
+      </div>
 
       {/* Main */}
       <div>
@@ -566,16 +915,76 @@ export function BorrowerProfilePage({
             </div>
 
             <div className="mt-6">
+              {active === "income" && loadingIncomeRestore && (
+                <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground animate-pulse">
+                  Loading your saved income details...
+                </div>
+              )}
+
+              {active === "credit" && loadingLiabilitiesRestore && (
+                <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground animate-pulse">
+                  Loading your saved liabilities details...
+                </div>
+              )}
+
+              {active === "income" && !loadingIncomeRestore && incomeRestoreSource !== "none" && (
+                <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {incomeRestoreSource === "saved"
+                      ? "Restored from your saved application."
+                      : "Pre-filled from your qualification answers. Please review and save."}
+                  </span>
+                </div>
+              )}
+
+              {active === "credit" &&
+                !loadingLiabilitiesRestore &&
+                liabilitiesRestoreSource !== "none" && (
+                  <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      {liabilitiesRestoreSource === "saved"
+                        ? "Restored from your saved application."
+                        : "Pre-filled from your qualification answers. Please review and save."}
+                    </span>
+                  </div>
+                )}
+
+              {active === "income" && incomeRestoreError && (
+                <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+                  {incomeRestoreError}
+                </div>
+              )}
+
+              {active === "credit" && liabilitiesRestoreError && (
+                <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+                  {liabilitiesRestoreError}
+                </div>
+              )}
+
+              {(active === "income" || active === "credit") && sectionSaveError && (
+                <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+                  {sectionSaveError}
+                </div>
+              )}
               {active === "about" && <AboutSection applicant={applicant} onMark={markSection} />}
               {active === "address" && <AddressSection onMark={markSection} />}
               {active === "income" && (
                 <IncomeSection
                   income={income}
                   none={noneIncome}
-                  setNone={setNoneIncome}
+                  setNone={(value) => {
+                    setNoneIncome(value);
+                    markIncomeDirty();
+                  }}
                   onAdd={() => setDrawer("income")}
-                  onRemove={(id) => setIncome((p) => p.filter((x) => x.id !== id))}
+                  onRemove={(id) => {
+                    setIncome((p) => p.filter((x) => x.id !== id));
+                    markIncomeDirty();
+                  }}
                   onMark={markSection}
+                  onSaveDraft={() => void saveIncomeSection("in_progress")}
                 />
               )}
               {active === "credit" && (
@@ -584,7 +993,15 @@ export function BorrowerProfilePage({
                   currentApplicantId={applicant.id}
                   applicantNameById={applicantNameById}
                   none={noneLiab}
-                  setNone={setNoneLiab}
+                  setNone={(value) => {
+                    setNoneLiab(value);
+                    markLiabilitiesDirty();
+                  }}
+                  creditDetails={creditDetails}
+                  setCreditDetails={(details) => {
+                    setCreditDetails(details);
+                    markLiabilitiesDirty();
+                  }}
                   onAdd={() => {
                     setEditingLiability(null);
                     setDrawer("liab");
@@ -593,9 +1010,16 @@ export function BorrowerProfilePage({
                     setEditingLiability(l);
                     setDrawer("liab");
                   }}
-                  onRemove={onRemoveLiability}
-                  onLeaveShared={(id) => onLeaveSharedLiability(id, applicant.id)}
+                  onRemove={(id) => {
+                    onRemoveLiability(id);
+                    markLiabilitiesDirty();
+                  }}
+                  onLeaveShared={(id) => {
+                    onLeaveSharedLiability(id, applicant.id);
+                    markLiabilitiesDirty();
+                  }}
                   onMark={markSection}
+                  onSaveDraft={() => void saveLiabilitiesSection("in_progress")}
                 />
               )}
               {active === "assets" && (
@@ -650,8 +1074,20 @@ export function BorrowerProfilePage({
           {/* Save & continue bar */}
           <div className="sticky bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
             <p className="text-xs text-muted-foreground">
-              <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-mint" /> Autosaved · changes
-              are saved as you go
+              <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-mint" />
+              {active === "income"
+                ? incomeSaveStatus === "saving"
+                  ? "Saving income..."
+                  : incomeSaveStatus === "unsaved"
+                    ? "Income has unsaved changes"
+                    : "Income saved"
+                : active === "credit"
+                  ? liabilitiesSaveStatus === "saving"
+                    ? "Saving liabilities..."
+                    : liabilitiesSaveStatus === "unsaved"
+                      ? "Liabilities have unsaved changes"
+                      : "Liabilities saved"
+                  : "Autosaved · changes are saved as you go"}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -675,11 +1111,12 @@ export function BorrowerProfilePage({
                 </button>
               ) : (
                 <button
-                  onClick={() => {
-                    markSection(active, "Complete");
-                    goNext();
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  onClick={saveActiveSectionAndContinue}
+                  disabled={
+                    (active === "income" && incomeSaveStatus === "saving") ||
+                    (active === "credit" && liabilitiesSaveStatus === "saving")
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Save & Continue <ArrowRight className="h-3.5 w-3.5" />
                 </button>
@@ -696,6 +1133,7 @@ export function BorrowerProfilePage({
           onSave={(data) => {
             setIncome((p) => [...p, { ...data, id: `inc-${Date.now()}` }]);
             setNoneIncome(false);
+            markIncomeDirty();
           }}
         />
       )}
@@ -713,6 +1151,7 @@ export function BorrowerProfilePage({
               : { ...data, id: `lia-${Date.now()}`, ownerId: applicant.id };
             onUpsertLiability(next);
             setNoneLiab(false);
+            markLiabilitiesDirty();
             setEditingLiability(null);
             setDrawer(null);
           }}
@@ -785,7 +1224,9 @@ export function BorrowerProfilePage({
           onSave={(data) => {
             setProperties((prev) =>
               editingProperty
-                ? prev.map((x) => (x.id === editingProperty.id ? { ...data, id: editingProperty.id } : x))
+                ? prev.map((x) =>
+                    x.id === editingProperty.id ? { ...data, id: editingProperty.id } : x,
+                  )
                 : [...prev, { ...data, id: `prop-${Date.now()}` }],
             );
             setNoneProps(false);
@@ -901,9 +1342,7 @@ function AboutSection({
         <YesNo label="Is this borrower occupying the property?" />
       </Group>
 
-      <SectionFootHelp
-        text="Updating legal name or date of birth after lender submission may require support to re-issue documents."
-      />
+      <SectionFootHelp text="Updating legal name or date of birth after lender submission may require support to re-issue documents." />
       <input type="hidden" onChange={() => onMark("about", "In Progress")} />
     </div>
   );
@@ -973,8 +1412,8 @@ function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) =
           </div>
           <p className="mt-1 text-xs text-foreground/80">
             A minimum of <span className="font-semibold">3 years</span> of address history is
-            required before proceeding. Add previous addresses until your combined history covers
-            at least 3 years.
+            required before proceeding. Add previous addresses until your combined history covers at
+            least 3 years.
           </p>
           <button className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
             <Plus className="h-3.5 w-3.5" /> Add Previous Address
@@ -994,6 +1433,7 @@ function IncomeSection({
   onAdd,
   onRemove,
   onMark,
+  onSaveDraft,
 }: {
   income: IncomeSource[];
   none: boolean;
@@ -1001,6 +1441,7 @@ function IncomeSection({
   onAdd: () => void;
   onRemove: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
+  onSaveDraft: () => void;
 }) {
   const totalDeclared = income.reduce(
     (sum, i) => sum + (i.frequency === "Annual" ? i.grossIncome : i.grossIncome * 12),
@@ -1085,7 +1526,10 @@ function IncomeSection({
           <Plus className="h-3.5 w-3.5" /> Add Income Source
         </button>
         <button
-          onClick={() => onMark("income", income.length > 0 || none ? "Complete" : "In Progress")}
+          onClick={() => {
+            onMark("income", "In Progress");
+            onSaveDraft();
+          }}
           className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
         >
           Save Progress
@@ -1101,29 +1545,33 @@ function CreditSection({
   applicantNameById,
   none,
   setNone,
+  creditDetails,
+  setCreditDetails,
   onAdd,
   onEdit,
   onRemove,
   onLeaveShared,
   onMark,
+  onSaveDraft,
 }: {
   liabilities: Liability[];
   currentApplicantId: string;
   applicantNameById: Record<string, string>;
   none: boolean;
   setNone: (v: boolean) => void;
+  creditDetails: CreditDetails;
+  setCreditDetails: (details: CreditDetails) => void;
   onAdd: () => void;
   onEdit: (l: Liability) => void;
   onRemove: (id: string) => void;
   onLeaveShared: (id: string) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
+  onSaveDraft: () => void;
 }) {
-  const [creditScore, setCreditScore] = useState("");
-  const [scoreSource, setScoreSource] = useState("");
-  const [bankruptcy, setBankruptcy] = useState<"yes" | "no" | "">("");
-  const [bankruptcyType, setBankruptcyType] = useState<"bankruptcy" | "consumer_proposal" | "">("");
-  const [bankruptcyActive, setBankruptcyActive] = useState<"yes" | "no" | "">("");
-  const [dischargedWhen, setDischargedWhen] = useState<string>("");
+  const { creditScore, scoreSource, bankruptcy, bankruptcyType, bankruptcyActive, dischargedWhen } =
+    creditDetails;
+  const updateCreditDetails = (patch: Partial<CreditDetails>) =>
+    setCreditDetails({ ...creditDetails, ...patch });
   // Only count debts owned by this applicant — shared debts are counted on the
   // owner's profile to avoid double counting in the qualification ratios.
   const ownLiabilities = liabilities.filter((l) => l.ownerId === currentApplicantId);
@@ -1146,9 +1594,10 @@ function CreditSection({
         <div>
           <p className="font-semibold">Why we ask for this information</p>
           <p className="mt-0.5 text-muted-foreground">
-            We're requesting detailed credit information to prevent checking your credit report at this early stage,
-            which could impact your score. All the information we're asking for can be found on your credit report,
-            and we'll ask you to upload a copy later to help our agents avoid pulling your credit record unnecessarily.
+            We're requesting detailed credit information to prevent checking your credit report at
+            this early stage, which could impact your score. All the information we're asking for
+            can be found on your credit report, and we'll ask you to upload a copy later to help our
+            agents avoid pulling your credit record unnecessarily.
           </p>
         </div>
       </div>
@@ -1158,10 +1607,12 @@ function CreditSection({
           <Input
             type="number"
             value={creditScore}
-            onChange={setCreditScore}
+            onChange={(value) => updateCreditDetails({ creditScore: value })}
             placeholder="e.g. 720"
           />
-          <p className={`mt-1 text-[11px] ${scoreInvalid ? "text-coral" : "text-muted-foreground"}`}>
+          <p
+            className={`mt-1 text-[11px] ${scoreInvalid ? "text-coral" : "text-muted-foreground"}`}
+          >
             {scoreInvalid
               ? "Please enter a score between 300 and 850."
               : "Enter your exact credit score (300–850)"}
@@ -1182,7 +1633,7 @@ function CreditSection({
                   type="radio"
                   name="score-source"
                   checked={scoreSource === s}
-                  onChange={() => setScoreSource(s)}
+                  onChange={() => updateCreditDetails({ scoreSource: s })}
                   className="h-3.5 w-3.5"
                 />
                 <span>{s}</span>
@@ -1195,8 +1646,8 @@ function CreditSection({
           <div>
             <p className="font-semibold text-foreground">Credit Report Upload Required</p>
             <p className="mt-0.5 text-muted-foreground">
-              Please upload a copy of your credit report in the document section of your application.
-              This helps our agents avoid pulling your credit record and saves costs.
+              Please upload a copy of your credit report in the document section of your
+              application. This helps our agents avoid pulling your credit record and saves costs.
             </p>
           </div>
         </div>
@@ -1214,12 +1665,16 @@ function CreditSection({
                   key={opt}
                   type="button"
                   onClick={() => {
-                    setBankruptcy(opt);
-                    if (opt === "no") {
-                      setBankruptcyType("");
-                      setBankruptcyActive("");
-                      setDischargedWhen("");
-                    }
+                    updateCreditDetails({
+                      bankruptcy: opt,
+                      ...(opt === "no"
+                        ? {
+                            bankruptcyType: "",
+                            bankruptcyActive: "",
+                            dischargedWhen: "",
+                          }
+                        : {}),
+                    });
                   }}
                   className={`rounded-md px-3 py-1 text-xs font-medium ${
                     bankruptcy === opt
@@ -1240,16 +1695,21 @@ function CreditSection({
                   Which one applies to you?
                 </p>
                 <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  {([
-                    ["bankruptcy", "Bankruptcy"],
-                    ["consumer_proposal", "Consumer Proposal"],
-                  ] as const).map(([val, label]) => (
-                    <label key={val} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                  {(
+                    [
+                      ["bankruptcy", "Bankruptcy"],
+                      ["consumer_proposal", "Consumer Proposal"],
+                    ] as const
+                  ).map(([val, label]) => (
+                    <label
+                      key={val}
+                      className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                    >
                       <input
                         type="radio"
                         name="bankruptcy-type"
                         checked={bankruptcyType === val}
-                        onChange={() => setBankruptcyType(val)}
+                        onChange={() => updateCreditDetails({ bankruptcyType: val })}
                         className="h-3.5 w-3.5 accent-primary"
                       />
                       {label}
@@ -1263,14 +1723,19 @@ function CreditSection({
                   <p className="mb-2 text-sm font-medium text-foreground">Is it still active?</p>
                   <div className="flex flex-wrap gap-x-6 gap-y-2">
                     {(["yes", "no"] as const).map((opt) => (
-                      <label key={opt} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                      <label
+                        key={opt}
+                        className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                      >
                         <input
                           type="radio"
                           name="bankruptcy-active"
                           checked={bankruptcyActive === opt}
                           onChange={() => {
-                            setBankruptcyActive(opt);
-                            if (opt === "yes") setDischargedWhen("");
+                            updateCreditDetails({
+                              bankruptcyActive: opt,
+                              dischargedWhen: opt === "yes" ? "" : dischargedWhen,
+                            });
                           }}
                           className="h-3.5 w-3.5 accent-primary"
                         />
@@ -1283,7 +1748,9 @@ function CreditSection({
 
               {bankruptcyType && bankruptcyActive === "no" && (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-foreground">When was it discharged?</p>
+                  <p className="mb-2 text-sm font-medium text-foreground">
+                    When was it discharged?
+                  </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {[
                       "Less than 12 months ago",
@@ -1291,12 +1758,15 @@ function CreditSection({
                       "2 years ago",
                       "Over 2 years ago",
                     ].map((opt) => (
-                      <label key={opt} className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+                      <label
+                        key={opt}
+                        className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground"
+                      >
                         <input
                           type="radio"
                           name="discharged-when"
                           checked={dischargedWhen === opt}
-                          onChange={() => setDischargedWhen(opt)}
+                          onChange={() => updateCreditDetails({ dischargedWhen: opt })}
                           className="h-3.5 w-3.5 accent-primary"
                         />
                         {opt}
@@ -1331,9 +1801,7 @@ function CreditSection({
         {liabilities.map((l, i) => {
           const isOwn = l.ownerId === currentApplicantId;
           const ownerName = applicantNameById[l.ownerId] ?? "another applicant";
-          const sharedNames = l.sharedWith
-            .map((id) => applicantNameById[id])
-            .filter(Boolean);
+          const sharedNames = l.sharedWith.map((id) => applicantNameById[id]).filter(Boolean);
           return (
             <div
               key={l.id}
@@ -1447,9 +1915,10 @@ function CreditSection({
           <Plus className="h-3.5 w-3.5" /> Add Debt
         </button>
         <button
-          onClick={() =>
-            onMark("credit", liabilities.length > 0 || none ? "Complete" : "In Progress")
-          }
+          onClick={() => {
+            onMark("credit", "In Progress");
+            onSaveDraft();
+          }}
           className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
         >
           Save Progress
@@ -1592,7 +2061,13 @@ function PropertiesSection({
   const equity = totalValue - totalMort;
   const rental = properties.reduce((s, p) => s + p.monthlyRental, 0);
   const carrying = properties.reduce(
-    (s, p) => s + (p.monthlyCosts || 0) + (p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0) + sumPayments(p),
+    (s, p) =>
+      s +
+      (p.monthlyCosts || 0) +
+      (p.propertyTax || 0) +
+      (p.condoFee || 0) +
+      (p.heating || 0) +
+      sumPayments(p),
     0,
   );
   const includedCount = properties.filter((p) => p.include).length;
@@ -1684,7 +2159,10 @@ function PropertiesSection({
               <Tiny label="Equity" value={fmtMoney(pEquity)} />
               <Tiny label="LTV" value={`${pLtv}%`} />
               <Tiny label="Rental" value={`${fmtMoney(p.monthlyRental)}/mo`} />
-              <Tiny label="Tax + condo + heat" value={`${fmtMoney((p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0))}/mo`} />
+              <Tiny
+                label="Tax + condo + heat"
+                value={`${fmtMoney((p.propertyTax || 0) + (p.condoFee || 0) + (p.heating || 0))}/mo`}
+              />
             </dl>
             {!p.mortgageFree && p.mortgages.length > 0 && (
               <div className="mt-3 space-y-1.5 rounded-xl border border-border bg-muted/30 p-3">
@@ -1692,12 +2170,17 @@ function PropertiesSection({
                   Mortgages on this property
                 </p>
                 {p.mortgages.map((m, i) => (
-                  <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div
+                    key={m.id}
+                    className="flex flex-wrap items-center justify-between gap-2 text-xs"
+                  >
                     <span className="font-medium text-foreground">
                       #{i + 1} · {m.position || "Mortgage"} · {m.lender || "—"}
                     </span>
                     <span className="text-muted-foreground">
-                      {fmtMoney(m.balance || 0)} @ {m.rate || 0}% {m.rateType ? `· ${m.rateType}` : ""} · {fmtMoney(m.payment || 0)}/{m.paymentFrequency || "mo"}
+                      {fmtMoney(m.balance || 0)} @ {m.rate || 0}%{" "}
+                      {m.rateType ? `· ${m.rateType}` : ""} · {fmtMoney(m.payment || 0)}/
+                      {m.paymentFrequency || "mo"}
                     </span>
                   </div>
                 ))}
@@ -1720,16 +2203,12 @@ function PropertiesSection({
           <Info className="h-4 w-4" /> Why this matters
         </div>
         <p className="mt-1 text-foreground/80">
-          Other properties affect affordability, can offset rental income, and help approvU
-          identify future refinance, renewal, and homeownership opportunities.
+          Other properties affect affordability, can offset rental income, and help approvU identify
+          future refinance, renewal, and homeownership opportunities.
         </p>
       </div>
 
-      <NoneToggle
-        checked={none}
-        onChange={setNone}
-        label="I do not own any other properties."
-      />
+      <NoneToggle checked={none} onChange={setNone} label="I do not own any other properties." />
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -1958,8 +2437,7 @@ function AddIncomeDrawer({
   const [otherType, setOtherType] = useState<string>("");
   const [otherSource, setOtherSource] = useState("");
   const [otherAmount, setOtherAmount] = useState("");
-  const [otherFrequency, setOtherFrequency] =
-    useState<IncomeSource["frequency"]>("Annual");
+  const [otherFrequency, setOtherFrequency] = useState<IncomeSource["frequency"]>("Annual");
   const [otherStart, setOtherStart] = useState("");
   const [otherDuration, setOtherDuration] = useState<"<1y" | "1-2y" | "2-3y" | "3+y">("3+y");
   const [otherContinuance, setOtherContinuance] = useState<"yes" | "no" | "unknown">("yes");
@@ -2167,7 +2645,11 @@ function AddIncomeDrawer({
                 </div>
               </Field>
               <Field label="Employer name" required full>
-                <Input value={employerName} onChange={setEmployerName} placeholder="Enter employer name" />
+                <Input
+                  value={employerName}
+                  onChange={setEmployerName}
+                  placeholder="Enter employer name"
+                />
               </Field>
               <Field label="Job title">
                 <Input value={jobTitle} onChange={setJobTitle} placeholder="Enter your job title" />
@@ -2213,11 +2695,7 @@ function AddIncomeDrawer({
                 <div className="flex items-center gap-3 rounded-md border border-input bg-background px-3 py-2">
                   {(["yes", "no"] as const).map((v) => (
                     <label key={v} className="flex items-center gap-1.5 text-sm">
-                      <input
-                        type="radio"
-                        checked={onLeave === v}
-                        onChange={() => setOnLeave(v)}
-                      />
+                      <input type="radio" checked={onLeave === v} onChange={() => setOnLeave(v)} />
                       {v === "yes" ? "Yes" : "No"}
                     </label>
                   ))}
@@ -2285,7 +2763,11 @@ function AddIncomeDrawer({
                   />
                   {overtimeIncluded === "no" && (
                     <Field label="Average annual overtime income" full>
-                      <Input value={overtimeAmount} onChange={setOvertimeAmount} placeholder="$10,000" />
+                      <Input
+                        value={overtimeAmount}
+                        onChange={setOvertimeAmount}
+                        placeholder="$10,000"
+                      />
                     </Field>
                   )}
                 </BreakdownCard>
@@ -2394,7 +2876,11 @@ function AddIncomeDrawer({
                 </div>
               </Field>
               <Field label="Business / operating name" required full>
-                <Input value={employerName} onChange={setEmployerName} placeholder="Enter business name" />
+                <Input
+                  value={employerName}
+                  onChange={setEmployerName}
+                  placeholder="Enter business name"
+                />
               </Field>
               <Field label="Your role / title">
                 <Input value={jobTitle} onChange={setJobTitle} placeholder="e.g. Owner, Director" />
@@ -2527,11 +3013,7 @@ function AddIncomeDrawer({
                 />
               </Field>
               <Field label="Accountant / CPA name">
-                <Input
-                  value={accountantName}
-                  onChange={setAccountantName}
-                  placeholder="Optional"
-                />
+                <Input value={accountantName} onChange={setAccountantName} placeholder="Optional" />
               </Field>
               <Field label="Accountant phone or email">
                 <Input
@@ -2724,9 +3206,7 @@ function AddLiabilityDrawer({
   const [paymentHistory, setPaymentHistory] = useState<Liability["paymentHistory"]>(
     initial?.paymentHistory ?? "",
   );
-  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>(
-    initial?.payoffPlan ?? "",
-  );
+  const [payoffPlan, setPayoffPlan] = useState<Liability["payoffPlan"]>(initial?.payoffPlan ?? "");
   const valid =
     !!type &&
     creditor.trim().length > 0 &&
@@ -2735,9 +3215,7 @@ function AddLiabilityDrawer({
     !!payoffPlan &&
     (!shared || sharedWith.length > 0);
   const toggleSharedWith = (id: string) =>
-    setSharedWith((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSharedWith((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   return (
     <DrawerShell
@@ -2930,7 +3408,9 @@ function AddAssetDrawer({
   const dpAnswered = !dpEligible || useForDP === "no" || (useForDP === "yes" && computedDP > 0);
   const dpInputInvalid =
     useForDP === "yes" &&
-    (dpInputNum <= 0 || (dpMode === "amount" && dpInputNum > valueNum) || (dpMode === "pct" && dpInputNum > 100));
+    (dpInputNum <= 0 ||
+      (dpMode === "amount" && dpInputNum > valueNum) ||
+      (dpMode === "pct" && dpInputNum > 100));
   const valid = institution.trim().length > 0 && valueNum > 0 && dpAnswered && !dpInputInvalid;
 
   return (
@@ -3101,7 +3581,9 @@ function AddOtherPropertyDrawer({
   const [usage, setUsage] = useState(initial?.usage ?? "Rental");
   const [type, setType] = useState(initial?.type ?? "Detached");
   const [ownership, setOwnership] = useState(String(initial?.ownership ?? "100"));
-  const [ownershipTimeframe, setOwnershipTimeframe] = useState(initial?.ownershipTimeframe ?? "1-3 years");
+  const [ownershipTimeframe, setOwnershipTimeframe] = useState(
+    initial?.ownershipTimeframe ?? "1-3 years",
+  );
   const [value, setValue] = useState(initial ? String(initial.value) : "");
   const [numberOfUnits, setNumberOfUnits] = useState(initial?.numberOfUnits ?? "1");
   const [monthlyRental, setMonthlyRental] = useState(initial ? String(initial.monthlyRental) : "");
@@ -3111,9 +3593,13 @@ function AddOtherPropertyDrawer({
     initial?.heatingIncludedInCondo ?? "",
   );
   const [propertyTax, setPropertyTax] = useState(initial ? String(initial.propertyTax) : "");
-  const [propertyTaxFrequency, setPropertyTaxFrequency] = useState(initial?.propertyTaxFrequency ?? "Annual");
+  const [propertyTaxFrequency, setPropertyTaxFrequency] = useState(
+    initial?.propertyTaxFrequency ?? "Annual",
+  );
   const [condoFee, setCondoFee] = useState(initial ? String(initial.condoFee) : "");
-  const [condoFeeFrequency, setCondoFeeFrequency] = useState(initial?.condoFeeFrequency ?? "Monthly");
+  const [condoFeeFrequency, setCondoFeeFrequency] = useState(
+    initial?.condoFeeFrequency ?? "Monthly",
+  );
   const [monthlyCosts, setMonthlyCosts] = useState(initial ? String(initial.monthlyCosts) : "");
   const [mortgageFree, setMortgageFree] = useState(initial?.mortgageFree ?? false);
   const [mortgages, setMortgages] = useState<PropertyMortgage[]>(
@@ -3141,13 +3627,11 @@ function AddOtherPropertyDrawer({
     city.trim().length > 0 &&
     Number(value) > 0 &&
     currentOwners.length > 0 &&
-    (mortgageFree ||
-      mortgages.every((m) => m.lender.trim().length > 0 && (m.balance || 0) >= 0));
+    (mortgageFree || mortgages.every((m) => m.lender.trim().length > 0 && (m.balance || 0) >= 0));
 
   const updateMortgage = (id: string, p: Partial<PropertyMortgage>) =>
     setMortgages((prev) => prev.map((m) => (m.id === id ? { ...m, ...p } : m)));
-  const removeMortgage = (id: string) =>
-    setMortgages((prev) => prev.filter((m) => m.id !== id));
+  const removeMortgage = (id: string) => setMortgages((prev) => prev.filter((m) => m.id !== id));
   const addMortgage = () =>
     setMortgages((prev) => [
       ...prev,
@@ -3233,7 +3717,21 @@ function AddOtherPropertyDrawer({
             <Select
               value={province}
               onChange={setProvince}
-              options={["AB", "BC", "MB", "NB", "NL", "NS", "ON", "PE", "QC", "SK", "NT", "NU", "YT"]}
+              options={[
+                "AB",
+                "BC",
+                "MB",
+                "NB",
+                "NL",
+                "NS",
+                "ON",
+                "PE",
+                "QC",
+                "SK",
+                "NT",
+                "NU",
+                "YT",
+              ]}
             />
           </Field>
           <Field label="Postal code">
@@ -3244,7 +3742,8 @@ function AddOtherPropertyDrawer({
         <Group title="Ownership Details">
           <div className="sm:col-span-2">
             <p className="mb-1 text-xs font-medium text-foreground">
-              Who are the current owners of this property?<span className="ml-0.5 text-coral">*</span>
+              Who are the current owners of this property?
+              <span className="ml-0.5 text-coral">*</span>
             </p>
             <p className="mb-2 text-[11px] text-muted-foreground">
               Select all owners who are also on this application.
@@ -3411,7 +3910,13 @@ function AddOtherPropertyDrawer({
                       <Select
                         value={m.position}
                         onChange={(v) => updateMortgage(m.id, { position: v })}
-                        options={["First mortgage", "Second mortgage", "HELOC", "Private mortgage", "Other"]}
+                        options={[
+                          "First mortgage",
+                          "Second mortgage",
+                          "HELOC",
+                          "Private mortgage",
+                          "Other",
+                        ]}
                       />
                     </Field>
                     <Field label="Lender">
@@ -3467,7 +3972,13 @@ function AddOtherPropertyDrawer({
                       <Select
                         value={m.paymentFrequency}
                         onChange={(v) => updateMortgage(m.id, { paymentFrequency: v })}
-                        options={["Monthly", "Semi-monthly", "Bi-weekly", "Accelerated bi-weekly", "Weekly"]}
+                        options={[
+                          "Monthly",
+                          "Semi-monthly",
+                          "Bi-weekly",
+                          "Accelerated bi-weekly",
+                          "Weekly",
+                        ]}
                       />
                     </Field>
                   </div>
@@ -3707,9 +4218,7 @@ function NoneToggle({
   return (
     <label
       className={`flex items-start gap-3 rounded-xl border p-3 text-sm transition ${
-        checked
-          ? "border-mint/40 bg-mint/10"
-          : "border-border bg-muted/30 hover:bg-muted/50"
+        checked ? "border-mint/40 bg-mint/10" : "border-border bg-muted/30 hover:bg-muted/50"
       }`}
     >
       <input
