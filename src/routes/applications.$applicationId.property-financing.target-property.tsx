@@ -16,6 +16,7 @@ import {
   TxType,
   inputCls,
 } from "@/components/property-financing/shared";
+import { saveBorrowerApplicationSection } from "@/lib/api/borrowerApplicationSectionsApi";
 
 export const Route = createFileRoute(
   "/applications/$applicationId/property-financing/target-property",
@@ -51,11 +52,52 @@ function TargetPropertyPage() {
   const [condoPref, setCondoPref] = useState("");
   const [condoFee, setCondoFee] = useState("");
 
+  // ── Save state ──────────────────────────────────────────────────────────
+  const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved" | "saving">("saved");
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const dpPct = Number(target) > 0 ? (Number(dpAmount || 0) / Number(target)) * 100 : 0;
 
   const addLoc = () => setLocations((p) => (p.length >= 5 ? p : [...p, { id: `l-${Date.now()}`, city: "", province: "", priority: String(p.length + 1) }]));
   const updateLoc = (id: string, p: Partial<Loc>) => setLocations((prev) => prev.map((l) => (l.id === id ? { ...l, ...p } : l)));
   const removeLoc = (id: string) => setLocations((prev) => prev.filter((l) => l.id !== id));
+
+  // ── Section save helper ─────────────────────────────────────────────────
+  const buildSectionData = () => ({
+    locations: locations.map(({ city, province, priority }) => ({ city, province, priority })),
+    property_types: types,
+    property_usage: usage,
+    target_purchase_price: target ? Number(target) : null,
+    expected_down_payment: dpAmount ? Number(dpAmount) : null,
+    max_monthly_payment: maxPayment ? Number(maxPayment) : null,
+    considering_new_build: newBuild || null,
+    considering_condo: condoPref || null,
+    estimated_condo_fee: condoFee ? Number(condoFee) : null,
+  });
+
+  const saveSection = async (
+    status: "in_progress" | "complete",
+    nextRoute?: string,
+  ) => {
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      await saveBorrowerApplicationSection("property", {
+        data: buildSectionData(),
+        status,
+        current_step: "property",
+      });
+      setSaveStatus("saved");
+      if (nextRoute) {
+        void navigate({ to: nextRoute });
+      }
+    } catch (err) {
+      setSaveStatus("unsaved");
+      setSaveError(
+        err instanceof Error ? err.message : "Your property section could not be saved.",
+      );
+    }
+  };
 
   const groupsDone = [
     locations.some((l) => l.city && l.province),
@@ -86,7 +128,13 @@ function TargetPropertyPage() {
         subtitle="Tell us what type of property you are looking for so we can guide your mortgage application."
         tx={tx}
         progress={progress}
+        saveStatus={saveStatus}
       />
+      {saveError && (
+        <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+          {saveError}
+        </div>
+      )}
       <CompletionSummaryPanel total={groupsDone.length} done={groupsDone.filter(Boolean).length} />
 
       <FormCard step={1} title="Preferred Locations" done={groupsDone[0]} description="Up to 5 locations.">
@@ -211,11 +259,12 @@ function TargetPropertyPage() {
       <SaveAndContinueBar
         applicationId={applicationId}
         canComplete={missing.length === 0}
+        onSaveDraft={() => void saveSection("in_progress")}
+        onMarkComplete={() =>
+          void saveSection("complete")
+        }
         onSaveContinue={() =>
-          navigate({
-            to: "/applications/$applicationId/property-financing/down-payment",
-            params: { applicationId },
-          })
+          void saveSection("in_progress", `/applications/${applicationId}/property-financing/down-payment`)
         }
       />
     </PageShell>
