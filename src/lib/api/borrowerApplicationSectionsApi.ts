@@ -33,8 +33,19 @@ export type ApplicationSection = {
   public_reference?: string | null;
   section_key: ApplicationSectionKey;
   status: ApplicationSectionStatus;
+  /** Data the borrower has explicitly saved. Empty array when no save has occurred. */
   data?: Record<string, unknown> | null;
+  /**
+   * Suggested starting values derived from qualification responses, mortgage
+   * profile, and primary borrower record. Always present; may have null fields.
+   */
   prefill_data?: Record<string, unknown> | null;
+  /**
+   * The preferred field values to display in a section form:
+   *   - equals `data` when the borrower has saved something
+   *   - equals `prefill_data` when no save has occurred yet
+   * The frontend should populate form fields from this field.
+   */
   effective_data?: Record<string, unknown> | null;
   completed_at?: string | null;
   last_saved_at?: string | null;
@@ -190,6 +201,30 @@ export async function saveBorrowerApplicationSection(
     },
   );
   return parseJson<SaveSectionResponse>(response, `Section '${sectionKey}' could not be saved.`);
+}
+
+/**
+ * POST /v2/borrower/application/sections/{sectionKey}/initialize
+ * Returns the prefill data for a section **without writing anything** to the
+ * database. Safe to call multiple times. If the section was already saved,
+ * returns both the saved `data` and the derived `prefill_data`.
+ *
+ * The response shape is identical to `getBorrowerApplicationSection` — use
+ * `section.effective_data` to pre-populate a form.
+ *
+ * CSRF is handled by fetchWithLaravelSession automatically.
+ */
+export async function initializeBorrowerApplicationSection(
+  sectionKey: ApplicationSectionKey,
+): Promise<SaveSectionResponse> {
+  const response = await fetchWithLaravelSession(
+    buildApiUrl(`/v2/borrower/application/sections/${encodeURIComponent(sectionKey)}/initialize`),
+    { method: "POST" },
+  );
+  return parseJson<SaveSectionResponse>(
+    response,
+    `Section '${sectionKey}' could not be initialized.`,
+  );
 }
 
 /**

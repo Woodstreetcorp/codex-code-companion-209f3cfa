@@ -1,7 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { saveBorrowerApplicationSection } from "@/lib/api/borrowerApplicationSectionsApi";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Info, Plus, Trash2 } from "lucide-react";
+import {
+  getBorrowerApplicationSection,
+  saveBorrowerApplicationSection,
+} from "@/lib/api/borrowerApplicationSectionsApi";
 import {
   ChoiceGrid,
   CompletionSummaryPanel,
@@ -61,28 +64,115 @@ type Source = {
   fromAsset?: { assetId: string; ownerName: string; assetType: string; institution: string };
 };
 
+// ── Restore state ─────────────────────────────────────────────────────────────
+
+type RestoreSource = "saved" | "prefill" | "none";
+
 function DownPaymentPage() {
   const { applicationId } = Route.useParams();
   const navigate = useNavigate();
   const tx: TxType = "Purchase";
 
-  // ── Save state ────────────────────────────────────────────────────────────
+  // ── Restore state ────────────────────────────────────────────────────────────
+  const [loadingRestore, setLoadingRestore] = useState(true);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreSource, setRestoreSource] = useState<RestoreSource>("none");
+
+  // Guard: prevent restore from overwriting after user edits
+  const userEditedRef = useRef(false);
+
+  // ── Save state ────────────────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved" | "saving">("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const propertyValue = 832000; // mock pulled from property/purchase plan
-  const [totalDP, setTotalDP] = useState("83000");
-  const totalDPNum = Number(totalDP || 0);
-  const dpPct = propertyValue ? (totalDPNum / propertyValue) * 100 : 0;
-  const requestedMortgage = Math.max(propertyValue - totalDPNum, 0);
-  const ltv = propertyValue ? (requestedMortgage / propertyValue) * 100 : 0;
-
+  // ── Form state — start empty; populated by restore or localStorage ────────────
+  const [totalDP, setTotalDP] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<SourceType[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
 
-  // Auto-populate sources from declared liquid assets marked for the down payment
-  // in the borrower profile (Assets section). The borrower-profile component
-  // writes these contributions into localStorage.
+  // Property value: prefer restored value from section, fall back to placeholder
+  const [propertyValue, setPropertyValue] = useState(0);
+
+  // ── Restore from backend on mount ────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    getBorrowerApplicationSection("assets_down_payment")
+      .then((res) => {
+        if (cancelled || userEditedRef.current) return;
+
+        const section = res.section;
+        const effective = section?.effective_data as Record<string, unknown> | null | undefined;
+
+        if (!effective || Object.keys(effective).length === 0) {
+          setRestoreSource("none");
+          return;
+        }
+
+        // Determine whether saved data or prefill drove effective_data
+        const saved = section?.data;
+        const hasSaved = saved != null && !Array.isArray(saved) && Object.keys(saved).length > 0;
+        setRestoreSource(hasSaved ? "saved" : "prefill");
+
+        // Total down payment
+        if (effective.total_down_payment != null) {
+          setTotalDP(String(effective.total_down_payment));
+        }
+
+        // Property value (used in derived stats)
+        if (effective.property_value != null && Number(effective.property_value) > 0) {
+          setPropertyValue(Number(effective.property_value));
+        }
+
+        // Source types and sources — only restore if saved data was used
+        // (prefill does not include source breakdowns)
+        if (hasSaved) {
+          const rawTypes = effective.source_types as SourceType[] | undefined;
+          if (Array.isArray(rawTypes) && rawTypes.length > 0) {
+            setSelectedTypes(rawTypes);
+          }
+
+          const rawSources = effective.sources as
+            | Array<{
+                type: SourceType;
+                amount: string;
+                borrower: string;
+                notes: string;
+                extra?: Record<string, string>;
+              }>
+            | undefined;
+          if (Array.isArray(rawSources) && rawSources.length > 0) {
+            setSources(
+              rawSources.map((s, i) => ({
+                id: `r-${i}-${Date.now()}`,
+                type: s.type,
+                amount: s.amount ?? "",
+                borrower: s.borrower ?? "",
+                notes: s.notes ?? "",
+                extra: s.extra ?? {},
+              })),
+            );
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRestoreError(
+            "We could not restore your saved down payment details. You can continue entering them manually.",
+          );
+          setRestoreSource("none");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingRestore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ── Auto-populate sources from localStorage dp-contributions ─────────────────
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -124,7 +214,22 @@ function DownPaymentPage() {
     }
   }, []);
 
+  const totalDPNum = Number(totalDP || 0);
+
+  // Use restored property value when available; otherwise fall back to 0
+  const dpPct = propertyValue ? (totalDPNum / propertyValue) * 100 : 0;
+  const requestedMortgage = Math.max(propertyValue - totalDPNum, 0);
+  const ltv = propertyValue ? (requestedMortgage / propertyValue) * 100 : 0;
+
+  // ── Mark dirty helper ─────────────────────────────────────────────────────────
+  const markDirty = () => {
+    userEditedRef.current = true;
+    setSaveStatus("unsaved");
+  };
+
+  // ── Source management ─────────────────────────────────────────────────────────
   const toggleType = (t: SourceType) => {
+    markDirty();
     if (selectedTypes.includes(t)) {
       setSelectedTypes((p) => p.filter((x) => x !== t));
       setSources((p) => p.filter((s) => s.type !== t));
@@ -132,7 +237,14 @@ function DownPaymentPage() {
       setSelectedTypes((p) => [...p, t]);
       setSources((p) => [
         ...p,
-        { id: `s-${Date.now()}-${Math.random()}`, type: t, amount: "", borrower: "", notes: "", extra: {} },
+        {
+          id: `s-${Date.now()}-${Math.random()}`,
+          type: t,
+          amount: "",
+          borrower: "",
+          notes: "",
+          extra: {},
+        },
       ]);
     }
   };
@@ -140,13 +252,19 @@ function DownPaymentPage() {
   const addAnother = (t: SourceType) =>
     setSources((p) => [
       ...p,
-      { id: `s-${Date.now()}-${Math.random()}`, type: t, amount: "", borrower: "", notes: "", extra: {} },
+      {
+        id: `s-${Date.now()}-${Math.random()}`,
+        type: t,
+        amount: "",
+        borrower: "",
+        notes: "",
+        extra: {},
+      },
     ]);
 
   const removeSource = (id: string) =>
     setSources((p) => {
       const next = p.filter((s) => s.id !== id);
-      // if no remaining of this type, deselect
       const removed = p.find((s) => s.id === id);
       if (removed && !next.some((s) => s.type === removed.type)) {
         setSelectedTypes((t) => t.filter((x) => x !== removed.type));
@@ -158,12 +276,14 @@ function DownPaymentPage() {
     setSources((p) => p.map((s) => (s.id === id ? { ...s, ...patch } : s)));
 
   const updateExtra = (id: string, key: string, value: string) =>
-    setSources((p) => p.map((s) => (s.id === id ? { ...s, extra: { ...s.extra, [key]: value } } : s)));
+    setSources((p) =>
+      p.map((s) => (s.id === id ? { ...s, extra: { ...s.extra, [key]: value } } : s)),
+    );
 
   const totalSources = sources.reduce((sum, s) => sum + Number(s.amount || 0), 0);
   const remaining = totalDPNum - totalSources;
 
-  // ── Section save helper ───────────────────────────────────────────────────
+  // ── Section save helper ───────────────────────────────────────────────────────
   const buildSectionData = () => ({
     total_down_payment: totalDPNum,
     property_value: propertyValue,
@@ -173,10 +293,7 @@ function DownPaymentPage() {
     sources: sources.map(({ id: _id, fromAsset: _fa, ...rest }) => rest),
   });
 
-  const saveSection = async (
-    status: "in_progress" | "complete",
-    nextRoute?: string,
-  ) => {
+  const saveSection = async (status: "in_progress" | "complete", nextRoute?: string) => {
     setSaveStatus("saving");
     setSaveError(null);
     try {
@@ -231,6 +348,31 @@ function DownPaymentPage() {
         progress={progress}
         saveStatus={saveStatus}
       />
+
+      {/* ── Restore / load banners ─────────────────────────────────────────── */}
+      {loadingRestore && (
+        <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground animate-pulse">
+          Loading your saved answers…
+        </div>
+      )}
+
+      {!loadingRestore && restoreSource !== "none" && (
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            {restoreSource === "saved"
+              ? "Restored from your saved application."
+              : "Pre-filled from your qualification answers. Please review and save."}
+          </span>
+        </div>
+      )}
+
+      {restoreError && (
+        <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+          {restoreError}
+        </div>
+      )}
+
       {saveError && (
         <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
           {saveError}
@@ -239,104 +381,144 @@ function DownPaymentPage() {
 
       <CompletionSummaryPanel total={groupsDone.length} done={groupsDone.filter(Boolean).length} />
 
-      <FormCard step={1} title="Down Payment Summary" done={groupsDone[0]}>
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:grid-cols-4">
-          <SummaryStat label="Property value" value={fmtMoney(propertyValue)} />
-          <SummaryStat label="Down payment" value={fmtMoney(totalDPNum)} />
-          <SummaryStat label="Down payment %" value={`${dpPct.toFixed(1)}%`} />
-          <SummaryStat label="Requested mortgage" value={fmtMoney(requestedMortgage)} />
-        </div>
-        <Field label="Total down payment amount" required>
-          <NumberInput value={totalDP} onChange={setTotalDP} prefix="$" />
-        </Field>
-        <p className="text-[11px] text-muted-foreground">Estimated LTV: {ltv.toFixed(1)}%</p>
-      </FormCard>
-
-      <FormCard step={2} title="Down Payment Sources" done={groupsDone[1]} description="Select all that apply.">
-        <ChoiceGrid<SourceType>
-          multi
-          values={selectedTypes}
-          onMultiChange={(v) => {
-            // diff-based update
-            const removed = selectedTypes.filter((s) => !v.includes(s));
-            const added = v.filter((s) => !selectedTypes.includes(s));
-            removed.forEach((t) => toggleType(t));
-            added.forEach((t) => toggleType(t));
-          }}
-          cols={2}
-          options={SOURCE_TYPES.map((s) => ({ value: s, label: s }))}
-        />
-
-        {sources.length > 0 && (
-          <div className="mt-4 space-y-3">
-            {selectedTypes.map((t) => (
-              <div key={t}>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-foreground">{t}</p>
-                  <button
-                    type="button"
-                    onClick={() => addAnother(t)}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                  >
-                    <Plus className="h-3 w-3" /> Add another
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {sources.filter((s) => s.type === t).map((s) => (
-                    <SourceCard
-                      key={s.id}
-                      source={s}
-                      onChange={(p) => updateSource(s.id, p)}
-                      onExtra={(k, v) => updateExtra(s.id, k, v)}
-                      onRemove={() => removeSource(s.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+      {/* ── Form cards (muted while loading restore) ───────────────────────── */}
+      <div className={loadingRestore ? "pointer-events-none opacity-60" : ""}>
+        <FormCard step={1} title="Down Payment Summary" done={groupsDone[0]}>
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:grid-cols-4">
+            <SummaryStat
+              label="Property value"
+              value={propertyValue ? fmtMoney(propertyValue) : "—"}
+            />
+            <SummaryStat label="Down payment" value={fmtMoney(totalDPNum)} />
+            <SummaryStat label="Down payment %" value={`${dpPct.toFixed(1)}%`} />
+            <SummaryStat label="Requested mortgage" value={fmtMoney(requestedMortgage)} />
           </div>
-        )}
-      </FormCard>
+          <Field label="Total down payment amount" required>
+            <NumberInput
+              value={totalDP}
+              onChange={(v) => {
+                markDirty();
+                setTotalDP(v);
+              }}
+              prefix="$"
+            />
+          </Field>
+          {propertyValue > 0 && (
+            <p className="text-[11px] text-muted-foreground">Estimated LTV: {ltv.toFixed(1)}%</p>
+          )}
+        </FormCard>
 
-      <FormCard step={3} title="Source Allocation Check" done={groupsDone[2]}>
-        <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-muted/30 p-4">
-          <SummaryStat label="Down payment total" value={fmtMoney(totalDPNum)} />
-          <SummaryStat label="Sources entered" value={fmtMoney(totalSources)} />
-          <SummaryStat
-            label="Remaining to allocate"
-            value={fmtMoney(remaining)}
-            tone={Math.abs(remaining) < 1 ? "good" : "warn"}
+        <FormCard
+          step={2}
+          title="Down Payment Sources"
+          done={groupsDone[1]}
+          description="Select all that apply."
+        >
+          <ChoiceGrid<SourceType>
+            multi
+            values={selectedTypes}
+            onMultiChange={(v) => {
+              // diff-based update
+              const removed = selectedTypes.filter((s) => !v.includes(s));
+              const added = v.filter((s) => !selectedTypes.includes(s));
+              removed.forEach((t) => toggleType(t));
+              added.forEach((t) => toggleType(t));
+            }}
+            cols={2}
+            options={SOURCE_TYPES.map((s) => ({ value: s, label: s }))}
           />
-        </div>
-        {Math.abs(remaining) >= 1 && totalDPNum > 0 && (
-          <InfoNote variant="warning">
-            Your down payment sources must equal your total down payment.
-          </InfoNote>
-        )}
-      </FormCard>
 
-      <FormCard title="Document Expectations" description="Based on your down payment sources, you may be asked for:">
-        <ul className="list-disc space-y-1 pl-5 text-xs text-foreground/80">
-          {selectedTypes.includes("Personal savings / investments / RRSP / FHSA") && <li>90-day bank or investment statements</li>}
-          {(selectedTypes.includes("Gift from immediate family") || selectedTypes.includes("Gift from non-immediate family")) && <li>Gift letter and proof of funds</li>}
-          {selectedTypes.includes("Government or homebuyer grants") && <li>Grant approval letter</li>}
-          {selectedTypes.includes("Sale of existing property") && <li>Sale agreement and closing statement</li>}
-          {selectedTypes.includes("Funds from outside Canada") && <li>Source of funds declaration</li>}
-          {selectedTypes.includes("Borrowed funds") && <li>Loan agreement and repayment schedule</li>}
-          {selectedTypes.length === 0 && <li className="text-muted-foreground">Select sources above to see expected documents.</li>}
-        </ul>
-      </FormCard>
+          {sources.length > 0 && (
+            <div className="mt-4 space-y-3">
+              {selectedTypes.map((t) => (
+                <div key={t}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">{t}</p>
+                    <button
+                      type="button"
+                      onClick={() => addAnother(t)}
+                      className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                    >
+                      <Plus className="h-3 w-3" /> Add another
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {sources
+                      .filter((s) => s.type === t)
+                      .map((s) => (
+                        <SourceCard
+                          key={s.id}
+                          source={s}
+                          onChange={(p) => updateSource(s.id, p)}
+                          onExtra={(k, v) => updateExtra(s.id, k, v)}
+                          onRemove={() => removeSource(s.id)}
+                        />
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </FormCard>
 
-      <MissingFieldsPanel items={missing} />
+        <FormCard step={3} title="Source Allocation Check" done={groupsDone[2]}>
+          <div className="grid grid-cols-3 gap-3 rounded-xl border border-border bg-muted/30 p-4">
+            <SummaryStat label="Down payment total" value={fmtMoney(totalDPNum)} />
+            <SummaryStat label="Sources entered" value={fmtMoney(totalSources)} />
+            <SummaryStat
+              label="Remaining to allocate"
+              value={fmtMoney(remaining)}
+              tone={Math.abs(remaining) < 1 ? "good" : "warn"}
+            />
+          </div>
+          {Math.abs(remaining) >= 1 && totalDPNum > 0 && (
+            <InfoNote variant="warning">
+              Your down payment sources must equal your total down payment.
+            </InfoNote>
+          )}
+        </FormCard>
+
+        <FormCard
+          title="Document Expectations"
+          description="Based on your down payment sources, you may be asked for:"
+        >
+          <ul className="list-disc space-y-1 pl-5 text-xs text-foreground/80">
+            {selectedTypes.includes("Personal savings / investments / RRSP / FHSA") && (
+              <li>90-day bank or investment statements</li>
+            )}
+            {(selectedTypes.includes("Gift from immediate family") ||
+              selectedTypes.includes("Gift from non-immediate family")) && (
+              <li>Gift letter and proof of funds</li>
+            )}
+            {selectedTypes.includes("Government or homebuyer grants") && (
+              <li>Grant approval letter</li>
+            )}
+            {selectedTypes.includes("Sale of existing property") && (
+              <li>Sale agreement and closing statement</li>
+            )}
+            {selectedTypes.includes("Funds from outside Canada") && (
+              <li>Source of funds declaration</li>
+            )}
+            {selectedTypes.includes("Borrowed funds") && (
+              <li>Loan agreement and repayment schedule</li>
+            )}
+            {selectedTypes.length === 0 && (
+              <li className="text-muted-foreground">
+                Select sources above to see expected documents.
+              </li>
+            )}
+          </ul>
+        </FormCard>
+
+        <MissingFieldsPanel items={missing} />
+      </div>
 
       <SaveAndContinueBar
         applicationId={applicationId}
         canComplete={canComplete}
         onSaveDraft={() => void saveSection("in_progress")}
         onMarkComplete={() => void saveSection("complete")}
-        onSaveContinue={() =>
-          void saveSection("in_progress", "/internal/full-application")
-        }
+        onSaveContinue={() => void saveSection("in_progress", "/internal/full-application")}
       />
     </PageShell>
   );
@@ -351,10 +533,13 @@ function SummaryStat({
   value: string;
   tone?: "good" | "warn";
 }) {
-  const cls = tone === "good" ? "text-mint-foreground" : tone === "warn" ? "text-coral" : "text-foreground";
+  const cls =
+    tone === "good" ? "text-mint-foreground" : tone === "warn" ? "text-coral" : "text-foreground";
   return (
     <div>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
       <p className={`mt-1 text-sm font-semibold ${cls}`}>{value}</p>
     </div>
   );
@@ -409,9 +594,13 @@ function SourceCard({
                 onChange={(e) => onExtra("accountType", e.target.value)}
               >
                 <option value="">Select</option>
-                {["Chequing", "Savings", "TFSA", "RRSP", "FHSA", "Non-Registered Investment"].map((v) => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
+                {["Chequing", "Savings", "TFSA", "RRSP", "FHSA", "Non-Registered Investment"].map(
+                  (v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ),
+                )}
               </select>
             </Field>
             <Field label="Financial institution">
@@ -436,23 +625,38 @@ function SourceCard({
           </>
         )}
 
-        {(source.type === "Gift from immediate family" || source.type === "Gift from non-immediate family") && (
+        {(source.type === "Gift from immediate family" ||
+          source.type === "Gift from non-immediate family") && (
           <>
             <Field label="Donor relationship">
-              <input className={inputCls} value={source.extra.donorRel ?? ""} onChange={(e) => onExtra("donorRel", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.donorRel ?? ""}
+                onChange={(e) => onExtra("donorRel", e.target.value)}
+              />
             </Field>
             <Field label="Is it repayable?">
-              <select className={inputCls} value={source.extra.repayable ?? ""} onChange={(e) => onExtra("repayable", e.target.value)}>
+              <select
+                className={inputCls}
+                value={source.extra.repayable ?? ""}
+                onChange={(e) => onExtra("repayable", e.target.value)}
+              >
                 <option value="">—</option>
                 <option value="no">No</option>
                 <option value="yes">Yes</option>
               </select>
             </Field>
             <Field label="Donor country">
-              <input className={inputCls} value={source.extra.donorCountry ?? ""} onChange={(e) => onExtra("donorCountry", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.donorCountry ?? ""}
+                onChange={(e) => onExtra("donorCountry", e.target.value)}
+              />
             </Field>
             <div className="sm:col-span-2">
-              <InfoNote variant={source.type === "Gift from non-immediate family" ? "warning" : "info"}>
+              <InfoNote
+                variant={source.type === "Gift from non-immediate family" ? "warning" : "info"}
+              >
                 {source.type === "Gift from non-immediate family"
                   ? "Some lenders may not accept this source. A signed gift letter will be required."
                   : "A signed gift letter will be required."}
@@ -464,10 +668,18 @@ function SourceCard({
         {source.type === "Government or homebuyer grants" && (
           <>
             <Field label="Program name">
-              <input className={inputCls} value={source.extra.program ?? ""} onChange={(e) => onExtra("program", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.program ?? ""}
+                onChange={(e) => onExtra("program", e.target.value)}
+              />
             </Field>
             <Field label="Approval status">
-              <select className={inputCls} value={source.extra.status ?? ""} onChange={(e) => onExtra("status", e.target.value)}>
+              <select
+                className={inputCls}
+                value={source.extra.status ?? ""}
+                onChange={(e) => onExtra("status", e.target.value)}
+              >
                 <option value="">—</option>
                 <option>Approved</option>
                 <option>Pending</option>
@@ -480,10 +692,18 @@ function SourceCard({
         {source.type === "Builder or seller incentives" && (
           <>
             <Field label="Incentive type">
-              <input className={inputCls} value={source.extra.incentiveType ?? ""} onChange={(e) => onExtra("incentiveType", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.incentiveType ?? ""}
+                onChange={(e) => onExtra("incentiveType", e.target.value)}
+              />
             </Field>
             <Field label="Disclosed in purchase agreement?">
-              <select className={inputCls} value={source.extra.disclosed ?? ""} onChange={(e) => onExtra("disclosed", e.target.value)}>
+              <select
+                className={inputCls}
+                value={source.extra.disclosed ?? ""}
+                onChange={(e) => onExtra("disclosed", e.target.value)}
+              >
                 <option value="">—</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
@@ -495,13 +715,26 @@ function SourceCard({
         {source.type === "Funds from outside Canada" && (
           <>
             <Field label="Country">
-              <input className={inputCls} value={source.extra.country ?? ""} onChange={(e) => onExtra("country", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.country ?? ""}
+                onChange={(e) => onExtra("country", e.target.value)}
+              />
             </Field>
             <Field label="Currency">
-              <input className={inputCls} value={source.extra.currency ?? ""} onChange={(e) => onExtra("currency", e.target.value)} placeholder="e.g. USD" />
+              <input
+                className={inputCls}
+                value={source.extra.currency ?? ""}
+                onChange={(e) => onExtra("currency", e.target.value)}
+                placeholder="e.g. USD"
+              />
             </Field>
             <Field label="Funds already in Canada?">
-              <select className={inputCls} value={source.extra.inCanada ?? ""} onChange={(e) => onExtra("inCanada", e.target.value)}>
+              <select
+                className={inputCls}
+                value={source.extra.inCanada ?? ""}
+                onChange={(e) => onExtra("inCanada", e.target.value)}
+              >
                 <option value="">—</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
@@ -516,7 +749,11 @@ function SourceCard({
         {source.type === "Borrowed funds" && (
           <>
             <Field label="Lender / source">
-              <input className={inputCls} value={source.extra.lender ?? ""} onChange={(e) => onExtra("lender", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.lender ?? ""}
+                onChange={(e) => onExtra("lender", e.target.value)}
+              />
             </Field>
             <Field label="Monthly payment" required>
               <NumberInput
@@ -527,10 +764,16 @@ function SourceCard({
               />
             </Field>
             <Field label="Repayment terms">
-              <input className={inputCls} value={source.extra.terms ?? ""} onChange={(e) => onExtra("terms", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.terms ?? ""}
+                onChange={(e) => onExtra("terms", e.target.value)}
+              />
             </Field>
             <div className="sm:col-span-2">
-              <InfoNote variant="warning">Borrowed down payment may affect your qualification.</InfoNote>
+              <InfoNote variant="warning">
+                Borrowed down payment may affect your qualification.
+              </InfoNote>
             </div>
           </>
         )}
@@ -538,20 +781,37 @@ function SourceCard({
         {source.type === "Sale of existing property" && (
           <>
             <Field label="Property address">
-              <input className={inputCls} value={source.extra.propAddress ?? ""} onChange={(e) => onExtra("propAddress", e.target.value)} />
+              <input
+                className={inputCls}
+                value={source.extra.propAddress ?? ""}
+                onChange={(e) => onExtra("propAddress", e.target.value)}
+              />
             </Field>
             <Field label="Expected sale proceeds">
-              <NumberInput value={source.extra.proceeds ?? ""} onChange={(v) => onExtra("proceeds", v)} prefix="$" />
+              <NumberInput
+                value={source.extra.proceeds ?? ""}
+                onChange={(v) => onExtra("proceeds", v)}
+                prefix="$"
+              />
             </Field>
             <Field label="Firm sale?">
-              <select className={inputCls} value={source.extra.firm ?? ""} onChange={(e) => onExtra("firm", e.target.value)}>
+              <select
+                className={inputCls}
+                value={source.extra.firm ?? ""}
+                onChange={(e) => onExtra("firm", e.target.value)}
+              >
                 <option value="">—</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
               </select>
             </Field>
             <Field label="Closing date">
-              <input type="date" className={inputCls} value={source.extra.closingDate ?? ""} onChange={(e) => onExtra("closingDate", e.target.value)} />
+              <input
+                type="date"
+                className={inputCls}
+                value={source.extra.closingDate ?? ""}
+                onChange={(e) => onExtra("closingDate", e.target.value)}
+              />
             </Field>
           </>
         )}
