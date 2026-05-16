@@ -71,22 +71,7 @@ export type ListDocumentRequestsResult = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  return `${apiBaseUrl()}${path}`;
-}
-
-/**
- * Read the Laravel CSRF token from the page meta tag, if present.
- * Laravel web-session auth requires this on state-changing requests.
- */
-function csrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-}
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
 
 async function parseListResponse(response: Response): Promise<ListDocumentsResult> {
   const body = (await response.json().catch(() => ({}))) as ListDocumentsResult & {
@@ -150,13 +135,10 @@ export async function listBorrowerDocuments(filters?: {
     params.set("document_type", filters.document_type);
   }
 
-  const url = endpoint("/v2/borrower/documents") + (params.size > 0 ? `?${params.toString()}` : "");
+  const url =
+    buildApiUrl("/v2/borrower/documents") + (params.size > 0 ? `?${params.toString()}` : "");
 
-  const response = await fetch(url, {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithLaravelSession(url);
 
   return parseListResponse(response);
 }
@@ -167,11 +149,7 @@ export async function listBorrowerDocuments(filters?: {
  * GET /v2/borrower/document-requests
  */
 export async function listBorrowerDocumentRequests(): Promise<ListDocumentRequestsResult> {
-  const response = await fetch(endpoint("/v2/borrower/document-requests"), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/document-requests"));
 
   return parseListRequestsResponse(response);
 }
@@ -202,16 +180,9 @@ export async function uploadBorrowerDocument(
     form.append("notes", payload.notes);
   }
 
-  const csrf = csrfToken();
-
-  const response = await fetch(endpoint("/v2/borrower/documents"), {
+  // Content-Type is intentionally omitted — browser sets multipart/form-data with the correct boundary
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/documents"), {
     method: "POST",
-    credentials: "include",
-    // Content-Type is intentionally omitted — browser sets it with the correct boundary
-    headers: {
-      Accept: "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
-    },
     body: form,
   });
 

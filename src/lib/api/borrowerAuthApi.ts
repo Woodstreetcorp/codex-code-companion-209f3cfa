@@ -21,20 +21,9 @@ export type BorrowerLoginPayload = {
   remember?: boolean;
 };
 
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
+
 const BORROWER_SESSION_STORAGE_KEY = "approvu:borrower-session";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  return `${apiBaseUrl()}${path}`;
-}
-
-function csrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-}
 
 async function parseResponse(response: Response, fallback: string): Promise<BorrowerSessionResult> {
   const body = (await response.json().catch(() => ({}))) as BorrowerSessionResult & {
@@ -51,15 +40,9 @@ async function parseResponse(response: Response, fallback: string): Promise<Borr
 }
 
 export async function loginBorrower(payload: BorrowerLoginPayload): Promise<BorrowerSessionResult> {
-  const csrf = csrfToken();
-  const response = await fetch(endpoint("/v2/borrower/login"), {
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/login"), {
     method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 
@@ -67,24 +50,14 @@ export async function loginBorrower(payload: BorrowerLoginPayload): Promise<Borr
 }
 
 export async function getBorrowerSession(): Promise<BorrowerSessionResult> {
-  const response = await fetch(endpoint("/v2/borrower/me"), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/me"));
 
   return parseResponse(response, "Your borrower session could not be loaded.");
 }
 
 export async function logoutBorrower(): Promise<BorrowerSessionResult> {
-  const csrf = csrfToken();
-  const response = await fetch(endpoint("/v2/borrower/logout"), {
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/logout"), {
     method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
-    },
   });
 
   return parseResponse(response, "We could not sign you out right now.");

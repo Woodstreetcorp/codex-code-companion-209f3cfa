@@ -26,21 +26,9 @@ type GenerateMortgageSnapshotInput = {
   public_reference?: string;
 };
 
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
+
 const SNAPSHOT_HANDOFF_STORAGE_KEY = "approvu:mortgage-snapshot";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  const base = apiBaseUrl();
-  return `${base}${path}`;
-}
-
-function csrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-}
 
 async function parseSnapshotResponse(response: Response): Promise<BorrowerMortgageSnapshot> {
   if (!response.ok) {
@@ -60,17 +48,14 @@ async function parseSnapshotResponse(response: Response): Promise<BorrowerMortga
 export async function generateMortgageSnapshot(
   payload: GenerateMortgageSnapshotInput,
 ): Promise<BorrowerMortgageSnapshot> {
-  const csrf = csrfToken();
-  const response = await fetch(endpoint("/v2/borrower/qualification/snapshot"), {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
+  const response = await fetchWithLaravelSession(
+    buildApiUrl("/v2/borrower/qualification/snapshot"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     },
-    body: JSON.stringify(payload),
-  });
+  );
 
   return parseSnapshotResponse(response);
 }
@@ -78,15 +63,8 @@ export async function generateMortgageSnapshot(
 export async function getMortgageSnapshot(
   publicReference: string,
 ): Promise<BorrowerMortgageSnapshot> {
-  const response = await fetch(
-    endpoint(`/v2/borrower/qualification/snapshot/${encodeURIComponent(publicReference)}`),
-    {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-    },
+  const response = await fetchWithLaravelSession(
+    buildApiUrl(`/v2/borrower/qualification/snapshot/${encodeURIComponent(publicReference)}`),
   );
 
   return parseSnapshotResponse(response);
