@@ -34,6 +34,8 @@ export type ApplicationSection = {
   section_key: ApplicationSectionKey;
   status: ApplicationSectionStatus;
   data?: Record<string, unknown> | null;
+  prefill_data?: Record<string, unknown> | null;
+  effective_data?: Record<string, unknown> | null;
   completed_at?: string | null;
   last_saved_at?: string | null;
 };
