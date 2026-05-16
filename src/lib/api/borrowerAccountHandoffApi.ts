@@ -17,21 +17,10 @@ export type BorrowerAccountHandoffResult = {
   message?: string;
 };
 
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
+
 const ACCOUNT_HANDOFF_STORAGE_KEY = "approvu:account-handoff";
 const QUALIFICATION_HANDOFF_STORAGE_KEY = "approvu:qualification-session";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  return `${apiBaseUrl()}${path}`;
-}
-
-function csrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-}
 
 function readQualificationHandoff(): {
   qualification_session_token?: string;
@@ -58,15 +47,9 @@ export function getSavedQualificationReference(): {
 export async function createBorrowerAccountHandoff(
   payload: BorrowerAccountHandoffPayload,
 ): Promise<BorrowerAccountHandoffResult> {
-  const csrf = csrfToken();
-  const response = await fetch(endpoint("/v2/borrower/account-handoff"), {
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/account-handoff"), {
     method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 

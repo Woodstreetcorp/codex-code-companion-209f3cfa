@@ -48,15 +48,9 @@ export type BorrowerPortalSummary = {
   message?: string | null;
 };
 
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
+
 const BORROWER_PORTAL_STORAGE_KEY = "approvu:borrower-portal-summary";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  return `${apiBaseUrl()}${path}`;
-}
 
 async function parseResponse(response: Response): Promise<BorrowerPortalSummary> {
   const body = (await response.json().catch(() => ({}))) as BorrowerPortalSummary & {
@@ -73,11 +67,7 @@ async function parseResponse(response: Response): Promise<BorrowerPortalSummary>
 }
 
 export async function getBorrowerPortalSummary(): Promise<BorrowerPortalSummary> {
-  const response = await fetch(endpoint("/v2/borrower/portal"), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/portal"));
 
   return parseResponse(response);
 }

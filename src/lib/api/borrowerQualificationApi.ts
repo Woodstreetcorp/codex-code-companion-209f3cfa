@@ -1,5 +1,6 @@
 import type { FlowKey, MortgageEntry } from "@/lib/flows";
 import { parseCurrency } from "@/lib/calculations";
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
 
 export type AnswerValue = string | string[] | MortgageEntry[];
 export type QualificationAnswers = Record<string, AnswerValue>;
@@ -43,20 +44,6 @@ type BorrowerQualificationPayload = {
 
 const CONSENT_VERSION = "borrower-qualification-v1";
 const HANDOFF_STORAGE_KEY = "approvu:qualification-session";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  const base = apiBaseUrl();
-  return `${base}${path}`;
-}
-
-function csrfToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-}
 
 function flowTransactionType(flowKey: FlowKey): BorrowerQualificationPayload["transaction_type"] {
   return flowKey === "pre" ? "pre_purchase" : flowKey;
@@ -132,15 +119,9 @@ async function postQualification(
   path: string,
   payload: BorrowerQualificationPayload,
 ): Promise<BorrowerQualificationResponse> {
-  const csrf = csrfToken();
-  const response = await fetch(endpoint(path), {
+  const response = await fetchWithLaravelSession(buildApiUrl(path), {
     method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 

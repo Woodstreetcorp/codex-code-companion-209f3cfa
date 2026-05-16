@@ -72,15 +72,9 @@ export type BorrowerOfferReviewSummary = {
   disclaimers?: string[] | null;
 };
 
+import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
+
 const BORROWER_OFFER_REVIEW_STORAGE_KEY = "approvu:borrower-offer-review-status";
-
-function apiBaseUrl(): string {
-  return (import.meta.env.VITE_APPROVU_API_BASE_URL ?? "").replace(/\/+$/, "");
-}
-
-function endpoint(path: string): string {
-  return `${apiBaseUrl()}${path}`;
-}
 
 async function parseResponse(
   response: Response,
@@ -105,11 +99,7 @@ async function parseResponse(
 }
 
 export async function getBorrowerOfferReviewStatus(): Promise<BorrowerOfferReviewSummary> {
-  const response = await fetch(endpoint("/v2/borrower/offer-review-status"), {
-    method: "GET",
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetchWithLaravelSession(buildApiUrl("/v2/borrower/offer-review-status"));
 
   return parseResponse(response);
 }
