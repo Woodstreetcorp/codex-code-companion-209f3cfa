@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { saveBorrowerApplicationSection } from "@/lib/api/borrowerApplicationSectionsApi";
 import {
   ChoiceGrid,
   CompletionSummaryPanel,
@@ -64,6 +65,10 @@ function DownPaymentPage() {
   const { applicationId } = Route.useParams();
   const navigate = useNavigate();
   const tx: TxType = "Purchase";
+
+  // ── Save state ────────────────────────────────────────────────────────────
+  const [saveStatus, setSaveStatus] = useState<"saved" | "unsaved" | "saving">("saved");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const propertyValue = 832000; // mock pulled from property/purchase plan
   const [totalDP, setTotalDP] = useState("83000");
@@ -158,6 +163,40 @@ function DownPaymentPage() {
   const totalSources = sources.reduce((sum, s) => sum + Number(s.amount || 0), 0);
   const remaining = totalDPNum - totalSources;
 
+  // ── Section save helper ───────────────────────────────────────────────────
+  const buildSectionData = () => ({
+    total_down_payment: totalDPNum,
+    property_value: propertyValue,
+    down_payment_percent: propertyValue ? (totalDPNum / propertyValue) * 100 : 0,
+    requested_mortgage: Math.max(propertyValue - totalDPNum, 0),
+    source_types: selectedTypes,
+    sources: sources.map(({ id: _id, fromAsset: _fa, ...rest }) => rest),
+  });
+
+  const saveSection = async (
+    status: "in_progress" | "complete",
+    nextRoute?: string,
+  ) => {
+    setSaveStatus("saving");
+    setSaveError(null);
+    try {
+      await saveBorrowerApplicationSection("assets_down_payment", {
+        data: buildSectionData(),
+        status,
+        current_step: "assets_down_payment",
+      });
+      setSaveStatus("saved");
+      if (nextRoute) {
+        void navigate({ to: nextRoute });
+      }
+    } catch (err) {
+      setSaveStatus("unsaved");
+      setSaveError(
+        err instanceof Error ? err.message : "Your down payment section could not be saved.",
+      );
+    }
+  };
+
   const groupsDone = [
     totalDPNum > 0,
     sources.length > 0,
@@ -190,7 +229,13 @@ function DownPaymentPage() {
         subtitle="Confirm your down payment amount, source of funds, and financing details."
         tx={tx}
         progress={progress}
+        saveStatus={saveStatus}
       />
+      {saveError && (
+        <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+          {saveError}
+        </div>
+      )}
 
       <CompletionSummaryPanel total={groupsDone.length} done={groupsDone.filter(Boolean).length} />
 
@@ -287,8 +332,10 @@ function DownPaymentPage() {
       <SaveAndContinueBar
         applicationId={applicationId}
         canComplete={canComplete}
+        onSaveDraft={() => void saveSection("in_progress")}
+        onMarkComplete={() => void saveSection("complete")}
         onSaveContinue={() =>
-          navigate({ to: "/internal/full-application" })
+          void saveSection("in_progress", "/internal/full-application")
         }
       />
     </PageShell>

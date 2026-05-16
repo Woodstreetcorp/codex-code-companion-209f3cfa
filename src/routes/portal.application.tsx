@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowRight,
+  CheckCircle2,
   ClipboardList,
   Clock,
   FileText,
@@ -17,6 +18,16 @@ import {
   type BorrowerApplicationSummary,
   type SectionStatus,
 } from "@/lib/api/borrowerApplicationSummaryApi";
+import {
+  listBorrowerApplicationSections,
+  storeBorrowerApplicationSections,
+  SECTION_LABELS,
+  ALL_SECTION_KEYS,
+  type ApplicationSectionKey,
+  type ApplicationSectionStatus,
+  type ApplicationSection as BackendSection,
+  type SectionsSummary,
+} from "@/lib/api/borrowerApplicationSectionsApi";
 
 export const Route = createFileRoute("/portal/application")({
   head: () => ({
@@ -106,8 +117,22 @@ function primaryRouteFor(
 
 // ── Page component ────────────────────────────────────────────────────────────
 
+// ── Section route mapping ──────────────────────────────────────────────────────
+// Maps backend section keys to the closest existing Lovable route.
+// applicationId "current" is a placeholder — the real application is resolved
+// server-side from the session cookie.
+const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
+  borrower_profile:    "/portal/settings/profile",
+  property:            "/applications/current/property-financing/target-property",
+  income:              "/applications/current/property-financing/purchase-plan",
+  assets_down_payment: "/applications/current/property-financing/down-payment",
+  liabilities:         "/applications/current/mortgage-request",
+};
+
 function ApplicationWorkspacePage() {
   const [summary, setSummary] = useState<BorrowerApplicationSummary | null>(null);
+  const [backendSections, setBackendSections] = useState<BackendSection[] | null>(null);
+  const [sectionsSummary, setSectionsSummary] = useState<SectionsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,10 +143,29 @@ function ApplicationWorkspacePage() {
       setLoading(true);
       setError(null);
       try {
-        const result = await getBorrowerApplicationSummary();
+        // Load both in parallel — sections failure is non-fatal
+        const [summaryResult, sectionsResult] = await Promise.allSettled([
+          getBorrowerApplicationSummary(),
+          listBorrowerApplicationSections(),
+        ]);
+
         if (!active) return;
-        storeBorrowerApplicationSummary(result);
-        setSummary(result);
+
+        if (summaryResult.status === "fulfilled") {
+          storeBorrowerApplicationSummary(summaryResult.value);
+          setSummary(summaryResult.value);
+        } else {
+          throw summaryResult.reason instanceof Error
+            ? summaryResult.reason
+            : new Error("Your application workspace could not be loaded.");
+        }
+
+        if (sectionsResult.status === "fulfilled" && sectionsResult.value.ok) {
+          storeBorrowerApplicationSections(sectionsResult.value);
+          setBackendSections(sectionsResult.value.sections ?? null);
+          setSectionsSummary(sectionsResult.value.sections_summary ?? null);
+        }
+        // Sections fetch failure is silent — workspace still loads
       } catch (failure) {
         if (!active) return;
         setError(
@@ -176,7 +220,12 @@ function ApplicationWorkspacePage() {
     );
   }
 
-  const percent = summary.completion_percent ?? 5;
+  // Use backend completion_percent from sections if available (more accurate)
+  const backendPercent = sectionsSummary != null && backendSections != null
+    ? Math.min(80, (backendSections.filter((s) => s.status === "complete").length) * 20)
+    : null;
+  const percent = backendPercent ?? summary.completion_percent ?? 5;
+
   const state = summary.application_state;
   const qualSummary = summary.qualification_summary;
   const snapSummary = summary.mortgage_snapshot_summary;
@@ -188,6 +237,7 @@ function ApplicationWorkspacePage() {
     primaryAction?.action,
     primaryAction?.route_hint,
   );
+
 
   return (
     <div className="space-y-6">
@@ -357,19 +407,62 @@ function ApplicationWorkspacePage() {
         </SummaryPanel>
       </div>
 
-      {/* ── Sections grid ────────────────────────────────────────────────── */}
-      {sections.length > 0 && (
+      {/* ── Backend application sections ──────────────────────────────── */}
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Application sections
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Fill in each section to complete your mortgage application.
+            </p>
+          </div>
+          {sectionsSummary && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-mint-foreground" />
+                <strong className="text-foreground">
+                  {sectionsSummary.completed_sections ?? 0}
+                </strong>{" "}
+                / {sectionsSummary.total_sections ?? 5} complete
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ALL_SECTION_KEYS.map((key) => {
+            const backendSection = backendSections?.find(
+              (s) => s.section_key === key,
+            );
+            const status: ApplicationSectionStatus =
+              backendSection?.status ?? "not_started";
+            return (
+              <BackendSectionCard
+                key={key}
+                sectionKey={key}
+                label={SECTION_LABELS[key]}
+                status={status}
+                lastSavedAt={backendSection?.last_saved_at ?? null}
+                route={SECTION_ROUTE[key]}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Summary sections (legacy — documents, offers) ─────────────── */}
+      {sections.filter((s) => !["borrower_profile", "property", "income", "down_payment", "credit"].includes(s.key ?? "")).length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            Application sections
+            Other sections
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            An overview of each part of your application.
-          </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sections.map((section) => (
-              <SectionCard key={section.key ?? section.label} section={section} />
-            ))}
+            {sections
+              .filter((s) => !["borrower_profile", "property", "income", "down_payment", "credit"].includes(s.key ?? ""))
+              .map((section) => (
+                <SectionCard key={section.key ?? section.label} section={section} />
+              ))}
           </div>
         </div>
       )}
@@ -525,6 +618,82 @@ function SectionCard({ section }: { section: ApplicationSection }) {
         <p className="mt-2 text-xs text-muted-foreground">{section.description}</p>
       )}
     </div>
+  );
+}
+
+// ── Backend section card ──────────────────────────────────────────────────────
+
+const BACKEND_STATUS_CONFIG: Record<
+  ApplicationSectionStatus,
+  { label: string; badgeClass: string; dotClass: string }
+> = {
+  complete: {
+    label: "Complete",
+    badgeClass: "bg-mint/15 text-mint-foreground border border-mint/30",
+    dotClass: "bg-mint",
+  },
+  in_progress: {
+    label: "In Progress",
+    badgeClass: "bg-secondary/10 text-secondary border border-secondary/20",
+    dotClass: "bg-secondary",
+  },
+  needs_attention: {
+    label: "Needs Attention",
+    badgeClass: "bg-coral/10 text-coral border border-coral/20",
+    dotClass: "bg-coral",
+  },
+  not_started: {
+    label: "Not Started",
+    badgeClass: "bg-muted text-muted-foreground border border-border",
+    dotClass: "bg-muted-foreground/40",
+  },
+};
+
+function BackendSectionCard({
+  sectionKey,
+  label,
+  status,
+  lastSavedAt,
+  route,
+}: {
+  sectionKey: ApplicationSectionKey;
+  label: string;
+  status: ApplicationSectionStatus;
+  lastSavedAt: string | null;
+  route: string;
+}) {
+  const cfg = BACKEND_STATUS_CONFIG[status] ?? BACKEND_STATUS_CONFIG.not_started;
+  return (
+    <Link
+      to={route}
+      className="group block rounded-xl border border-border bg-background p-4 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">
+          {label}
+        </h3>
+        <span
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.badgeClass}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${cfg.dotClass}`} />
+          {cfg.label}
+        </span>
+      </div>
+      {lastSavedAt && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Last saved {formatDate(lastSavedAt)}
+        </p>
+      )}
+      {!lastSavedAt && status === "not_started" && (
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Not started yet
+        </p>
+      )}
+      <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+        {status === "not_started" ? "Start" : "Continue"}{" "}
+        <ArrowRight className="h-3 w-3" />
+      </div>
+    </Link>
   );
 }
 
