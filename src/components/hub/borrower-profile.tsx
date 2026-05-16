@@ -74,12 +74,166 @@ const EMPTY_CREDIT_DETAILS: CreditDetails = {
   dischargedWhen: "",
 };
 
+type BorrowerProfileDetails = {
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  preferred_name: string;
+  email: string;
+  phone: string;
+  alternate_phone: string;
+  date_of_birth: string;
+  marital_status: string;
+  dependents: string;
+  residency_status: string;
+  contact_preference: string;
+  role: string;
+};
+
+type BorrowerAddressDetails = {
+  street_address: string;
+  unit: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  housing_status: string;
+  years_at_address: string;
+  months_at_address: string;
+  monthly_housing_payment: string;
+  mailing_same: boolean;
+};
+
+type ParticipationAnswer = "yes" | "no" | "";
+
+type BorrowerParticipationDetails = {
+  on_title: ParticipationAnswer;
+  on_mortgage: ParticipationAnswer;
+  provides_income: ParticipationAnswer;
+  provides_down_payment_assets: ParticipationAnswer;
+  debts_included: ParticipationAnswer;
+  occupying_property: ParticipationAnswer;
+};
+
+const EMPTY_ADDRESS_DETAILS: BorrowerAddressDetails = {
+  street_address: "",
+  unit: "",
+  city: "",
+  province: "AB",
+  postal_code: "",
+  country: "Canada",
+  housing_status: "Own",
+  years_at_address: "3",
+  months_at_address: "",
+  monthly_housing_payment: "",
+  mailing_same: true,
+};
+
+const EMPTY_PARTICIPATION_DETAILS: BorrowerParticipationDetails = {
+  on_title: "",
+  on_mortgage: "",
+  provides_income: "",
+  provides_down_payment_assets: "",
+  debts_included: "",
+  occupying_property: "",
+};
+
+function buildDefaultProfileDetails(applicant: BorrowerProfileApplicant): BorrowerProfileDetails {
+  return {
+    first_name: applicant.name.split(" ")[0] ?? "",
+    middle_name: "",
+    last_name: applicant.name.split(" ").slice(1).join(" "),
+    preferred_name: "",
+    email: applicant.email ?? "",
+    phone: "",
+    alternate_phone: "",
+    date_of_birth: "",
+    marital_status: "Married",
+    dependents: "0",
+    residency_status: "Canadian Citizen",
+    contact_preference: "Email",
+    role: applicant.role,
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function hasSectionData(value: unknown): value is Record<string, unknown> {
   return isRecord(value) && Object.keys(value).length > 0;
+}
+
+function getString(value: unknown, fallback = ""): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return fallback;
+}
+
+function getBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function toParticipationAnswer(value: unknown): ParticipationAnswer {
+  return value === "yes" || value === "no" ? value : "";
+}
+
+function getNestedRecord(source: Record<string, unknown>, key: string): Record<string, unknown> {
+  return isRecord(source[key]) ? source[key] : {};
+}
+
+function toBorrowerProfileDetails(
+  value: unknown,
+  fallback: BorrowerProfileDetails,
+): BorrowerProfileDetails {
+  if (!isRecord(value)) return fallback;
+
+  return {
+    first_name: getString(value.first_name, fallback.first_name),
+    middle_name: getString(value.middle_name, fallback.middle_name),
+    last_name: getString(value.last_name, fallback.last_name),
+    preferred_name: getString(value.preferred_name, fallback.preferred_name),
+    email: getString(value.email, fallback.email),
+    phone: getString(value.phone, fallback.phone),
+    alternate_phone: getString(value.alternate_phone, fallback.alternate_phone),
+    date_of_birth: getString(value.date_of_birth, fallback.date_of_birth),
+    marital_status: getString(value.marital_status, fallback.marital_status),
+    dependents: getString(value.dependents, fallback.dependents),
+    residency_status: getString(value.residency_status, fallback.residency_status),
+    contact_preference: getString(value.contact_preference, fallback.contact_preference),
+    role: getString(value.role, fallback.role),
+  };
+}
+
+function toBorrowerAddressDetails(value: unknown): BorrowerAddressDetails {
+  if (!isRecord(value)) return EMPTY_ADDRESS_DETAILS;
+
+  return {
+    street_address: getString(value.street_address),
+    unit: getString(value.unit),
+    city: getString(value.city),
+    province: getString(value.province, EMPTY_ADDRESS_DETAILS.province),
+    postal_code: getString(value.postal_code),
+    country: getString(value.country, EMPTY_ADDRESS_DETAILS.country),
+    housing_status: getString(value.housing_status, EMPTY_ADDRESS_DETAILS.housing_status),
+    years_at_address: getString(value.years_at_address, EMPTY_ADDRESS_DETAILS.years_at_address),
+    months_at_address: getString(value.months_at_address),
+    monthly_housing_payment: getString(value.monthly_housing_payment),
+    mailing_same: getBoolean(value.mailing_same, EMPTY_ADDRESS_DETAILS.mailing_same),
+  };
+}
+
+function toBorrowerParticipationDetails(value: unknown): BorrowerParticipationDetails {
+  if (!isRecord(value)) return EMPTY_PARTICIPATION_DETAILS;
+
+  return {
+    on_title: toParticipationAnswer(value.on_title),
+    on_mortgage: toParticipationAnswer(value.on_mortgage),
+    provides_income: toParticipationAnswer(value.provides_income),
+    provides_down_payment_assets: toParticipationAnswer(value.provides_down_payment_assets),
+    debts_included: toParticipationAnswer(value.debts_included),
+    occupying_property: toParticipationAnswer(value.occupying_property),
+  };
 }
 
 function toIncomeSource(value: unknown, index: number): IncomeSource | null {
@@ -487,6 +641,14 @@ export function BorrowerProfilePage({
   );
   const [assets, setAssets] = useState<Asset[]>(applicant.isPrimary ? SEED_ASSETS_PRIMARY : []);
   const [properties, setProperties] = useState<OtherProperty[]>([]);
+  const defaultProfileDetails = useMemo(() => buildDefaultProfileDetails(applicant), [applicant]);
+  const [profileDetails, setProfileDetails] =
+    useState<BorrowerProfileDetails>(defaultProfileDetails);
+  const [addressDetails, setAddressDetails] =
+    useState<BorrowerAddressDetails>(EMPTY_ADDRESS_DETAILS);
+  const [participationDetails, setParticipationDetails] = useState<BorrowerParticipationDetails>(
+    EMPTY_PARTICIPATION_DETAILS,
+  );
 
   // "I have none" toggles
   const [noneIncome, setNoneIncome] = useState(false);
@@ -494,15 +656,20 @@ export function BorrowerProfilePage({
   const [noneAssets, setNoneAssets] = useState(false);
   const [noneProps, setNoneProps] = useState(false);
   const [creditDetails, setCreditDetails] = useState<CreditDetails>(EMPTY_CREDIT_DETAILS);
+  const [profileSaveStatus, setProfileSaveStatus] = useState<SaveStatus>("saved");
   const [incomeSaveStatus, setIncomeSaveStatus] = useState<SaveStatus>("saved");
   const [liabilitiesSaveStatus, setLiabilitiesSaveStatus] = useState<SaveStatus>("saved");
   const [sectionSaveError, setSectionSaveError] = useState<string | null>(null);
+  const [loadingProfileRestore, setLoadingProfileRestore] = useState(true);
   const [loadingIncomeRestore, setLoadingIncomeRestore] = useState(true);
   const [loadingLiabilitiesRestore, setLoadingLiabilitiesRestore] = useState(true);
+  const [profileRestoreSource, setProfileRestoreSource] = useState<RestoreSource>("none");
   const [incomeRestoreSource, setIncomeRestoreSource] = useState<RestoreSource>("none");
   const [liabilitiesRestoreSource, setLiabilitiesRestoreSource] = useState<RestoreSource>("none");
+  const [profileRestoreError, setProfileRestoreError] = useState<string | null>(null);
   const [incomeRestoreError, setIncomeRestoreError] = useState<string | null>(null);
   const [liabilitiesRestoreError, setLiabilitiesRestoreError] = useState<string | null>(null);
+  const profileEditedRef = useRef(false);
   const incomeEditedRef = useRef(false);
   const liabilitiesEditedRef = useRef(false);
 
@@ -550,6 +717,12 @@ export function BorrowerProfilePage({
   const markSection = (key: SectionKey, state: SectionState) =>
     setSections((prev) => prev.map((s) => (s.key === key ? { ...s, state } : s)));
 
+  const markProfileDirty = () => {
+    profileEditedRef.current = true;
+    setProfileSaveStatus("unsaved");
+    setSectionSaveError(null);
+  };
+
   const markIncomeDirty = () => {
     incomeEditedRef.current = true;
     setIncomeSaveStatus("unsaved");
@@ -568,6 +741,35 @@ export function BorrowerProfilePage({
     no_income_declared: noneIncome,
     income_sources: income.map(({ id, ...source }) => ({ id, ...source })),
   });
+
+  const buildBorrowerProfileSectionData = () => ({
+    borrower_id: applicant.id,
+    borrower_name: applicant.name,
+    primary_applicant: profileDetails,
+    address: addressDetails,
+    participation: participationDetails,
+  });
+
+  const saveBorrowerProfileSection = async (
+    status: "in_progress" | "complete",
+    continueNext = false,
+  ) => {
+    setProfileSaveStatus("saving");
+    setSectionSaveError(null);
+    try {
+      await saveBorrowerApplicationSection("borrower_profile", {
+        data: buildBorrowerProfileSectionData(),
+        status,
+        current_step: "borrower_profile",
+      });
+      setProfileSaveStatus("saved");
+      markSection(active, status === "complete" ? "Complete" : "In Progress");
+      if (continueNext) goNext();
+    } catch {
+      setProfileSaveStatus("unsaved");
+      setSectionSaveError("We could not save this section right now. Please try again.");
+    }
+  };
 
   const buildLiabilitiesSectionData = () => ({
     borrower_id: applicant.id,
@@ -626,6 +828,11 @@ export function BorrowerProfilePage({
   };
 
   const saveActiveSectionAndContinue = () => {
+    if (active === "about" || active === "address") {
+      void saveBorrowerProfileSection("complete", true);
+      return;
+    }
+
     if (active === "income") {
       void saveIncomeSection("complete", true);
       return;
@@ -639,6 +846,53 @@ export function BorrowerProfilePage({
     markSection(active, "Complete");
     goNext();
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setLoadingProfileRestore(true);
+    setProfileRestoreError(null);
+    setProfileRestoreSource("none");
+
+    getBorrowerApplicationSection("borrower_profile")
+      .then((res) => {
+        if (cancelled || profileEditedRef.current) return;
+
+        const section = res.section;
+        const effective = section?.effective_data;
+        if (!hasSectionData(effective)) {
+          setProfileDetails(defaultProfileDetails);
+          setAddressDetails(EMPTY_ADDRESS_DETAILS);
+          setParticipationDetails(EMPTY_PARTICIPATION_DETAILS);
+          setProfileRestoreSource("none");
+          return;
+        }
+
+        const primaryApplicant = hasSectionData(effective.primary_applicant)
+          ? getNestedRecord(effective, "primary_applicant")
+          : effective;
+        setProfileDetails(toBorrowerProfileDetails(primaryApplicant, defaultProfileDetails));
+        setAddressDetails(toBorrowerAddressDetails(effective.address));
+        setParticipationDetails(toBorrowerParticipationDetails(effective.participation));
+        setProfileSaveStatus("saved");
+        setProfileRestoreSource(hasSectionData(section?.data) ? "saved" : "prefill");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProfileRestoreError(
+            "We could not restore your saved profile details. You can continue entering them manually.",
+          );
+          setProfileRestoreSource("none");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingProfileRestore(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applicant.id, defaultProfileDetails]);
 
   useEffect(() => {
     let cancelled = false;
@@ -915,6 +1169,12 @@ export function BorrowerProfilePage({
             </div>
 
             <div className="mt-6">
+              {(active === "about" || active === "address") && loadingProfileRestore && (
+                <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground animate-pulse">
+                  Loading your saved profile details...
+                </div>
+              )}
+
               {active === "income" && loadingIncomeRestore && (
                 <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground animate-pulse">
                   Loading your saved income details...
@@ -926,6 +1186,19 @@ export function BorrowerProfilePage({
                   Loading your saved liabilities details...
                 </div>
               )}
+
+              {(active === "about" || active === "address") &&
+                !loadingProfileRestore &&
+                profileRestoreSource !== "none" && (
+                  <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      {profileRestoreSource === "saved"
+                        ? "Restored from your saved application."
+                        : "Pre-filled from your qualification answers. Please review and save."}
+                    </span>
+                  </div>
+                )}
 
               {active === "income" && !loadingIncomeRestore && incomeRestoreSource !== "none" && (
                 <div className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-300">
@@ -963,13 +1236,48 @@ export function BorrowerProfilePage({
                 </div>
               )}
 
-              {(active === "income" || active === "credit") && sectionSaveError && (
+              {(active === "about" || active === "address") && profileRestoreError && (
                 <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
-                  {sectionSaveError}
+                  {profileRestoreError}
                 </div>
               )}
-              {active === "about" && <AboutSection applicant={applicant} onMark={markSection} />}
-              {active === "address" && <AddressSection onMark={markSection} />}
+
+              {(active === "about" ||
+                active === "address" ||
+                active === "income" ||
+                active === "credit") &&
+                sectionSaveError && (
+                  <div className="mb-4 rounded-xl border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+                    {sectionSaveError}
+                  </div>
+                )}
+              {active === "about" && (
+                <AboutSection
+                  profile={profileDetails}
+                  participation={participationDetails}
+                  onProfileChange={(patch) => {
+                    setProfileDetails((current) => ({ ...current, ...patch }));
+                    markProfileDirty();
+                  }}
+                  onParticipationChange={(patch) => {
+                    setParticipationDetails((current) => ({ ...current, ...patch }));
+                    markProfileDirty();
+                  }}
+                  onMark={markSection}
+                  onSaveDraft={() => void saveBorrowerProfileSection("in_progress")}
+                />
+              )}
+              {active === "address" && (
+                <AddressSection
+                  address={addressDetails}
+                  onAddressChange={(patch) => {
+                    setAddressDetails((current) => ({ ...current, ...patch }));
+                    markProfileDirty();
+                  }}
+                  onMark={markSection}
+                  onSaveDraft={() => void saveBorrowerProfileSection("in_progress")}
+                />
+              )}
               {active === "income" && (
                 <IncomeSection
                   income={income}
@@ -1075,19 +1383,25 @@ export function BorrowerProfilePage({
           <div className="sticky bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
             <p className="text-xs text-muted-foreground">
               <CheckCircle2 className="mr-1 inline h-3.5 w-3.5 text-mint" />
-              {active === "income"
-                ? incomeSaveStatus === "saving"
-                  ? "Saving income..."
-                  : incomeSaveStatus === "unsaved"
-                    ? "Income has unsaved changes"
-                    : "Income saved"
-                : active === "credit"
-                  ? liabilitiesSaveStatus === "saving"
-                    ? "Saving liabilities..."
-                    : liabilitiesSaveStatus === "unsaved"
-                      ? "Liabilities have unsaved changes"
-                      : "Liabilities saved"
-                  : "Autosaved · changes are saved as you go"}
+              {active === "about" || active === "address"
+                ? profileSaveStatus === "saving"
+                  ? "Saving profile..."
+                  : profileSaveStatus === "unsaved"
+                    ? "Profile has unsaved changes"
+                    : "Profile saved"
+                : active === "income"
+                  ? incomeSaveStatus === "saving"
+                    ? "Saving income..."
+                    : incomeSaveStatus === "unsaved"
+                      ? "Income has unsaved changes"
+                      : "Income saved"
+                  : active === "credit"
+                    ? liabilitiesSaveStatus === "saving"
+                      ? "Saving liabilities..."
+                      : liabilitiesSaveStatus === "unsaved"
+                        ? "Liabilities have unsaved changes"
+                        : "Liabilities saved"
+                    : "Autosaved · changes are saved as you go"}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -1113,6 +1427,8 @@ export function BorrowerProfilePage({
                 <button
                   onClick={saveActiveSectionAndContinue}
                   disabled={
+                    ((active === "about" || active === "address") &&
+                      profileSaveStatus === "saving") ||
                     (active === "income" && incomeSaveStatus === "saving") ||
                     (active === "credit" && liabilitiesSaveStatus === "saving")
                   }
@@ -1241,54 +1557,72 @@ export function BorrowerProfilePage({
 
 // ─── Sections ──────────────────────────────────────────────────────
 function AboutSection({
-  applicant,
+  profile,
+  participation,
+  onProfileChange,
+  onParticipationChange,
   onMark,
+  onSaveDraft,
 }: {
-  applicant: BorrowerProfileApplicant;
+  profile: BorrowerProfileDetails;
+  participation: BorrowerParticipationDetails;
+  onProfileChange: (patch: Partial<BorrowerProfileDetails>) => void;
+  onParticipationChange: (patch: Partial<BorrowerParticipationDetails>) => void;
   onMark: (k: SectionKey, s: SectionState) => void;
+  onSaveDraft: () => void;
 }) {
-  const [first, setFirst] = useState(applicant.name.split(" ")[0] ?? "");
-  const [last, setLast] = useState(applicant.name.split(" ").slice(1).join(" "));
-  const [dob, setDob] = useState("");
-  const [marital, setMarital] = useState("Married");
-  const [dependents, setDependents] = useState("0");
-  const [residency, setResidency] = useState("Canadian Citizen");
-  const [email, setEmail] = useState(applicant.email ?? "");
-  const [phone, setPhone] = useState("");
-  const [contactPref, setContactPref] = useState("Email");
-
   return (
     <div className="space-y-6">
       <Group title="Personal Information">
         <Field label="Legal first name" required>
-          <Input value={first} onChange={setFirst} />
+          <Input
+            value={profile.first_name}
+            onChange={(value) => onProfileChange({ first_name: value })}
+          />
         </Field>
         <Field label="Legal middle name">
-          <Input />
+          <Input
+            value={profile.middle_name}
+            onChange={(value) => onProfileChange({ middle_name: value })}
+          />
         </Field>
         <Field label="Legal last name" required>
-          <Input value={last} onChange={setLast} />
+          <Input
+            value={profile.last_name}
+            onChange={(value) => onProfileChange({ last_name: value })}
+          />
         </Field>
         <Field label="Preferred name">
-          <Input placeholder="Optional" />
+          <Input
+            value={profile.preferred_name}
+            onChange={(value) => onProfileChange({ preferred_name: value })}
+            placeholder="Optional"
+          />
         </Field>
         <Field label="Date of birth" required>
-          <Input type="date" value={dob} onChange={setDob} />
+          <Input
+            type="date"
+            value={profile.date_of_birth}
+            onChange={(value) => onProfileChange({ date_of_birth: value })}
+          />
         </Field>
         <Field label="Marital status">
           <Select
-            value={marital}
-            onChange={setMarital}
+            value={profile.marital_status}
+            onChange={(value) => onProfileChange({ marital_status: value })}
             options={["Single", "Married", "Common-Law", "Separated", "Divorced", "Widowed"]}
           />
         </Field>
         <Field label="Number of dependents">
-          <Input value={dependents} onChange={setDependents} />
+          <Input
+            value={profile.dependents}
+            onChange={(value) => onProfileChange({ dependents: value })}
+          />
         </Field>
         <Field label="Citizenship / Residency">
           <Select
-            value={residency}
-            onChange={setResidency}
+            value={profile.residency_status}
+            onChange={(value) => onProfileChange({ residency_status: value })}
             options={["Canadian Citizen", "Permanent Resident", "Work Permit", "Other"]}
           />
         </Field>
@@ -1296,18 +1630,30 @@ function AboutSection({
 
       <Group title="Contact Information">
         <Field label="Email" required>
-          <Input value={email} onChange={setEmail} type="email" />
+          <Input
+            value={profile.email}
+            onChange={(value) => onProfileChange({ email: value })}
+            type="email"
+          />
         </Field>
         <Field label="Mobile phone" required>
-          <Input value={phone} onChange={setPhone} placeholder="(555) 555-5555" />
+          <Input
+            value={profile.phone}
+            onChange={(value) => onProfileChange({ phone: value })}
+            placeholder="(555) 555-5555"
+          />
         </Field>
         <Field label="Alternate phone">
-          <Input placeholder="Optional" />
+          <Input
+            value={profile.alternate_phone}
+            onChange={(value) => onProfileChange({ alternate_phone: value })}
+            placeholder="Optional"
+          />
         </Field>
         <Field label="Preferred contact method">
           <Select
-            value={contactPref}
-            onChange={setContactPref}
+            value={profile.contact_preference}
+            onChange={(value) => onProfileChange({ contact_preference: value })}
             options={["Email", "Mobile", "SMS", "Call"]}
           />
         </Field>
@@ -1316,8 +1662,8 @@ function AboutSection({
       <Group title="Borrower Role">
         <Field label="Role on this application" full>
           <Select
-            value={applicant.role}
-            onChange={() => {}}
+            value={profile.role}
+            onChange={(value) => onProfileChange({ role: value })}
             options={[
               "Primary Applicant",
               "Co-Applicant",
@@ -1333,14 +1679,46 @@ function AboutSection({
       <Group title="Application Participation">
         <YesNo
           label="Will this borrower be on title?"
+          value={participation.on_title}
+          onChange={(value) => onParticipationChange({ on_title: value })}
           warnOnNo="Lenders strongly prefer every applicant on the mortgage to also be on title. Selecting No may disqualify this mortgage application or require lender exception approval."
         />
-        <YesNo label="Will this borrower be on the mortgage?" />
-        <YesNo label="Will this borrower provide income?" />
-        <YesNo label="Will this borrower provide down payment / assets?" />
-        <YesNo label="Will this borrower's debts be included?" />
-        <YesNo label="Is this borrower occupying the property?" />
+        <YesNo
+          label="Will this borrower be on the mortgage?"
+          value={participation.on_mortgage}
+          onChange={(value) => onParticipationChange({ on_mortgage: value })}
+        />
+        <YesNo
+          label="Will this borrower provide income?"
+          value={participation.provides_income}
+          onChange={(value) => onParticipationChange({ provides_income: value })}
+        />
+        <YesNo
+          label="Will this borrower provide down payment / assets?"
+          value={participation.provides_down_payment_assets}
+          onChange={(value) => onParticipationChange({ provides_down_payment_assets: value })}
+        />
+        <YesNo
+          label="Will this borrower's debts be included?"
+          value={participation.debts_included}
+          onChange={(value) => onParticipationChange({ debts_included: value })}
+        />
+        <YesNo
+          label="Is this borrower occupying the property?"
+          value={participation.occupying_property}
+          onChange={(value) => onParticipationChange({ occupying_property: value })}
+        />
       </Group>
+
+      <button
+        onClick={() => {
+          onMark("about", "In Progress");
+          onSaveDraft();
+        }}
+        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+      >
+        Save Progress
+      </button>
 
       <SectionFootHelp text="Updating legal name or date of birth after lender submission may require support to re-issue documents." />
       <input type="hidden" onChange={() => onMark("about", "In Progress")} />
@@ -1348,58 +1726,90 @@ function AboutSection({
   );
 }
 
-function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) => void }) {
-  const [years, setYears] = useState("3");
-  const [housing, setHousing] = useState("Own");
-  const [mailingSame, setMailingSame] = useState(true);
-  const needsPrev = parseInt(years || "0", 10) < 3;
+function AddressSection({
+  address,
+  onAddressChange,
+  onMark,
+  onSaveDraft,
+}: {
+  address: BorrowerAddressDetails;
+  onAddressChange: (patch: Partial<BorrowerAddressDetails>) => void;
+  onMark: (k: SectionKey, s: SectionState) => void;
+  onSaveDraft: () => void;
+}) {
+  const needsPrev = parseInt(address.years_at_address || "0", 10) < 3;
 
   return (
     <div className="space-y-6">
       <Group title="Current Address">
         <Field label="Street address" required full>
-          <AddressAutocompleteInput placeholder="Start typing your address…" />
+          <AddressAutocompleteInput
+            value={address.street_address}
+            onChange={(value) => onAddressChange({ street_address: value })}
+            placeholder="Start typing your address…"
+          />
         </Field>
         <Field label="Unit / Suite">
-          <Input />
+          <Input value={address.unit} onChange={(value) => onAddressChange({ unit: value })} />
         </Field>
         <Field label="City" required>
-          <Input />
+          <Input value={address.city} onChange={(value) => onAddressChange({ city: value })} />
         </Field>
         <Field label="Province" required>
           <Select
+            value={address.province}
+            onChange={(value) => onAddressChange({ province: value })}
             options={["AB", "BC", "MB", "NB", "NL", "NS", "ON", "PE", "QC", "SK", "NT", "NU", "YT"]}
           />
         </Field>
         <Field label="Postal code" required>
-          <Input placeholder="A1A 1A1" />
+          <Input
+            value={address.postal_code}
+            onChange={(value) => onAddressChange({ postal_code: value })}
+            placeholder="A1A 1A1"
+          />
         </Field>
         <Field label="Country" required>
-          <Select options={["Canada", "United States", "Other"]} />
+          <Select
+            value={address.country}
+            onChange={(value) => onAddressChange({ country: value })}
+            options={["Canada", "United States", "Other"]}
+          />
         </Field>
         <Field label="Housing status" required>
           <Select
-            value={housing}
-            onChange={setHousing}
+            value={address.housing_status}
+            onChange={(value) => onAddressChange({ housing_status: value })}
             options={["Own", "Rent", "Live with family", "Employer-provided", "Other"]}
           />
         </Field>
         <Field label="Years at address" required>
-          <Input value={years} onChange={setYears} />
+          <Input
+            value={address.years_at_address}
+            onChange={(value) => onAddressChange({ years_at_address: value })}
+          />
         </Field>
         <Field label="Months at address">
-          <Input placeholder="0" />
+          <Input
+            value={address.months_at_address}
+            onChange={(value) => onAddressChange({ months_at_address: value })}
+            placeholder="0"
+          />
         </Field>
         <Field label="Monthly housing payment">
-          <Input placeholder="$0" />
+          <Input
+            value={address.monthly_housing_payment}
+            onChange={(value) => onAddressChange({ monthly_housing_payment: value })}
+            placeholder="$0"
+          />
         </Field>
       </Group>
 
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
-          checked={mailingSame}
-          onChange={(e) => setMailingSame(e.target.checked)}
+          checked={address.mailing_same}
+          onChange={(e) => onAddressChange({ mailing_same: e.target.checked })}
           className="h-4 w-4 rounded border-input"
         />
         Mailing address is the same as current address
@@ -1420,6 +1830,16 @@ function AddressSection({ onMark }: { onMark: (k: SectionKey, s: SectionState) =
           </button>
         </div>
       )}
+
+      <button
+        onClick={() => {
+          onMark("address", "In Progress");
+          onSaveDraft();
+        }}
+        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+      >
+        Save Progress
+      </button>
 
       <input type="hidden" onChange={() => onMark("address", "In Progress")} />
     </div>
@@ -4092,16 +4512,30 @@ function Select({
   );
 }
 
-function AddressAutocompleteInput({ placeholder }: { placeholder?: string }) {
-  const [v, setV] = useState("");
+function AddressAutocompleteInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value?: string;
+  onChange?: (v: string) => void;
+  placeholder?: string;
+}) {
+  const [internalValue, setInternalValue] = useState("");
+  const currentValue = value ?? internalValue;
+  const setValue = (next: string) => {
+    if (value === undefined) setInternalValue(next);
+    onChange?.(next);
+  };
+
   return (
     <div className="space-y-1.5">
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
-          value={v}
-          onChange={(e) => setV(e.target.value)}
+          value={currentValue}
+          onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
           autoComplete="street-address"
           className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-28 text-sm text-foreground outline-none focus:border-secondary"
@@ -4119,8 +4553,24 @@ function AddressAutocompleteInput({ placeholder }: { placeholder?: string }) {
   );
 }
 
-function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
-  const [v, setV] = useState<"yes" | "no" | undefined>();
+function YesNo({
+  label,
+  value,
+  onChange,
+  warnOnNo,
+}: {
+  label: string;
+  value?: ParticipationAnswer;
+  onChange?: (v: ParticipationAnswer) => void;
+  warnOnNo?: string;
+}) {
+  const [internalValue, setInternalValue] = useState<ParticipationAnswer>("");
+  const currentValue = value ?? internalValue;
+  const setValue = (next: ParticipationAnswer) => {
+    if (value === undefined) setInternalValue(next);
+    onChange?.(next);
+  };
+
   return (
     <div className="sm:col-span-2 space-y-2">
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
@@ -4130,9 +4580,9 @@ function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
             <button
               key={opt}
               type="button"
-              onClick={() => setV(opt)}
+              onClick={() => setValue(opt)}
               className={`rounded-md px-3 py-1 text-xs font-medium ${
-                v === opt
+                currentValue === opt
                   ? "bg-primary text-primary-foreground"
                   : "border border-input bg-background text-foreground hover:bg-muted"
               }`}
@@ -4142,7 +4592,7 @@ function YesNo({ label, warnOnNo }: { label: string; warnOnNo?: string }) {
           ))}
         </div>
       </div>
-      {warnOnNo && v === "no" && (
+      {warnOnNo && currentValue === "no" && (
         <div className="flex items-start gap-2 rounded-xl border border-coral/40 bg-coral/10 px-3 py-2 text-xs text-foreground">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-coral" />
           <p>{warnOnNo}</p>
