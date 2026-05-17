@@ -35,8 +35,10 @@ import {
 } from "@/lib/api/borrowerApplicationConsentsApi";
 import {
   listBorrowerApplicationReviewRequests,
+  respondToBorrowerApplicationReviewRequest,
   storeBorrowerApplicationReviewRequests,
   type BorrowerApplicationReviewRequest,
+  type ReviewRequestResponseResult,
   type ReviewRequestsResponse,
 } from "@/lib/api/borrowerApplicationReviewRequestsApi";
 import {
@@ -260,6 +262,29 @@ function ApplicationWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  async function refreshReviewRequests(result?: ReviewRequestResponseResult) {
+    if (result?.application_status) {
+      setSubmissionReadiness((current) =>
+        current ? { ...current, status: result.application_status } : current,
+      );
+    }
+
+    const [requestsResult, readinessResult] = await Promise.allSettled([
+      listBorrowerApplicationReviewRequests(),
+      getBorrowerApplicationSubmissionReadiness(),
+    ]);
+
+    if (requestsResult.status === "fulfilled") {
+      storeBorrowerApplicationReviewRequests(requestsResult.value);
+      setReviewRequests(requestsResult.value);
+    }
+
+    if (readinessResult.status === "fulfilled" && readinessResult.value.ok !== false) {
+      storeBorrowerApplicationSubmission(readinessResult.value);
+      setSubmissionReadiness(readinessResult.value);
+    }
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -444,7 +469,11 @@ function ApplicationWorkspacePage() {
       {/* ── Summary grid ─────────────────────────────────────────────────── */}
       <ConsentWorkspaceCard consentReady={consentReady} consentSummary={consentSummary} />
 
-      <ReviewRequestsPanel reviewRequests={reviewRequests} requests={requestItems} />
+      <ReviewRequestsPanel
+        reviewRequests={reviewRequests}
+        requests={requestItems}
+        onRequestAddressed={refreshReviewRequests}
+      />
 
       <ReviewSubmitWorkspaceCard status={submittedStatus} />
 
@@ -788,9 +817,11 @@ function DataRow({
 function ReviewRequestsPanel({
   reviewRequests,
   requests,
+  onRequestAddressed,
 }: {
   reviewRequests: ReviewRequestsResponse | null;
   requests: BorrowerApplicationReviewRequest[];
+  onRequestAddressed: (result?: ReviewRequestResponseResult) => Promise<void>;
 }) {
   const openCount =
     reviewRequests?.open_count ??
@@ -869,6 +900,7 @@ function ReviewRequestsPanel({
             <ReviewRequestCard
               key={request.public_reference ?? request.id ?? index}
               request={request}
+              onRequestAddressed={onRequestAddressed}
             />
           ))}
         </div>
@@ -877,10 +909,42 @@ function ReviewRequestsPanel({
   );
 }
 
-function ReviewRequestCard({ request }: { request: BorrowerApplicationReviewRequest }) {
+function ReviewRequestCard({
+  request,
+  onRequestAddressed,
+}: {
+  request: BorrowerApplicationReviewRequest;
+  onRequestAddressed: (result?: ReviewRequestResponseResult) => Promise<void>;
+}) {
   const route = reviewRequestRoute(request);
   const status = request.status?.toLowerCase();
   const resolved = !!request.resolved_at || status === "resolved" || status === "closed";
+  const publicReference = request.public_reference;
+  const [response, setResponse] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleMarkAddressed() {
+    if (!publicReference || !confirmed || saving) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await respondToBorrowerApplicationReviewRequest(publicReference, {
+        response: response.trim() || undefined,
+        mark_addressed: true,
+      });
+      setSuccess(result.message ?? "Request marked as addressed.");
+      await onRequestAddressed(result);
+    } catch {
+      setError("We could not mark this request as addressed right now. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="rounded-xl border border-border bg-background p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -905,6 +969,16 @@ function ReviewRequestCard({ request }: { request: BorrowerApplicationReviewRequ
             {request.created_at && <span>Created {formatDate(request.created_at)}</span>}
             {request.resolved_at && <span>Resolved {formatDate(request.resolved_at)}</span>}
           </div>
+          {resolved && (request.response || request.borrower_response) && (
+            <div className="mt-3 rounded-lg border border-mint/30 bg-mint/10 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-mint-foreground">
+                Your response
+              </p>
+              <p className="mt-1 text-sm text-foreground">
+                {request.response ?? request.borrower_response}
+              </p>
+            </div>
+          )}
         </div>
         {route && !resolved && (
           <Link
@@ -916,6 +990,62 @@ function ReviewRequestCard({ request }: { request: BorrowerApplicationReviewRequ
           </Link>
         )}
       </div>
+      {!resolved && (
+        <div className="mt-4 border-t border-border pt-4">
+          <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Response note
+          </label>
+          <textarea
+            value={response}
+            onChange={(event) => setResponse(event.target.value)}
+            placeholder="Add a short note about what you updated..."
+            rows={3}
+            className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+          <label className="mt-3 flex items-start gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+              disabled={saving || !publicReference}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>
+              I have reviewed this request and updated the relevant information where needed.
+            </span>
+          </label>
+          {error && (
+            <div className="mt-3 rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mt-3 rounded-lg border border-mint/30 bg-mint/10 px-3 py-2 text-sm text-mint-foreground">
+              {success}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleMarkAddressed()}
+            disabled={!publicReference || !confirmed || saving}
+            className="mt-3 inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Saving
+              </>
+            ) : (
+              "Mark as addressed"
+            )}
+          </button>
+          {!publicReference && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              This request cannot be marked addressed until approvU provides a request reference.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
