@@ -6,10 +6,25 @@ export type BorrowerApplicationReviewRequest = {
   title?: string | null;
   body?: string | null;
   message?: string | null;
+  response?: string | null;
+  borrower_response?: string | null;
   related_section_key?: string | null;
   status?: ReviewRequestStatus | null;
   created_at?: string | null;
   resolved_at?: string | null;
+};
+
+export type ReviewRequestResponsePayload = {
+  response?: string;
+  mark_addressed: true;
+};
+
+export type ReviewRequestResponseResult = {
+  ok?: boolean;
+  request?: BorrowerApplicationReviewRequest | null;
+  application_status?: string | null;
+  next_step?: string | null;
+  message?: string | null;
 };
 
 export type ReviewRequestsResponse = {
@@ -74,5 +89,26 @@ export async function listBorrowerApplicationReviewRequests(): Promise<ReviewReq
   return parseJson<ReviewRequestsResponse>(
     response,
     "Application review requests could not be loaded.",
+  );
+}
+
+export async function respondToBorrowerApplicationReviewRequest(
+  publicReference: string,
+  payload: ReviewRequestResponsePayload,
+): Promise<ReviewRequestResponseResult> {
+  const response = await fetchWithLaravelSession(
+    buildApiUrl(
+      `/v2/borrower/application/review-requests/${encodeURIComponent(publicReference)}/respond`,
+    ),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  return parseJson<ReviewRequestResponseResult>(
+    response,
+    "We could not mark this request as addressed right now. Please try again.",
   );
 }
