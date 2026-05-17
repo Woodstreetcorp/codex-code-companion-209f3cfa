@@ -289,6 +289,8 @@ function ApplicationWorkspacePage() {
       {/* ── Summary grid ─────────────────────────────────────────────────── */}
       <ConsentWorkspaceCard consentReady={consentReady} consentSummary={consentSummary} />
 
+      <ReviewSubmitWorkspaceCard />
+
       <div className="grid gap-4 md:grid-cols-3">
         {/* Qualification */}
         <SummaryPanel
@@ -616,6 +618,34 @@ function ConsentWorkspaceCard({
           className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           Review consents
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ReviewSubmitWorkspaceCard() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Review & submit</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check submission readiness, resolve blockers, and submit your application to approvU
+              for review.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/portal/application/review-submit"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Review application
           <ArrowRight className="ml-1.5 h-4 w-4" />
         </Link>
       </div>

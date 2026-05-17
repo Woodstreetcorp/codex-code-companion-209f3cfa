@@ -71,6 +71,7 @@ import { Route as PortalSettingsConnectionsRouteImport } from './routes/portal.s
 import { Route as PortalSettingsCommunicationsRouteImport } from './routes/portal.settings.communications'
 import { Route as PortalHomeRenewalRouteImport } from './routes/portal.home.renewal'
 import { Route as PortalHomeEquityRouteImport } from './routes/portal.home.equity'
+import { Route as PortalApplicationReviewSubmitRouteImport } from './routes/portal.application.review-submit'
 import { Route as PortalApplicationConsentsRouteImport } from './routes/portal.application.consents'
 import { Route as ApplicationsApplicationIdSubmitRouteImport } from './routes/applications.$applicationId.submit'
 import { Route as ApplicationsApplicationIdQualifiedMortgagesRouteImport } from './routes/applications.$applicationId.qualified-mortgages'
@@ -423,6 +424,12 @@ const PortalHomeEquityRoute = PortalHomeEquityRouteImport.update({
   path: '/equity',
   getParentRoute: () => PortalHomeRoute,
 } as any)
+const PortalApplicationReviewSubmitRoute =
+  PortalApplicationReviewSubmitRouteImport.update({
+    id: '/review-submit',
+    path: '/review-submit',
+    getParentRoute: () => PortalApplicationRoute,
+  } as any)
 const PortalApplicationConsentsRoute =
   PortalApplicationConsentsRouteImport.update({
     id: '/consents',
@@ -629,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/application/consents': typeof PortalApplicationConsentsRoute
+  '/portal/application/review-submit': typeof PortalApplicationReviewSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
@@ -718,6 +726,7 @@ export interface FileRoutesByTo {
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/application/consents': typeof PortalApplicationConsentsRoute
+  '/portal/application/review-submit': typeof PortalApplicationReviewSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
@@ -810,6 +819,7 @@ export interface FileRoutesById {
   '/applications/$applicationId/qualified-mortgages': typeof ApplicationsApplicationIdQualifiedMortgagesRoute
   '/applications/$applicationId/submit': typeof ApplicationsApplicationIdSubmitRoute
   '/portal/application/consents': typeof PortalApplicationConsentsRoute
+  '/portal/application/review-submit': typeof PortalApplicationReviewSubmitRoute
   '/portal/home/equity': typeof PortalHomeEquityRoute
   '/portal/home/renewal': typeof PortalHomeRenewalRoute
   '/portal/settings/communications': typeof PortalSettingsCommunicationsRoute
@@ -903,6 +913,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
     | '/portal/application/consents'
+    | '/portal/application/review-submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
     | '/portal/settings/communications'
@@ -992,6 +1003,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
     | '/portal/application/consents'
+    | '/portal/application/review-submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
     | '/portal/settings/communications'
@@ -1083,6 +1095,7 @@ export interface FileRouteTypes {
     | '/applications/$applicationId/qualified-mortgages'
     | '/applications/$applicationId/submit'
     | '/portal/application/consents'
+    | '/portal/application/review-submit'
     | '/portal/home/equity'
     | '/portal/home/renewal'
     | '/portal/settings/communications'
@@ -1599,6 +1612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalHomeEquityRouteImport
       parentRoute: typeof PortalHomeRoute
     }
+    '/portal/application/review-submit': {
+      id: '/portal/application/review-submit'
+      path: '/review-submit'
+      fullPath: '/portal/application/review-submit'
+      preLoaderRoute: typeof PortalApplicationReviewSubmitRouteImport
+      parentRoute: typeof PortalApplicationRoute
+    }
     '/portal/application/consents': {
       id: '/portal/application/consents'
       path: '/consents'
@@ -1793,10 +1813,12 @@ declare module '@tanstack/react-router' {
 
 interface PortalApplicationRouteChildren {
   PortalApplicationConsentsRoute: typeof PortalApplicationConsentsRoute
+  PortalApplicationReviewSubmitRoute: typeof PortalApplicationReviewSubmitRoute
 }
 
 const PortalApplicationRouteChildren: PortalApplicationRouteChildren = {
   PortalApplicationConsentsRoute: PortalApplicationConsentsRoute,
+  PortalApplicationReviewSubmitRoute: PortalApplicationReviewSubmitRoute,
 }
 
 const PortalApplicationRouteWithChildren =
