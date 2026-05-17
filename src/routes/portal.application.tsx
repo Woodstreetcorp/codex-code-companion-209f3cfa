@@ -33,6 +33,17 @@ import {
   storeBorrowerApplicationConsents,
   type ConsentSummary,
 } from "@/lib/api/borrowerApplicationConsentsApi";
+import {
+  listBorrowerApplicationReviewRequests,
+  storeBorrowerApplicationReviewRequests,
+  type BorrowerApplicationReviewRequest,
+  type ReviewRequestsResponse,
+} from "@/lib/api/borrowerApplicationReviewRequestsApi";
+import {
+  getBorrowerApplicationSubmissionReadiness,
+  storeBorrowerApplicationSubmission,
+  type SubmissionReadinessResponse,
+} from "@/lib/api/borrowerApplicationSubmissionApi";
 
 export const Route = createFileRoute("/portal/application")({
   head: () => ({
@@ -54,6 +65,71 @@ type StatusConfig = {
   label: string;
   badgeClass: string;
   dotClass: string;
+};
+
+type SubmittedApplicationStatus =
+  | "borrower_submitted"
+  | "advisor_review"
+  | "needs_more_information"
+  | "ready_for_lender_packaging"
+  | "submitted_to_lender"
+  | "approved"
+  | "declined"
+  | "withdrawn"
+  | "closed";
+
+type SubmittedStatusConfig = {
+  label: string;
+  copy: string;
+  badgeClass: string;
+};
+
+const SUBMITTED_STATUS_CONFIG: Record<SubmittedApplicationStatus, SubmittedStatusConfig> = {
+  borrower_submitted: {
+    label: "Submitted",
+    copy: "Submitted to approvU for review.",
+    badgeClass: "bg-secondary/10 text-secondary",
+  },
+  advisor_review: {
+    label: "Advisor review",
+    copy: "Your application is being reviewed by the approvU team.",
+    badgeClass: "bg-secondary/10 text-secondary",
+  },
+  needs_more_information: {
+    label: "More information needed",
+    copy: "More information is needed before review can continue.",
+    badgeClass: "bg-coral/10 text-coral",
+  },
+  ready_for_lender_packaging: {
+    label: "Preparing lender package",
+    copy: "Your application is being prepared for lender packaging.",
+    badgeClass: "bg-yellow-50 text-yellow-700",
+  },
+  submitted_to_lender: {
+    label: "Submitted to lender",
+    copy: "Your application has been submitted for lender review.",
+    badgeClass: "bg-secondary/10 text-secondary",
+  },
+  approved: {
+    label: "Approval update",
+    copy: "Your application has an approval update. Your advisor will provide details.",
+    badgeClass: "bg-mint/15 text-mint-foreground",
+  },
+  declined: {
+    label: "Review update",
+    copy: "Your application has a review update. Your advisor will discuss next steps.",
+    badgeClass: "bg-coral/10 text-coral",
+  },
+  withdrawn: {
+    label: "Withdrawn",
+    copy: "This application has been withdrawn.",
+    badgeClass: "bg-muted text-muted-foreground",
+  },
+  closed: {
+    label: "Closed",
+    copy: "This application is closed.",
+    badgeClass: "bg-muted text-muted-foreground",
+  },
 };
 
 const SECTION_STATUS_CONFIG: Record<SectionStatus, StatusConfig> = {
@@ -112,6 +188,52 @@ function primaryRouteFor(action?: string | null, routeHint?: string | null): str
   }
 }
 
+function isSubmittedApplicationStatus(
+  status?: string | null,
+): status is SubmittedApplicationStatus {
+  return !!status && status in SUBMITTED_STATUS_CONFIG;
+}
+
+function reviewRequestRoute(request?: BorrowerApplicationReviewRequest | null): string | null {
+  const key = request?.related_section_key?.toLowerCase();
+  switch (key) {
+    case "borrower_profile":
+      return SECTION_ROUTE.borrower_profile;
+    case "property":
+      return SECTION_ROUTE.property;
+    case "income":
+      return SECTION_ROUTE.income;
+    case "assets_down_payment":
+    case "down_payment":
+      return SECTION_ROUTE.assets_down_payment;
+    case "liabilities":
+      return SECTION_ROUTE.liabilities;
+    case "documents":
+      return "/portal/documents";
+    case "consents":
+      return "/portal/application/consents";
+    default:
+      return null;
+  }
+}
+
+function submittedStatusAction(
+  status: SubmittedApplicationStatus,
+  firstOpenRequest?: BorrowerApplicationReviewRequest | null,
+): { label: string; route: string } | null {
+  if (status === "withdrawn" || status === "closed") return null;
+  if (status === "needs_more_information") {
+    return {
+      label: "Review Requested Items",
+      route: reviewRequestRoute(firstOpenRequest) ?? "/portal/application",
+    };
+  }
+  if (status === "ready_for_lender_packaging") {
+    return { label: "View Next Steps", route: "/portal/application/review-submit" };
+  }
+  return { label: "View Application Status", route: "/portal/application/review-submit" };
+}
+
 // ── Page component ────────────────────────────────────────────────────────────
 
 // ── Section route mapping ──────────────────────────────────────────────────────
@@ -132,6 +254,9 @@ function ApplicationWorkspacePage() {
   const [sectionsSummary, setSectionsSummary] = useState<SectionsSummary | null>(null);
   const [consentReady, setConsentReady] = useState<boolean | null>(null);
   const [consentSummary, setConsentSummary] = useState<ConsentSummary | null>(null);
+  const [submissionReadiness, setSubmissionReadiness] =
+    useState<SubmissionReadinessResponse | null>(null);
+  const [reviewRequests, setReviewRequests] = useState<ReviewRequestsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,12 +267,15 @@ function ApplicationWorkspacePage() {
       setLoading(true);
       setError(null);
       try {
-        // Load both in parallel — sections failure is non-fatal
-        const [summaryResult, sectionsResult, consentsResult] = await Promise.allSettled([
-          getBorrowerApplicationSummary(),
-          listBorrowerApplicationSections(),
-          listBorrowerApplicationConsents(),
-        ]);
+        // Load in parallel; only the core summary is fatal.
+        const [summaryResult, sectionsResult, consentsResult, readinessResult, requestsResult] =
+          await Promise.allSettled([
+            getBorrowerApplicationSummary(),
+            listBorrowerApplicationSections(),
+            listBorrowerApplicationConsents(),
+            getBorrowerApplicationSubmissionReadiness(),
+            listBorrowerApplicationReviewRequests(),
+          ]);
 
         if (!active) return;
 
@@ -170,7 +298,15 @@ function ApplicationWorkspacePage() {
           setConsentReady(consentsResult.value.consent_ready ?? null);
           setConsentSummary(consentsResult.value.consent_summary ?? null);
         }
-        // Sections fetch failure is silent — workspace still loads
+        if (readinessResult.status === "fulfilled" && readinessResult.value.ok !== false) {
+          storeBorrowerApplicationSubmission(readinessResult.value);
+          setSubmissionReadiness(readinessResult.value);
+        }
+        if (requestsResult.status === "fulfilled") {
+          storeBorrowerApplicationReviewRequests(requestsResult.value);
+          setReviewRequests(requestsResult.value);
+        }
+        // Secondary fetch failures are silent; the workspace still loads.
       } catch (failure) {
         if (!active) return;
         setError(
@@ -237,6 +373,16 @@ function ApplicationWorkspacePage() {
   const primaryAction = summary.primary_action;
   const messages = summary.messages?.filter(Boolean) ?? [];
   const primaryRoute = primaryRouteFor(primaryAction?.action, primaryAction?.route_hint);
+  const applicationStatus = submissionReadiness?.status ?? state ?? null;
+  const submittedStatus = isSubmittedApplicationStatus(applicationStatus)
+    ? applicationStatus
+    : null;
+  const requestItems = reviewRequests?.requests?.filter(Boolean) ?? [];
+  const openRequests = requestItems.filter((request) => {
+    const status = request.status?.toLowerCase();
+    return !status || status === "open" || status === "pending" || status === "needs_attention";
+  });
+  const firstOpenRequest = openRequests[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -268,6 +414,15 @@ function ApplicationWorkspacePage() {
       )}
 
       {/* ── Progress card ────────────────────────────────────────────────── */}
+      {submittedStatus && (
+        <SubmittedStatusCard
+          status={submittedStatus}
+          publicReference={submissionReadiness?.application_public_reference ?? null}
+          openRequestCount={openRequests.length}
+          firstOpenRequest={firstOpenRequest}
+        />
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -289,7 +444,9 @@ function ApplicationWorkspacePage() {
       {/* ── Summary grid ─────────────────────────────────────────────────── */}
       <ConsentWorkspaceCard consentReady={consentReady} consentSummary={consentSummary} />
 
-      <ReviewSubmitWorkspaceCard />
+      <ReviewRequestsPanel reviewRequests={reviewRequests} requests={requestItems} />
+
+      <ReviewSubmitWorkspaceCard status={submittedStatus} />
 
       <div className="grid gap-4 md:grid-cols-3">
         {/* Qualification */}
@@ -490,6 +647,63 @@ function ApplicationWorkspacePage() {
 
 // ── Supporting components ─────────────────────────────────────────────────────
 
+function SubmittedStatusCard({
+  status,
+  publicReference,
+  openRequestCount,
+  firstOpenRequest,
+}: {
+  status: SubmittedApplicationStatus;
+  publicReference: string | null;
+  openRequestCount: number;
+  firstOpenRequest: BorrowerApplicationReviewRequest | null;
+}) {
+  const config = SUBMITTED_STATUS_CONFIG[status];
+  const action = submittedStatusAction(status, firstOpenRequest);
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground">Application status</h2>
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.badgeClass}`}
+              >
+                {config.label}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{config.copy}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Submitting your application is not a mortgage approval or lender commitment.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {publicReference && <span>Reference {publicReference}</span>}
+              {openRequestCount > 0 && (
+                <span className="font-semibold text-coral">
+                  {openRequestCount} request{openRequestCount === 1 ? "" : "s"} open
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        {action && (
+          <Link
+            to={action.route}
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            {action.label}
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function StateChip({ state }: { state: string }) {
   const config: Record<string, { label: string; classes: string }> = {
     not_started: {
@@ -571,6 +785,141 @@ function DataRow({
   );
 }
 
+function ReviewRequestsPanel({
+  reviewRequests,
+  requests,
+}: {
+  reviewRequests: ReviewRequestsResponse | null;
+  requests: BorrowerApplicationReviewRequest[];
+}) {
+  const openCount =
+    reviewRequests?.open_count ??
+    requests.filter((request) => {
+      const status = request.status?.toLowerCase();
+      return !status || status === "open" || status === "pending" || status === "needs_attention";
+    }).length;
+  const resolvedCount = reviewRequests?.resolved_count ?? 0;
+
+  if (reviewRequests?.unavailable) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Requests from approvU</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Review requests are not available yet. If approvU needs more information, your advisor
+              will let you know.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      className={`rounded-2xl border p-5 shadow-sm ${
+        openCount > 0 ? "border-coral/30 bg-coral/5" : "border-border bg-card"
+      }`}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              openCount > 0 ? "bg-coral/10 text-coral" : "bg-mint/15 text-mint-foreground"
+            }`}
+          >
+            {openCount > 0 ? (
+              <AlertCircle className="h-5 w-5" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5" />
+            )}
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Requests from approvU</h2>
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  openCount > 0 ? "bg-coral/10 text-coral" : "bg-mint/15 text-mint-foreground"
+                }`}
+              >
+                {openCount > 0 ? `${openCount} open` : "No open requests"}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {openCount > 0
+                ? "Please review the items below so the approvU team can continue your application review."
+                : "No additional information has been requested right now."}
+            </p>
+            {resolvedCount > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {resolvedCount} request{resolvedCount === 1 ? "" : "s"} resolved
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {requests.length > 0 && (
+        <div className="mt-4 space-y-3">
+          {requests.map((request, index) => (
+            <ReviewRequestCard
+              key={request.public_reference ?? request.id ?? index}
+              request={request}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ReviewRequestCard({ request }: { request: BorrowerApplicationReviewRequest }) {
+  const route = reviewRequestRoute(request);
+  const status = request.status?.toLowerCase();
+  const resolved = !!request.resolved_at || status === "resolved" || status === "closed";
+  return (
+    <div className="rounded-xl border border-border bg-background p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">
+              {request.title ?? "Additional information requested"}
+            </h3>
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                resolved ? "bg-mint/15 text-mint-foreground" : "bg-yellow-50 text-yellow-700"
+              }`}
+            >
+              {formatLabel(request.status ?? (resolved ? "resolved" : "open"))}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {request.body ?? request.message ?? "approvU needs more information for this item."}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+            {request.related_section_key && <span>{formatLabel(request.related_section_key)}</span>}
+            {request.created_at && <span>Created {formatDate(request.created_at)}</span>}
+            {request.resolved_at && <span>Resolved {formatDate(request.resolved_at)}</span>}
+          </div>
+        </div>
+        {route && !resolved && (
+          <Link
+            to={route}
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-input bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+          >
+            Review item
+            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ConsentWorkspaceCard({
   consentReady,
   consentSummary,
@@ -625,7 +974,16 @@ function ConsentWorkspaceCard({
   );
 }
 
-function ReviewSubmitWorkspaceCard() {
+function ReviewSubmitWorkspaceCard({ status }: { status: SubmittedApplicationStatus | null }) {
+  const submitted = status != null;
+  const closed = status === "withdrawn" || status === "closed";
+  const description =
+    status === "needs_more_information"
+      ? "Review your submitted application status and resolve any blockers before review can continue."
+      : submitted
+        ? "View your submitted application status and next steps from approvU."
+        : "Check submission readiness, resolve blockers, and submit your application to approvU for review.";
+
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -635,19 +993,18 @@ function ReviewSubmitWorkspaceCard() {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">Review & submit</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Check submission readiness, resolve blockers, and submit your application to approvU
-              for review.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           </div>
         </div>
-        <Link
-          to="/portal/application/review-submit"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          Review application
-          <ArrowRight className="ml-1.5 h-4 w-4" />
-        </Link>
+        {!closed && (
+          <Link
+            to="/portal/application/review-submit"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            {submitted ? "View status" : "Review application"}
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+        )}
       </div>
     </div>
   );
