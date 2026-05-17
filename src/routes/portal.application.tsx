@@ -80,10 +80,23 @@ type SubmittedApplicationStatus =
   | "withdrawn"
   | "closed";
 
+type ApplicationCycleStatus =
+  | "draft"
+  | "in_progress"
+  | "documents_requested"
+  | SubmittedApplicationStatus;
+
 type SubmittedStatusConfig = {
   label: string;
   copy: string;
   badgeClass: string;
+};
+
+type WorkspaceAction = {
+  label: string;
+  route: string;
+  description: string;
+  disabled?: boolean;
 };
 
 const SUBMITTED_STATUS_CONFIG: Record<SubmittedApplicationStatus, SubmittedStatusConfig> = {
@@ -196,6 +209,15 @@ function isSubmittedApplicationStatus(
   return !!status && status in SUBMITTED_STATUS_CONFIG;
 }
 
+function isApplicationCycleStatus(status?: string | null): status is ApplicationCycleStatus {
+  return (
+    status === "draft" ||
+    status === "in_progress" ||
+    status === "documents_requested" ||
+    isSubmittedApplicationStatus(status)
+  );
+}
+
 function reviewRequestRoute(request?: BorrowerApplicationReviewRequest | null): string | null {
   const key = request?.related_section_key?.toLowerCase();
   switch (key) {
@@ -236,6 +258,84 @@ function submittedStatusAction(
   return { label: "View Application Status", route: "/portal/application/review-submit" };
 }
 
+function workspaceActionForStatus(
+  status: ApplicationCycleStatus | null,
+  firstOpenRequest?: BorrowerApplicationReviewRequest | null,
+  fallbackLabel?: string | null,
+  fallbackRoute?: string | null,
+): WorkspaceAction {
+  switch (status) {
+    case "draft":
+    case "in_progress":
+      return {
+        label: "Continue Application",
+        route: "/portal/application",
+        description: "Keep working through your application sections and required details.",
+      };
+    case "documents_requested":
+      return {
+        label: "Upload Documents",
+        route: "/portal/documents",
+        description: "Upload the documents approvU needs to continue your application review.",
+      };
+    case "borrower_submitted":
+      return {
+        label: "View Submitted Application",
+        route: "/portal/application/review-submit",
+        description: "Your application has been submitted to approvU for review.",
+      };
+    case "advisor_review":
+      return {
+        label: "View Review Status",
+        route: "/portal/application/review-submit",
+        description: "The approvU team is reviewing your application.",
+      };
+    case "needs_more_information":
+      return {
+        label: "Review Requested Items",
+        route: reviewRequestRoute(firstOpenRequest) ?? "/portal/application",
+        description: "Review the open request and update the relevant information.",
+      };
+    case "ready_for_lender_packaging":
+      return {
+        label: "View Next Steps",
+        route: "/portal/application/review-submit",
+        description: "Your application is being prepared for lender packaging.",
+      };
+    case "submitted_to_lender":
+      return {
+        label: "View Lender Review Status",
+        route: "/portal/application/review-submit",
+        description: "Your application has been submitted for lender review.",
+      };
+    case "approved":
+      return {
+        label: "Contact Advisor / View Update",
+        route: "/portal/application/review-submit",
+        description: "Your application has an update. Your advisor will provide details.",
+      };
+    case "declined":
+      return {
+        label: "Contact Advisor / View Next Steps",
+        route: "/portal/application/review-submit",
+        description: "Your application has a review update. Your advisor will discuss next steps.",
+      };
+    case "withdrawn":
+    case "closed":
+      return {
+        label: "View Application Status",
+        route: "/portal/application/review-submit",
+        description: "This application is no longer editable from the workspace.",
+      };
+    default:
+      return {
+        label: fallbackLabel ?? "Continue Application",
+        route: fallbackRoute ?? "/portal/application",
+        description: "Review your application workspace for the next step.",
+      };
+  }
+}
+
 // ── Page component ────────────────────────────────────────────────────────────
 
 // ── Section route mapping ──────────────────────────────────────────────────────
@@ -259,10 +359,15 @@ function ApplicationWorkspacePage() {
   const [submissionReadiness, setSubmissionReadiness] =
     useState<SubmissionReadinessResponse | null>(null);
   const [reviewRequests, setReviewRequests] = useState<ReviewRequestsResponse | null>(null);
+  const [reviewRequestsError, setReviewRequestsError] = useState<string | null>(null);
+  const [responseSentNotice, setResponseSentNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function refreshReviewRequests(result?: ReviewRequestResponseResult) {
+    if (result?.ok !== false) {
+      setResponseSentNotice("Thanks — your response was sent to the approvU team.");
+    }
     if (result?.application_status) {
       setSubmissionReadiness((current) =>
         current ? { ...current, status: result.application_status } : current,
@@ -277,6 +382,9 @@ function ApplicationWorkspacePage() {
     if (requestsResult.status === "fulfilled") {
       storeBorrowerApplicationReviewRequests(requestsResult.value);
       setReviewRequests(requestsResult.value);
+      setReviewRequestsError(null);
+    } else {
+      setReviewRequestsError("We could not load requests from approvU right now.");
     }
 
     if (readinessResult.status === "fulfilled" && readinessResult.value.ok !== false) {
@@ -330,6 +438,9 @@ function ApplicationWorkspacePage() {
         if (requestsResult.status === "fulfilled") {
           storeBorrowerApplicationReviewRequests(requestsResult.value);
           setReviewRequests(requestsResult.value);
+          setReviewRequestsError(null);
+        } else {
+          setReviewRequestsError("We could not load requests from approvU right now.");
         }
         // Secondary fetch failures are silent; the workspace still loads.
       } catch (failure) {
@@ -361,6 +472,10 @@ function ApplicationWorkspacePage() {
   }
 
   if (error || !summary?.ok) {
+    const sessionExpired =
+      summary?.authenticated === false ||
+      error?.toLowerCase().includes("unauthenticated") ||
+      error?.toLowerCase().includes("session");
     return (
       <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-coral/10 text-coral">
@@ -370,7 +485,9 @@ function ApplicationWorkspacePage() {
           We could not load your workspace
         </h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          {error ?? "Your session may have expired. Sign in again to continue your application."}
+          {sessionExpired
+            ? "Your session may have expired. Please sign in again."
+            : (error ?? "Your application workspace could not be loaded. Please try again.")}
         </p>
         <Link
           to="/login"
@@ -399,6 +516,15 @@ function ApplicationWorkspacePage() {
   const messages = summary.messages?.filter(Boolean) ?? [];
   const primaryRoute = primaryRouteFor(primaryAction?.action, primaryAction?.route_hint);
   const applicationStatus = submissionReadiness?.status ?? state ?? null;
+  const cycleStatus = isApplicationCycleStatus(applicationStatus)
+    ? applicationStatus
+    : state === "not_started"
+      ? "draft"
+      : state === "needs_attention" && (docSummary?.requested ?? 0) > 0
+        ? "documents_requested"
+        : state === "in_progress"
+          ? "in_progress"
+          : null;
   const submittedStatus = isSubmittedApplicationStatus(applicationStatus)
     ? applicationStatus
     : null;
@@ -408,6 +534,12 @@ function ApplicationWorkspacePage() {
     return !status || status === "open" || status === "pending" || status === "needs_attention";
   });
   const firstOpenRequest = openRequests[0] ?? null;
+  const workspaceAction = workspaceActionForStatus(
+    cycleStatus,
+    firstOpenRequest,
+    primaryAction?.label,
+    primaryRoute,
+  );
 
   return (
     <div className="space-y-6">
@@ -467,11 +599,15 @@ function ApplicationWorkspacePage() {
       </div>
 
       {/* ── Summary grid ─────────────────────────────────────────────────── */}
+      <WorkspacePrimaryActionCard action={workspaceAction} />
+
       <ConsentWorkspaceCard consentReady={consentReady} consentSummary={consentSummary} />
 
       <ReviewRequestsPanel
         reviewRequests={reviewRequests}
+        error={reviewRequestsError}
         requests={requestItems}
+        responseSentNotice={responseSentNotice}
         onRequestAddressed={refreshReviewRequests}
       />
 
@@ -633,7 +769,7 @@ function ApplicationWorkspacePage() {
       )}
 
       {/* ── Primary action CTA ───────────────────────────────────────────── */}
-      {primaryAction?.label && (
+      {primaryAction?.label && primaryAction.label !== workspaceAction.label && (
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -733,6 +869,29 @@ function SubmittedStatusCard({
   );
 }
 
+function WorkspacePrimaryActionCard({ action }: { action: WorkspaceAction }) {
+  return (
+    <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Recommended next step
+          </p>
+          <h2 className="mt-1 text-base font-semibold text-foreground">{action.label}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
+        </div>
+        <Link
+          to={action.route}
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          {action.label}
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function StateChip({ state }: { state: string }) {
   const config: Record<string, { label: string; classes: string }> = {
     not_started: {
@@ -816,11 +975,15 @@ function DataRow({
 
 function ReviewRequestsPanel({
   reviewRequests,
+  error,
   requests,
+  responseSentNotice,
   onRequestAddressed,
 }: {
   reviewRequests: ReviewRequestsResponse | null;
+  error: string | null;
   requests: BorrowerApplicationReviewRequest[];
+  responseSentNotice: string | null;
   onRequestAddressed: (result?: ReviewRequestResponseResult) => Promise<void>;
 }) {
   const openCount =
@@ -841,9 +1004,18 @@ function ReviewRequestsPanel({
           <div>
             <h2 className="text-sm font-semibold text-foreground">Requests from approvU</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Review requests are not available yet. If approvU needs more information, your advisor
-              will let you know.
+              We could not check requests from approvU right now. Your workspace is still usable,
+              and your advisor will let you know if more information is needed.
             </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              If you believe this is a session issue, please sign in again.
+            </p>
+            <Link
+              to="/login"
+              className="mt-3 inline-flex text-xs font-semibold text-secondary hover:underline"
+            >
+              Sign in
+            </Link>
           </div>
         </div>
       </section>
@@ -879,34 +1051,53 @@ function ReviewRequestsPanel({
               >
                 {openCount > 0 ? `${openCount} open` : "No open requests"}
               </span>
+              <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                {resolvedCount} resolved
+              </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {openCount > 0
                 ? "Please review the items below so the approvU team can continue your application review."
-                : "No additional information has been requested right now."}
+                : "No open requests right now."}
             </p>
-            {resolvedCount > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {resolvedCount} request{resolvedCount === 1 ? "" : "s"} resolved
+            {responseSentNotice && (
+              <p className="mt-2 rounded-lg border border-mint/30 bg-mint/10 px-3 py-2 text-sm font-medium text-mint-foreground">
+                {responseSentNotice}
+              </p>
+            )}
+            {error && (
+              <p className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
+                {error}
               </p>
             )}
           </div>
         </div>
       </div>
 
-      {requests.length > 0 && (
+      {requests.length > 0 ? (
         <div className="mt-4 space-y-3">
-          {requests.map((request, index) => (
-            <ReviewRequestCard
-              key={request.public_reference ?? request.id ?? index}
-              request={request}
-              onRequestAddressed={onRequestAddressed}
-            />
-          ))}
+          {[...requests]
+            .sort((a, b) => Number(isRequestResolved(a)) - Number(isRequestResolved(b)))
+            .map((request, index) => (
+              <ReviewRequestCard
+                key={request.public_reference ?? request.id ?? index}
+                request={request}
+                onRequestAddressed={onRequestAddressed}
+              />
+            ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground">
+          No open requests right now.
         </div>
       )}
     </section>
   );
+}
+
+function isRequestResolved(request: BorrowerApplicationReviewRequest): boolean {
+  const status = request.status?.toLowerCase();
+  return !!request.resolved_at || status === "resolved" || status === "closed";
 }
 
 function ReviewRequestCard({
@@ -917,8 +1108,7 @@ function ReviewRequestCard({
   onRequestAddressed: (result?: ReviewRequestResponseResult) => Promise<void>;
 }) {
   const route = reviewRequestRoute(request);
-  const status = request.status?.toLowerCase();
-  const resolved = !!request.resolved_at || status === "resolved" || status === "closed";
+  const resolved = isRequestResolved(request);
   const publicReference = request.public_reference;
   const [response, setResponse] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -946,7 +1136,11 @@ function ReviewRequestCard({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-background p-4">
+    <div
+      className={`rounded-xl border border-border bg-background p-4 ${
+        resolved ? "opacity-75" : ""
+      }`}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
