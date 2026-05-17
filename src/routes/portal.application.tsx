@@ -28,6 +28,11 @@ import {
   type ApplicationSection as BackendSection,
   type SectionsSummary,
 } from "@/lib/api/borrowerApplicationSectionsApi";
+import {
+  listBorrowerApplicationConsents,
+  storeBorrowerApplicationConsents,
+  type ConsentSummary,
+} from "@/lib/api/borrowerApplicationConsentsApi";
 
 export const Route = createFileRoute("/portal/application")({
   head: () => ({
@@ -54,32 +59,27 @@ type StatusConfig = {
 const SECTION_STATUS_CONFIG: Record<SectionStatus, StatusConfig> = {
   complete: {
     label: "Complete",
-    badgeClass:
-      "bg-mint/15 text-mint-foreground border border-mint/30",
+    badgeClass: "bg-mint/15 text-mint-foreground border border-mint/30",
     dotClass: "bg-mint",
   },
   in_progress: {
     label: "In Progress",
-    badgeClass:
-      "bg-secondary/10 text-secondary border border-secondary/20",
+    badgeClass: "bg-secondary/10 text-secondary border border-secondary/20",
     dotClass: "bg-secondary",
   },
   needs_attention: {
     label: "Needs Attention",
-    badgeClass:
-      "bg-coral/10 text-coral border border-coral/20",
+    badgeClass: "bg-coral/10 text-coral border border-coral/20",
     dotClass: "bg-coral",
   },
   not_started: {
     label: "Not Started",
-    badgeClass:
-      "bg-muted text-muted-foreground border border-border",
+    badgeClass: "bg-muted text-muted-foreground border border-border",
     dotClass: "bg-muted-foreground/40",
   },
   pending_review: {
     label: "Pending Review",
-    badgeClass:
-      "bg-yellow-50 text-yellow-700 border border-yellow-200",
+    badgeClass: "bg-yellow-50 text-yellow-700 border border-yellow-200",
     dotClass: "bg-yellow-400",
   },
 };
@@ -98,10 +98,7 @@ function formatLabel(value?: string | null): string {
     .join(" ");
 }
 
-function primaryRouteFor(
-  action?: string | null,
-  routeHint?: string | null,
-): string {
+function primaryRouteFor(action?: string | null, routeHint?: string | null): string {
   if (routeHint) return routeHint;
   switch (action) {
     case "start_qualification":
@@ -122,17 +119,19 @@ function primaryRouteFor(
 // applicationId "current" is a placeholder — the real application is resolved
 // server-side from the session cookie.
 const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
-  borrower_profile:    "/portal/settings/profile",
-  property:            "/applications/current/property-financing/target-property",
-  income:              "/applications/current/property-financing/purchase-plan",
+  borrower_profile: "/portal/settings/profile",
+  property: "/applications/current/property-financing/target-property",
+  income: "/applications/current/property-financing/purchase-plan",
   assets_down_payment: "/applications/current/property-financing/down-payment",
-  liabilities:         "/applications/current/mortgage-request",
+  liabilities: "/applications/current/mortgage-request",
 };
 
 function ApplicationWorkspacePage() {
   const [summary, setSummary] = useState<BorrowerApplicationSummary | null>(null);
   const [backendSections, setBackendSections] = useState<BackendSection[] | null>(null);
   const [sectionsSummary, setSectionsSummary] = useState<SectionsSummary | null>(null);
+  const [consentReady, setConsentReady] = useState<boolean | null>(null);
+  const [consentSummary, setConsentSummary] = useState<ConsentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,9 +143,10 @@ function ApplicationWorkspacePage() {
       setError(null);
       try {
         // Load both in parallel — sections failure is non-fatal
-        const [summaryResult, sectionsResult] = await Promise.allSettled([
+        const [summaryResult, sectionsResult, consentsResult] = await Promise.allSettled([
           getBorrowerApplicationSummary(),
           listBorrowerApplicationSections(),
+          listBorrowerApplicationConsents(),
         ]);
 
         if (!active) return;
@@ -164,6 +164,11 @@ function ApplicationWorkspacePage() {
           storeBorrowerApplicationSections(sectionsResult.value);
           setBackendSections(sectionsResult.value.sections ?? null);
           setSectionsSummary(sectionsResult.value.sections_summary ?? null);
+        }
+        if (consentsResult.status === "fulfilled" && consentsResult.value.ok) {
+          storeBorrowerApplicationConsents(consentsResult.value);
+          setConsentReady(consentsResult.value.consent_ready ?? null);
+          setConsentSummary(consentsResult.value.consent_summary ?? null);
         }
         // Sections fetch failure is silent — workspace still loads
       } catch (failure) {
@@ -189,9 +194,7 @@ function ApplicationWorkspacePage() {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Loading your application workspace…
-        </p>
+        <p className="mt-4 text-sm text-muted-foreground">Loading your application workspace…</p>
       </div>
     );
   }
@@ -206,8 +209,7 @@ function ApplicationWorkspacePage() {
           We could not load your workspace
         </h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          {error ??
-            "Your session may have expired. Sign in again to continue your application."}
+          {error ?? "Your session may have expired. Sign in again to continue your application."}
         </p>
         <Link
           to="/login"
@@ -221,9 +223,10 @@ function ApplicationWorkspacePage() {
   }
 
   // Use backend completion_percent from sections if available (more accurate)
-  const backendPercent = sectionsSummary != null && backendSections != null
-    ? Math.min(80, (backendSections.filter((s) => s.status === "complete").length) * 20)
-    : null;
+  const backendPercent =
+    sectionsSummary != null && backendSections != null
+      ? Math.min(80, backendSections.filter((s) => s.status === "complete").length * 20)
+      : null;
   const percent = backendPercent ?? summary.completion_percent ?? 5;
 
   const state = summary.application_state;
@@ -233,11 +236,7 @@ function ApplicationWorkspacePage() {
   const sections = summary.sections ?? [];
   const primaryAction = summary.primary_action;
   const messages = summary.messages?.filter(Boolean) ?? [];
-  const primaryRoute = primaryRouteFor(
-    primaryAction?.action,
-    primaryAction?.route_hint,
-  );
-
+  const primaryRoute = primaryRouteFor(primaryAction?.action, primaryAction?.route_hint);
 
   return (
     <div className="space-y-6">
@@ -259,10 +258,7 @@ function ApplicationWorkspacePage() {
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
           <ul className="space-y-1">
             {messages.map((msg) => (
-              <li
-                key={msg}
-                className="flex items-start gap-2 text-sm text-yellow-800"
-              >
+              <li key={msg} className="flex items-start gap-2 text-sm text-yellow-800">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
                 {msg}
               </li>
@@ -278,9 +274,7 @@ function ApplicationWorkspacePage() {
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Application progress
             </p>
-            <p className="mt-1 text-2xl font-semibold text-foreground">
-              {percent}%
-            </p>
+            <p className="mt-1 text-2xl font-semibold text-foreground">{percent}%</p>
           </div>
           <StateChip state={state ?? "not_started"} />
         </div>
@@ -293,6 +287,8 @@ function ApplicationWorkspacePage() {
       </div>
 
       {/* ── Summary grid ─────────────────────────────────────────────────── */}
+      <ConsentWorkspaceCard consentReady={consentReady} consentSummary={consentSummary} />
+
       <div className="grid gap-4 md:grid-cols-3">
         {/* Qualification */}
         <SummaryPanel
@@ -314,10 +310,7 @@ function ApplicationWorkspacePage() {
                 />
               )}
               {qualSummary.started_at && (
-                <DataRow
-                  label="Started"
-                  value={formatDate(qualSummary.started_at)}
-                />
+                <DataRow label="Started" value={formatDate(qualSummary.started_at)} />
               )}
             </dl>
           )}
@@ -333,23 +326,11 @@ function ApplicationWorkspacePage() {
           {snapSummary?.snapshot_reference && (
             <dl className="space-y-2">
               <DataRow label="Reference" value={snapSummary.snapshot_reference} />
-              <DataRow
-                label="Classification"
-                value={formatLabel(snapSummary.classification)}
-              />
-              <DataRow
-                label="Readiness"
-                value={formatLabel(snapSummary.readiness_status)}
-              />
-              <DataRow
-                label="Key insights"
-                value={String(snapSummary.key_insights_count ?? 0)}
-              />
+              <DataRow label="Classification" value={formatLabel(snapSummary.classification)} />
+              <DataRow label="Readiness" value={formatLabel(snapSummary.readiness_status)} />
+              <DataRow label="Key insights" value={String(snapSummary.key_insights_count ?? 0)} />
               {(snapSummary.missing_items_count ?? 0) > 0 && (
-                <DataRow
-                  label="Missing items"
-                  value={String(snapSummary.missing_items_count)}
-                />
+                <DataRow label="Missing items" value={String(snapSummary.missing_items_count)} />
               )}
             </dl>
           )}
@@ -380,17 +361,10 @@ function ApplicationWorkspacePage() {
                 />
               )}
               {(docSummary.uploaded ?? 0) > 0 && (
-                <DataRow
-                  label="Under review"
-                  value={String(docSummary.uploaded)}
-                />
+                <DataRow label="Under review" value={String(docSummary.uploaded)} />
               )}
               {(docSummary.reviewed ?? 0) > 0 && (
-                <DataRow
-                  label="Accepted"
-                  value={String(docSummary.reviewed)}
-                  highlight="mint"
-                />
+                <DataRow label="Accepted" value={String(docSummary.reviewed)} highlight="mint" />
               )}
               {docSummary.next_required_document && (
                 <div className="border-t border-border pt-2">
@@ -411,9 +385,7 @@ function ApplicationWorkspacePage() {
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">
-              Application sections
-            </h2>
+            <h2 className="text-lg font-semibold text-foreground">Application sections</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Fill in each section to complete your mortgage application.
             </p>
@@ -432,11 +404,8 @@ function ApplicationWorkspacePage() {
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ALL_SECTION_KEYS.map((key) => {
-            const backendSection = backendSections?.find(
-              (s) => s.section_key === key,
-            );
-            const status: ApplicationSectionStatus =
-              backendSection?.status ?? "not_started";
+            const backendSection = backendSections?.find((s) => s.section_key === key);
+            const status: ApplicationSectionStatus = backendSection?.status ?? "not_started";
             return (
               <BackendSectionCard
                 key={key}
@@ -452,14 +421,22 @@ function ApplicationWorkspacePage() {
       </div>
 
       {/* ── Summary sections (legacy — documents, offers) ─────────────── */}
-      {sections.filter((s) => !["borrower_profile", "property", "income", "down_payment", "credit"].includes(s.key ?? "")).length > 0 && (
+      {sections.filter(
+        (s) =>
+          !["borrower_profile", "property", "income", "down_payment", "credit"].includes(
+            s.key ?? "",
+          ),
+      ).length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-foreground">
-            Other sections
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">Other sections</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sections
-              .filter((s) => !["borrower_profile", "property", "income", "down_payment", "credit"].includes(s.key ?? ""))
+              .filter(
+                (s) =>
+                  !["borrower_profile", "property", "income", "down_payment", "credit"].includes(
+                    s.key ?? "",
+                  ),
+              )
               .map((section) => (
                 <SectionCard key={section.key ?? section.label} section={section} />
               ))}
@@ -475,9 +452,7 @@ function ApplicationWorkspacePage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
                 Your next step
               </p>
-              <p className="mt-1 text-base font-semibold text-foreground">
-                {primaryAction.label}
-              </p>
+              <p className="mt-1 text-base font-semibold text-foreground">{primaryAction.label}</p>
             </div>
             <Link
               to={primaryRoute}
@@ -564,11 +539,7 @@ function SummaryPanel({
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
       </div>
       <div className="mt-4">
-        {empty ? (
-          <p className="text-sm text-muted-foreground">{emptyText}</p>
-        ) : (
-          children
-        )}
+        {empty ? <p className="text-sm text-muted-foreground">{emptyText}</p> : children}
       </div>
     </div>
   );
@@ -594,6 +565,60 @@ function DataRow({
     <div className="flex items-center justify-between gap-2">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className={`text-xs ${valueClass}`}>{value}</dd>
+    </div>
+  );
+}
+
+function ConsentWorkspaceCard({
+  consentReady,
+  consentSummary,
+}: {
+  consentReady: boolean | null;
+  consentSummary: ConsentSummary | null;
+}) {
+  const accepted = consentSummary?.accepted ?? consentSummary?.required_accepted ?? null;
+  const total = consentSummary?.total ?? consentSummary?.required_total ?? 6;
+  const statusText =
+    consentReady === true
+      ? "All required consents are accepted."
+      : consentReady === false
+        ? "Review and accept required borrower consents before submission."
+        : "Review borrower consent requirements before submission.";
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Application consents</h2>
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                  consentReady ? "bg-mint/15 text-mint-foreground" : "bg-yellow-50 text-yellow-700"
+                }`}
+              >
+                {consentReady ? "Ready" : "Action needed"}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{statusText}</p>
+            {accepted != null && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {accepted} / {total} consents accepted
+              </p>
+            )}
+          </div>
+        </div>
+        <Link
+          to="/portal/application/consents"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Review consents
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
     </div>
   );
 }
@@ -669,9 +694,7 @@ function BackendSectionCard({
       className="group block rounded-xl border border-border bg-background p-4 hover:border-primary/40 hover:bg-primary/5 transition-colors"
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">
-          {label}
-        </h3>
+        <h3 className="text-sm font-semibold text-foreground group-hover:text-primary">{label}</h3>
         <span
           className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.badgeClass}`}
         >
@@ -685,13 +708,10 @@ function BackendSectionCard({
         </p>
       )}
       {!lastSavedAt && status === "not_started" && (
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Not started yet
-        </p>
+        <p className="mt-2 text-[11px] text-muted-foreground">Not started yet</p>
       )}
       <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-        {status === "not_started" ? "Start" : "Continue"}{" "}
-        <ArrowRight className="h-3 w-3" />
+        {status === "not_started" ? "Start" : "Continue"} <ArrowRight className="h-3 w-3" />
       </div>
     </Link>
   );
