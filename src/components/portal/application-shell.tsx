@@ -48,43 +48,76 @@ export function getApplicationSummary(id: string): AppSummary | null {
   const a: ActiveApp | undefined = ACTIVE.find((x) => x.id === id);
   if (a) {
     return {
-      id: a.id, type: a.type, property: a.property, bucket: "Active",
-      status: a.status, progress: a.completion, nextStep: a.nextStep,
-      lastUpdate: a.lastUpdated, conditionsOutstanding: 0, documentsPending: 2,
+      id: a.id,
+      type: a.type,
+      property: a.property,
+      bucket: "Active",
+      status: a.status,
+      progress: a.completion,
+      nextStep: a.nextStep,
+      lastUpdate: a.lastUpdated,
+      conditionsOutstanding: 0,
+      documentsPending: 2,
     };
   }
   const s: SubmittedApp | undefined = SUBMITTED.find((x) => x.id === id);
   if (s) {
     return {
-      id: s.id, type: s.type, property: s.property, bucket: "Submitted",
-      status: s.stage, progress: s.progress, nextStep: s.nextStep,
-      lastUpdate: s.lastUpdate, conditionsOutstanding: s.conditionsOutstanding,
-      documentsPending: s.documentsPending, broker: s.broker,
+      id: s.id,
+      type: s.type,
+      property: s.property,
+      bucket: "Submitted",
+      status: s.stage,
+      progress: s.progress,
+      nextStep: s.nextStep,
+      lastUpdate: s.lastUpdate,
+      conditionsOutstanding: s.conditionsOutstanding,
+      documentsPending: s.documentsPending,
+      broker: s.broker,
     };
   }
   const e: ExpiredApp | undefined = EXPIRED.find((x) => x.id === id);
   if (e) {
     return {
-      id: e.id, type: e.type, property: e.property, bucket: "Expired",
-      status: "Expired", progress: e.completion,
-      nextStep: `Reactivate by ${e.reactivateUntil}`, lastUpdate: e.expiredOn,
-      conditionsOutstanding: 0, documentsPending: 0,
+      id: e.id,
+      type: e.type,
+      property: e.property,
+      bucket: "Expired",
+      status: "Expired",
+      progress: e.completion,
+      nextStep: `Reactivate by ${e.reactivateUntil}`,
+      lastUpdate: e.expiredOn,
+      conditionsOutstanding: 0,
+      documentsPending: 0,
     };
   }
   const c: CompletedApp | undefined = COMPLETED.find((x) => x.id === id);
   if (c) {
     return {
-      id: c.id, type: "Purchase", property: c.property, bucket: "Completed",
-      status: "Funded & Closed", progress: 100,
-      nextStep: "View funded mortgage details", lastUpdate: c.fundedDate,
-      conditionsOutstanding: 0, documentsPending: 0,
+      id: c.id,
+      type: "Purchase",
+      property: c.property,
+      bucket: "Completed",
+      status: "Funded & Closed",
+      progress: 100,
+      nextStep: "View funded mortgage details",
+      lastUpdate: c.fundedDate,
+      conditionsOutstanding: 0,
+      documentsPending: 0,
     };
   }
   // Fallback synthetic so unknown IDs still render the shell
   return {
-    id, type: "Application", property: "Unknown property", bucket: "Active",
-    status: "In Progress", progress: 0, nextStep: "Continue your application",
-    lastUpdate: "—", conditionsOutstanding: 0, documentsPending: 0,
+    id,
+    type: "Application",
+    property: "Unknown property",
+    bucket: "Active",
+    status: "In Progress",
+    progress: 0,
+    nextStep: "Continue your application",
+    lastUpdate: "—",
+    conditionsOutstanding: 0,
+    documentsPending: 0,
   };
 }
 
@@ -112,34 +145,126 @@ function stageIndexFor(summary: AppSummary): number {
 }
 
 export type AppTabKey =
-  | "snapshot" | "timeline" | "certificate" | "offers" | "benefits" | "lender" | "documents" | "disclosures" | "conditions" | "funding" | "messages" | "manage";
+  | "snapshot"
+  | "timeline"
+  | "certificate"
+  | "offers"
+  | "benefits"
+  | "lender"
+  | "documents"
+  | "disclosures"
+  | "conditions"
+  | "funding"
+  | "messages"
+  | "manage";
 
 const TABS = [
-  { key: "snapshot",   label: "Snapshot",   to: "/portal/applications/$applicationId",            icon: LayoutDashboard },
-  { key: "timeline",   label: "Timeline",   to: "/portal/applications/$applicationId/timeline",   icon: History },
-  { key: "certificate", label: "Certificate", to: "/portal/applications/$applicationId/certificate", icon: BadgeCheck },
-  { key: "offers",     label: "Offers",     to: "/portal/applications/$applicationId/offers",     icon: HandCoins },
-  { key: "benefits",   label: "Benefits",   to: "/portal/applications/$applicationId/benefits",   icon: Gift },
-  { key: "lender",     label: "Lender",     to: "/portal/applications/$applicationId/lender",     icon: Building2 },
-  { key: "documents",  label: "Documents",  to: "/portal/applications/$applicationId/documents",  icon: FileText },
-  { key: "disclosures", label: "Disclosures", to: "/portal/applications/$applicationId/disclosures", icon: ShieldCheck },
-  { key: "conditions", label: "Conditions", to: "/portal/applications/$applicationId/conditions", icon: ListChecks },
-  { key: "funding",    label: "Funding",    to: "/portal/applications/$applicationId/funding",    icon: Clock },
-  { key: "messages",   label: "Messages",   to: "/portal/applications/$applicationId/messages",   icon: MessageSquare },
-  { key: "manage",     label: "Manage",     to: "/portal/applications/$applicationId/manage",     icon: Settings2 },
+  {
+    key: "snapshot",
+    label: "Snapshot",
+    to: "/portal/applications/$applicationId",
+    icon: LayoutDashboard,
+    scope: "application",
+  },
+  {
+    key: "timeline",
+    label: "Timeline",
+    to: "/portal/applications/$applicationId/timeline",
+    icon: History,
+    scope: "application",
+  },
+  {
+    key: "certificate",
+    label: "Certificate",
+    to: "/portal/applications/$applicationId/certificate",
+    icon: BadgeCheck,
+    scope: "application",
+  },
+  {
+    key: "offers",
+    label: "Offers",
+    to: "/portal/applications/$applicationId/offers",
+    icon: HandCoins,
+    scope: "application",
+  },
+  {
+    key: "benefits",
+    label: "Benefits",
+    to: "/portal/applications/$applicationId/benefits",
+    icon: Gift,
+    scope: "application",
+  },
+  {
+    key: "lender",
+    label: "Lender",
+    to: "/portal/applications/$applicationId/lender",
+    icon: Building2,
+    scope: "application",
+  },
+  {
+    key: "documents",
+    label: "Documents",
+    to: "/portal/documents",
+    icon: FileText,
+    scope: "portal",
+  },
+  {
+    key: "disclosures",
+    label: "Disclosures",
+    to: "/portal/applications/$applicationId/disclosures",
+    icon: ShieldCheck,
+    scope: "application",
+  },
+  {
+    key: "conditions",
+    label: "Conditions",
+    to: "/portal/applications/$applicationId/conditions",
+    icon: ListChecks,
+    scope: "application",
+  },
+  {
+    key: "funding",
+    label: "Funding",
+    to: "/portal/applications/$applicationId/funding",
+    icon: Clock,
+    scope: "application",
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    to: "/portal/messages",
+    icon: MessageSquare,
+    scope: "portal",
+  },
+  {
+    key: "manage",
+    label: "Manage",
+    to: "/portal/applications/$applicationId/manage",
+    icon: Settings2,
+    scope: "application",
+  },
 ] as const;
 
 export function ApplicationShell({
-  summary, tab, children,
-}: { summary: AppSummary; tab: AppTabKey; children: ReactNode }) {
+  summary,
+  tab,
+  children,
+}: {
+  summary: AppSummary;
+  tab: AppTabKey;
+  children: ReactNode;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const stageIdx = stageIndexFor(summary);
   const base = `/portal/applications/${summary.id}`;
   const bucketTone =
-    summary.bucket === "Submitted" ? "bg-secondary/15 text-secondary border-secondary/40"
-    : summary.bucket === "Completed" ? "bg-mint/30 text-mint-foreground border-mint"
-    : summary.bucket === "Expired" ? "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40"
-    : "bg-primary/10 text-primary border-primary/30";
+    summary.bucket === "Submitted"
+      ? "bg-secondary/15 text-secondary border-secondary/40"
+      : summary.bucket === "Completed"
+        ? "bg-mint/30 text-mint-foreground border-mint"
+        : summary.bucket === "Expired"
+          ? "bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40"
+          : "bg-primary/10 text-primary border-primary/30";
 
   return (
     <>
@@ -166,7 +291,9 @@ export function ApplicationShell({
               {summary.broker ? ` · Broker ${summary.broker}` : ""}
             </p>
           </div>
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${bucketTone}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${bucketTone}`}
+          >
             {summary.status}
           </span>
         </div>
@@ -178,8 +305,10 @@ export function ApplicationShell({
             <span className="font-semibold text-foreground">{summary.progress}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
-              style={{ width: `${summary.progress}%` }} />
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
+              style={{ width: `${summary.progress}%` }}
+            />
           </div>
         </div>
 
@@ -192,21 +321,33 @@ export function ApplicationShell({
               return (
                 <li key={s.key} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold ${
-                      done ? "border-primary bg-primary text-primary-foreground"
-                      : active ? "border-secondary bg-secondary/15 text-secondary"
-                      : "border-border bg-background text-muted-foreground"
-                    }`}>
+                    <div
+                      className={`flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold ${
+                        done
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : active
+                            ? "border-secondary bg-secondary/15 text-secondary"
+                            : "border-border bg-background text-muted-foreground"
+                      }`}
+                    >
                       {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : i + 1}
                     </div>
-                    <span className={`mt-1 whitespace-nowrap text-[10px] ${
-                      active ? "font-semibold text-secondary" : done ? "text-foreground" : "text-muted-foreground"
-                    }`}>
+                    <span
+                      className={`mt-1 whitespace-nowrap text-[10px] ${
+                        active
+                          ? "font-semibold text-secondary"
+                          : done
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                      }`}
+                    >
                       {s.label}
                     </span>
                   </div>
                   {i < STAGES.length - 1 && (
-                    <div className={`mx-1 h-px w-8 ${i < stageIdx ? "bg-primary" : "bg-border"} sm:w-12`} />
+                    <div
+                      className={`mx-1 h-px w-8 ${i < stageIdx ? "bg-primary" : "bg-border"} sm:w-12`}
+                    />
                   )}
                 </li>
               );
@@ -217,28 +358,46 @@ export function ApplicationShell({
         {/* Quick signals */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Signal label="Next step" value={summary.nextStep} />
-          <Signal label="Conditions" value={`${summary.conditionsOutstanding} outstanding`} tone={summary.conditionsOutstanding > 0 ? "amber" : "default"} />
-          <Signal label="Documents" value={`${summary.documentsPending} pending`} tone={summary.documentsPending > 0 ? "amber" : "default"} />
+          <Signal
+            label="Conditions"
+            value={`${summary.conditionsOutstanding} outstanding`}
+            tone={summary.conditionsOutstanding > 0 ? "amber" : "default"}
+          />
+          <Signal
+            label="Documents"
+            value={`${summary.documentsPending} pending`}
+            tone={summary.documentsPending > 0 ? "amber" : "default"}
+          />
           <Signal label="Stage" value={STAGES[stageIdx]?.label ?? "—"} />
         </div>
       </div>
 
       {/* Tabs */}
-      <nav className="mt-6 flex gap-1 overflow-x-auto border-b border-border" aria-label="Application sections">
+      <nav
+        className="mt-6 flex gap-1 overflow-x-auto border-b border-border"
+        aria-label="Application sections"
+      >
         {TABS.map((t) => {
-          const isActive = t.key === tab || (t.key === "snapshot" && (pathname === base || pathname === `${base}/`));
+          const isActive =
+            t.key === tab ||
+            (t.key === "snapshot" && (pathname === base || pathname === `${base}/`));
           const Icon = t.icon;
-          return (
+          const className = `inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition ${
+            isActive
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`;
+          return t.scope === "application" ? (
             <Link
               key={t.key}
               to={t.to}
               params={{ applicationId: summary.id }}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition ${
-                isActive
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className={className}
             >
+              <Icon className="h-4 w-4" /> {t.label}
+            </Link>
+          ) : (
+            <Link key={t.key} to={t.to} className={className}>
               <Icon className="h-4 w-4" /> {t.label}
             </Link>
           );
@@ -250,16 +409,27 @@ export function ApplicationShell({
   );
 }
 
-function Signal({ label, value, tone = "default" }: {
-  label: string; value: string; tone?: "default" | "amber";
+function Signal({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "amber";
 }) {
-  const cls = tone === "amber"
-    ? "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
-    : "border-border bg-background";
+  const cls =
+    tone === "amber"
+      ? "border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10"
+      : "border-border bg-background";
   return (
     <div className={`rounded-lg border p-2.5 ${cls}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-0.5 truncate text-xs font-medium text-foreground" title={value}>{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate text-xs font-medium text-foreground" title={value}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -272,7 +442,10 @@ export function NotFoundApplication({ id }: { id: string }) {
       <p className="mt-1 text-sm text-muted-foreground">
         We couldn't find an application with ID #{id}.
       </p>
-      <Link to="/portal/applications" className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+      <Link
+        to="/portal/applications"
+        className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+      >
         Back to Applications
       </Link>
     </div>
