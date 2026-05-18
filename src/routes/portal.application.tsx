@@ -99,6 +99,25 @@ type WorkspaceAction = {
   disabled?: boolean;
 };
 
+const FULL_APPLICATION_ROUTE = "/internal/full-application";
+
+const ROUTE_HINTS: Record<string, string> = {
+  application: "/portal/application",
+  application_workspace: "/portal/application",
+  review_submit: "/portal/application/review-submit",
+  consents: "/portal/application/consents",
+  documents: "/portal/documents",
+  document_vault: "/portal/documents",
+  offers: "/portal/offers",
+  review_status: "/portal/offers",
+  borrower_profile: FULL_APPLICATION_ROUTE,
+  income: FULL_APPLICATION_ROUTE,
+  liabilities: FULL_APPLICATION_ROUTE,
+  property: "/applications/current/property-financing/target-property",
+  assets_down_payment: "/applications/current/property-financing/down-payment",
+  down_payment: "/applications/current/property-financing/down-payment",
+};
+
 const SUBMITTED_STATUS_CONFIG: Record<SubmittedApplicationStatus, SubmittedStatusConfig> = {
   borrower_submitted: {
     label: "Submitted",
@@ -190,7 +209,8 @@ function formatLabel(value?: string | null): string {
 }
 
 function primaryRouteFor(action?: string | null, routeHint?: string | null): string {
-  if (routeHint) return routeHint;
+  const normalizedHint = normalizeRouteHint(routeHint);
+  if (normalizedHint) return normalizedHint;
   switch (action) {
     case "start_qualification":
       return "/purchase";
@@ -198,9 +218,29 @@ function primaryRouteFor(action?: string | null, routeHint?: string | null): str
       return "/portal";
     case "upload_documents":
       return "/portal/documents";
+    case "review_application":
+    case "continue_application":
+      return FULL_APPLICATION_ROUTE;
     default:
-      return "/portal";
+      return FULL_APPLICATION_ROUTE;
   }
+}
+
+function normalizeRouteHint(routeHint?: string | null): string | null {
+  if (!routeHint) return null;
+  const trimmed = routeHint.trim();
+  const mapped = ROUTE_HINTS[trimmed.replace(/^\/+/, "")];
+  if (mapped) return mapped;
+  if (
+    trimmed.startsWith("/portal") ||
+    trimmed.startsWith("/applications/") ||
+    trimmed.startsWith("/internal/") ||
+    trimmed.startsWith("/purchase") ||
+    trimmed.startsWith("/refinance")
+  ) {
+    return trimmed;
+  }
+  return null;
 }
 
 function isSubmittedApplicationStatus(
@@ -269,7 +309,7 @@ function workspaceActionForStatus(
     case "in_progress":
       return {
         label: "Continue Application",
-        route: "/portal/application",
+        route: FULL_APPLICATION_ROUTE,
         description: "Keep working through your application sections and required details.",
       };
     case "documents_requested":
@@ -343,11 +383,11 @@ function workspaceActionForStatus(
 // applicationId "current" is a placeholder — the real application is resolved
 // server-side from the session cookie.
 const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
-  borrower_profile: "/portal/settings/profile",
+  borrower_profile: FULL_APPLICATION_ROUTE,
   property: "/applications/current/property-financing/target-property",
-  income: "/applications/current/property-financing/purchase-plan",
+  income: FULL_APPLICATION_ROUTE,
   assets_down_payment: "/applications/current/property-financing/down-payment",
-  liabilities: "/applications/current/mortgage-request",
+  liabilities: FULL_APPLICATION_ROUTE,
 };
 
 function ApplicationWorkspacePage() {

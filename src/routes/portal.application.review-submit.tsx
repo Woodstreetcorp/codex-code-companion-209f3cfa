@@ -107,6 +107,7 @@ function ApplicationReviewSubmitPage() {
   }
 
   if (loadError && !readiness) {
+    const sessionExpired = isSessionExpiredMessage(loadError);
     return (
       <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-coral/10 text-coral">
@@ -115,14 +116,26 @@ function ApplicationReviewSubmitPage() {
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
           We could not check readiness
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">{loadError}</p>
-        <button
-          onClick={() => void loadReadiness()}
-          className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          <RefreshCw className="mr-1.5 h-4 w-4" />
-          Retry
-        </button>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          {sessionExpired ? "Your session may have expired. Please sign in again." : loadError}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            onClick={() => void loadReadiness()}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <RefreshCw className="mr-1.5 h-4 w-4" />
+            Retry
+          </button>
+          {sessionExpired && (
+            <Link
+              to="/login"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -446,11 +459,50 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
 }
 
 function routeForBlocker(blocker: SubmissionBlocker): string | undefined {
-  if (blocker.route_hint) return blocker.route_hint;
+  const routeHint = normalizeRouteHint(blocker.route_hint);
+  if (routeHint) return routeHint;
   const key = (blocker.key ?? "").toLowerCase();
   if (key.includes("consent")) return "/portal/application/consents";
   if (key.includes("document")) return "/portal/documents";
+  if (key.includes("borrower") || key.includes("income") || key.includes("liabilit")) {
+    return "/internal/full-application";
+  }
+  if (key.includes("property")) return "/applications/current/property-financing/target-property";
+  if (key.includes("asset") || key.includes("down_payment") || key.includes("down payment")) {
+    return "/applications/current/property-financing/down-payment";
+  }
   if (key.includes("section")) return "/portal/application";
+  return undefined;
+}
+
+function normalizeRouteHint(routeHint?: string | null): string | undefined {
+  if (!routeHint) return undefined;
+  const trimmed = routeHint.trim();
+  const normalized = trimmed.replace(/^\/+/, "");
+  const routeMap: Record<string, string> = {
+    application: "/portal/application",
+    application_workspace: "/portal/application",
+    review_submit: "/portal/application/review-submit",
+    consents: "/portal/application/consents",
+    documents: "/portal/documents",
+    document_vault: "/portal/documents",
+    borrower_profile: "/internal/full-application",
+    income: "/internal/full-application",
+    liabilities: "/internal/full-application",
+    property: "/applications/current/property-financing/target-property",
+    assets_down_payment: "/applications/current/property-financing/down-payment",
+    down_payment: "/applications/current/property-financing/down-payment",
+  };
+  if (routeMap[normalized]) return routeMap[normalized];
+  if (
+    trimmed.startsWith("/portal") ||
+    trimmed.startsWith("/applications/") ||
+    trimmed.startsWith("/internal/") ||
+    trimmed.startsWith("/purchase") ||
+    trimmed.startsWith("/refinance")
+  ) {
+    return trimmed;
+  }
   return undefined;
 }
 
@@ -473,4 +525,9 @@ function formatDate(iso?: string | null): string | null {
   } catch {
     return iso;
   }
+}
+
+function isSessionExpiredMessage(message?: string | null): boolean {
+  const lower = message?.toLowerCase() ?? "";
+  return lower.includes("session") || lower.includes("unauthenticated") || lower.includes("401");
 }
