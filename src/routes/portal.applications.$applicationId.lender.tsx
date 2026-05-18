@@ -73,7 +73,12 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
         lenderName: "Major Bank",
         productName: "5-yr Fixed · Insured",
         status: "queued",
-        requested: { rate: "4.59%", term: "5-yr fixed", amount: "$520,000", payment: "$2,358 / mo" },
+        requested: {
+          rate: "4.59%",
+          term: "5-yr fixed",
+          amount: "$520,000",
+          payment: "$2,358 / mo",
+        },
         notes: "Will be submitted once your file is reviewed.",
       },
     ];
@@ -87,7 +92,12 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
         status: "in_review",
         submittedAt: "May 8, 2026 · 9:42 AM",
         expectedDecisionBy: "May 14, 2026",
-        requested: { rate: "4.59%", term: "5-yr fixed", amount: "$520,000", payment: "$2,358 / mo" },
+        requested: {
+          rate: "4.59%",
+          term: "5-yr fixed",
+          amount: "$520,000",
+          payment: "$2,358 / mo",
+        },
         underwriter: {
           name: "S. Patel",
           email: "underwriting@majorbank.example",
@@ -102,7 +112,12 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
         status: "conditional_approval",
         submittedAt: "May 6, 2026 · 2:10 PM",
         decisionAt: "May 9, 2026 · 4:55 PM",
-        requested: { rate: "4.74%", term: "5-yr fixed", amount: "$520,000", payment: "$2,402 / mo" },
+        requested: {
+          rate: "4.74%",
+          term: "5-yr fixed",
+          amount: "$520,000",
+          payment: "$2,402 / mo",
+        },
         approved: { rate: "4.74%", term: "5-yr fixed", amount: "$520,000", payment: "$2,402 / mo" },
         notes: "Conditional on income verification and property appraisal.",
       },
@@ -113,7 +128,12 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
         status: "declined",
         submittedAt: "May 5, 2026 · 11:00 AM",
         decisionAt: "May 7, 2026 · 3:20 PM",
-        requested: { rate: "5.10%", term: "5-yr variable", amount: "$520,000", payment: "$2,488 / mo" },
+        requested: {
+          rate: "5.10%",
+          term: "5-yr variable",
+          amount: "$520,000",
+          payment: "$2,488 / mo",
+        },
         declineReason:
           "Beneficial-debt-service ratio (TDS) above policy ceiling for variable-rate stress test. Consider a fixed-rate alternative.",
       },
@@ -128,7 +148,12 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
         status: "approved",
         submittedAt: "Apr 15, 2026",
         decisionAt: "Apr 19, 2026",
-        requested: { rate: "4.59%", term: "5-yr fixed", amount: "$520,000", payment: "$2,358 / mo" },
+        requested: {
+          rate: "4.59%",
+          term: "5-yr fixed",
+          amount: "$520,000",
+          payment: "$2,358 / mo",
+        },
         approved: { rate: "4.54%", term: "5-yr fixed", amount: "$520,000", payment: "$2,346 / mo" },
         underwriter: { name: "S. Patel", email: "underwriting@majorbank.example" },
         notes: "Funded and closed.",
@@ -138,17 +163,38 @@ function mockSubmissions(summary: AppSummary): LenderSubmission[] {
   return [];
 }
 
-const STATUS_META: Record<
-  SubmissionStatus,
-  { label: string; tone: string; icon: typeof Clock }
-> = {
-  queued:                { label: "Queued for submission", tone: "bg-muted text-muted-foreground border-border",                                                            icon: Clock },
-  submitted:             { label: "Submitted to lender",   tone: "bg-secondary/10 text-secondary border-secondary/30",                                                       icon: Send },
-  in_review:             { label: "Under review",          tone: "bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40", icon: Clock },
-  conditional_approval:  { label: "Conditional approval",  tone: "bg-mint/25 text-mint-foreground border-mint/40",                                                            icon: CheckCircle2 },
-  approved:              { label: "Approved",              tone: "bg-mint/30 text-mint-foreground border-mint/50",                                                            icon: CheckCircle2 },
-  declined:              { label: "Declined",              tone: "bg-coral/10 text-coral border-coral/30",                                                                     icon: XCircle },
-  withdrawn:             { label: "Withdrawn",             tone: "bg-muted text-muted-foreground border-border",                                                              icon: XCircle },
+const STATUS_META: Record<SubmissionStatus, { label: string; tone: string; icon: typeof Clock }> = {
+  queued: {
+    label: "Queued for submission",
+    tone: "bg-muted text-muted-foreground border-border",
+    icon: Clock,
+  },
+  submitted: {
+    label: "Submitted to lender",
+    tone: "bg-secondary/10 text-secondary border-secondary/30",
+    icon: Send,
+  },
+  in_review: {
+    label: "Under review",
+    tone: "bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:border-amber-500/40",
+    icon: Clock,
+  },
+  conditional_approval: {
+    label: "Conditional approval",
+    tone: "bg-mint/25 text-mint-foreground border-mint/40",
+    icon: CheckCircle2,
+  },
+  approved: {
+    label: "Approved",
+    tone: "bg-mint/30 text-mint-foreground border-mint/50",
+    icon: CheckCircle2,
+  },
+  declined: { label: "Declined", tone: "bg-coral/10 text-coral border-coral/30", icon: XCircle },
+  withdrawn: {
+    label: "Withdrawn",
+    tone: "bg-muted text-muted-foreground border-border",
+    icon: XCircle,
+  },
 };
 
 function LenderPage() {
@@ -192,7 +238,8 @@ function LenderPage() {
           <Sparkles className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-3 text-sm font-semibold text-foreground">Nothing submitted yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Once you select an offer and your file passes review, we'll show every lender submission here.
+            Once you select an offer and your file passes review, we'll show every lender submission
+            here.
           </p>
           <Link
             to="/portal/applications/$applicationId/offers"
@@ -208,10 +255,7 @@ function LenderPage() {
             const meta = STATUS_META[s.status];
             const Icon = meta.icon;
             return (
-              <article
-                key={s.id}
-                className="rounded-2xl border border-border bg-card p-5"
-              >
+              <article key={s.id} className="rounded-2xl border border-border bg-card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
@@ -237,9 +281,7 @@ function LenderPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <TermsCard label="Terms requested" terms={s.requested} />
-                  {s.approved && (
-                    <TermsCard label="Terms approved" terms={s.approved} highlight />
-                  )}
+                  {s.approved && <TermsCard label="Terms approved" terms={s.approved} highlight />}
                 </div>
 
                 {s.declineReason && (
@@ -249,8 +291,7 @@ function LenderPage() {
                       <p className="font-semibold text-coral">Decline reason</p>
                       <p className="mt-0.5 text-muted-foreground">{s.declineReason}</p>
                       <Link
-                        to="/portal/applications/$applicationId/messages"
-                        params={{ applicationId }}
+                        to="/portal/messages"
                         className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80"
                       >
                         Discuss alternatives with your advisor →
