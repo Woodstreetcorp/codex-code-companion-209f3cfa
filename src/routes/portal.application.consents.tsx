@@ -169,6 +169,7 @@ function BorrowerApplicationConsentsPage() {
   }
 
   if (loadError && !result) {
+    const sessionExpired = isSessionExpiredMessage(loadError);
     return (
       <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-coral/10 text-coral">
@@ -177,14 +178,26 @@ function BorrowerApplicationConsentsPage() {
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
           We could not load your consents
         </h1>
-        <p className="mt-2 max-w-xl text-sm text-muted-foreground">{loadError}</p>
-        <button
-          onClick={() => void loadConsents()}
-          className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-        >
-          <RefreshCw className="mr-1.5 h-4 w-4" />
-          Retry
-        </button>
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+          {sessionExpired ? "Your session may have expired. Please sign in again." : loadError}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            onClick={() => void loadConsents()}
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            <RefreshCw className="mr-1.5 h-4 w-4" />
+            Retry
+          </button>
+          {sessionExpired && (
+            <Link
+              to="/login"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
@@ -406,4 +419,9 @@ function formatDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function isSessionExpiredMessage(message?: string | null): boolean {
+  const lower = message?.toLowerCase() ?? "";
+  return lower.includes("session") || lower.includes("unauthenticated") || lower.includes("401");
 }

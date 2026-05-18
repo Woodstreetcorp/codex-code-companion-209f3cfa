@@ -121,11 +121,11 @@ function sectionStatusConfig(status?: OfferSectionStatus | null): SectionConfig 
 // ── Preliminary path helpers ──────────────────────────────────────────────────
 
 const PATH_DESCRIPTIONS: Record<string, string> = {
-  prime: "Prime lending path — standard institutional mortgage products are likely to be applicable.",
+  prime:
+    "Prime lending path — standard institutional mortgage products are likely to be applicable.",
   alternative:
     "Alternative lending path — lenders who specialise in non-traditional income or credit profiles may be more suitable.",
-  manual_review:
-    "Tailored review — your file requires a case-by-case assessment by an advisor.",
+  manual_review: "Tailored review — your file requires a case-by-case assessment by an advisor.",
   unknown: "Your preliminary lending path has not yet been determined.",
 };
 
@@ -137,8 +137,31 @@ function pathDescription(value?: PreliminaryPathValue | null): string {
 
 function resolveRoute(hint?: string | null): string {
   if (!hint) return "/portal";
-  if (hint.startsWith("/portal") || hint.startsWith("/purchase") || hint.startsWith("/refinance")) {
-    return hint;
+  const trimmed = hint.trim();
+  const routeMap: Record<string, string> = {
+    application: "/portal/application",
+    application_workspace: "/portal/application",
+    review_submit: "/portal/application/review-submit",
+    consents: "/portal/application/consents",
+    documents: "/portal/documents",
+    document_vault: "/portal/documents",
+    borrower_profile: "/internal/full-application",
+    income: "/internal/full-application",
+    liabilities: "/internal/full-application",
+    property: "/applications/current/property-financing/target-property",
+    assets_down_payment: "/applications/current/property-financing/down-payment",
+    down_payment: "/applications/current/property-financing/down-payment",
+  };
+  const mapped = routeMap[trimmed.replace(/^\/+/, "")];
+  if (mapped) return mapped;
+  if (
+    trimmed.startsWith("/portal") ||
+    trimmed.startsWith("/applications/") ||
+    trimmed.startsWith("/internal/") ||
+    trimmed.startsWith("/purchase") ||
+    trimmed.startsWith("/refinance")
+  ) {
+    return trimmed;
   }
   return "/portal";
 }
@@ -184,9 +207,7 @@ function OffersReviewPage() {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-sm text-muted-foreground">
-          Loading your offer review status…
-        </p>
+        <p className="mt-4 text-sm text-muted-foreground">Loading your offer review status…</p>
       </div>
     );
   }
@@ -201,8 +222,7 @@ function OffersReviewPage() {
           We could not load your review status
         </h1>
         <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          {error ??
-            "Your session may have expired. Sign in again to continue."}
+          {error ?? "Your session may have expired. Sign in again to continue."}
         </p>
         <Link
           to="/login"
@@ -235,9 +255,8 @@ function OffersReviewPage() {
           Your Mortgage Options
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This page shows where your file stands in the review process. Real
-          mortgage options will be discussed once your application and documents
-          are complete.
+          This page shows where your file stands in the review process. Real mortgage options will
+          be discussed once your application and documents are complete.
         </p>
       </div>
 
@@ -252,9 +271,7 @@ function OffersReviewPage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Review status
               </p>
-              <p className="mt-0.5 text-lg font-semibold text-foreground">
-                {statusLabel}
-              </p>
+              <p className="mt-0.5 text-lg font-semibold text-foreground">{statusLabel}</p>
             </div>
           </div>
           <span
@@ -265,9 +282,7 @@ function OffersReviewPage() {
         </div>
 
         {reviewStatus?.message && (
-          <p className="mt-4 text-sm text-muted-foreground">
-            {reviewStatus.message}
-          </p>
+          <p className="mt-4 text-sm text-muted-foreground">{reviewStatus.message}</p>
         )}
       </div>
 
@@ -286,33 +301,26 @@ function OffersReviewPage() {
             </p>
           </div>
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {pathDescription(prelimPath?.value)}
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">{pathDescription(prelimPath?.value)}</p>
         {prelimPath?.source && prelimPath.source !== "unknown" && (
           <p className="mt-2 text-xs text-muted-foreground">
             Source:{" "}
-            <span className="font-medium text-foreground capitalize">
-              {prelimPath.source}
-            </span>
+            <span className="font-medium text-foreground capitalize">{prelimPath.source}</span>
           </p>
         )}
         <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-2.5">
           <p className="text-xs text-yellow-800">
-            <span className="font-semibold">Note:</span> This helps guide the
-            review process. It is not an approval decision.
+            <span className="font-semibold">Note:</span> This helps guide the review process. It is
+            not an approval decision.
           </p>
         </div>
       </div>
 
       {/* ── Readiness checklist ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-foreground">
-          Application readiness
-        </h2>
+        <h2 className="text-base font-semibold text-foreground">Application readiness</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          These three things must be in place before your mortgage options can be
-          fully reviewed.
+          These three things must be in place before your mortgage options can be fully reviewed.
         </p>
         <ul className="mt-4 space-y-3">
           <ReadinessRow
@@ -349,18 +357,13 @@ function OffersReviewPage() {
       {/* ── Offer sections grid ───────────────────────────────────────────── */}
       {sections.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-foreground">
-            Review sections
-          </h2>
+          <h2 className="text-lg font-semibold text-foreground">Review sections</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Each area of your review, and what needs to happen next.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {sections.map((section) => (
-              <OfferSectionCard
-                key={section.key ?? section.label}
-                section={section}
-              />
+              <OfferSectionCard key={section.key ?? section.label} section={section} />
             ))}
           </div>
         </div>
@@ -374,9 +377,7 @@ function OffersReviewPage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
                 Your next step
               </p>
-              <p className="mt-1 text-base font-semibold text-foreground">
-                {primaryAction.label}
-              </p>
+              <p className="mt-1 text-base font-semibold text-foreground">{primaryAction.label}</p>
             </div>
             <Link
               to={primaryRoute}
@@ -441,9 +442,7 @@ function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
       ) : (
         <XCircle className="h-4 w-4 shrink-0 text-muted-foreground/50" />
       )}
-      <span
-        className={`text-sm ${ready ? "text-foreground" : "text-muted-foreground"}`}
-      >
+      <span className={`text-sm ${ready ? "text-foreground" : "text-muted-foreground"}`}>
         {label}
       </span>
     </li>
@@ -457,9 +456,7 @@ function OfferSectionCard({ section }: { section: OfferSection }) {
   return (
     <div className="rounded-xl border border-border bg-background p-5">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">
-          {section.label ?? section.key}
-        </h3>
+        <h3 className="text-sm font-semibold text-foreground">{section.label ?? section.key}</h3>
         <span
           className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.badgeClass}`}
         >
@@ -467,9 +464,7 @@ function OfferSectionCard({ section }: { section: OfferSection }) {
           {config.label}
         </span>
       </div>
-      {section.message && (
-        <p className="mt-2 text-xs text-muted-foreground">{section.message}</p>
-      )}
+      {section.message && <p className="mt-2 text-xs text-muted-foreground">{section.message}</p>}
       {section.action_label && (
         <Link
           to={sectionRoute}
