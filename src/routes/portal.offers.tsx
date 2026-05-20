@@ -18,8 +18,14 @@ import {
   type BorrowerOfferReviewSummary,
   type OfferSection,
   type OfferSectionStatus,
-  type PreliminaryPathValue,
 } from "@/lib/api/borrowerOfferReviewApi";
+import {
+  getProductMatchDisclaimer,
+  getProductMatchStatusCopy,
+  PRODUCT_MATCH_CTA_LABELS,
+  type ProductMatchStatus,
+  type ProductMatchStatusCopy,
+} from "@/lib/productMatching/productMatchCopy";
 
 export const Route = createFileRoute("/portal/offers")({
   head: () => ({
@@ -60,7 +66,7 @@ const REVIEW_STATUS_CONFIG: Record<string, ReviewConfig> = {
     chipClass: "bg-secondary/10 text-secondary",
   },
   options_pending: {
-    label: "Options Pending",
+    label: "Options Being Prepared",
     chipClass: "bg-secondary/10 text-secondary",
   },
   ready_for_advisor_review: {
@@ -118,21 +124,6 @@ function sectionStatusConfig(status?: OfferSectionStatus | null): SectionConfig 
   return SECTION_STATUS_CONFIG[status ?? "not_started"] ?? SECTION_STATUS_CONFIG.not_started;
 }
 
-// ── Preliminary path helpers ──────────────────────────────────────────────────
-
-const PATH_DESCRIPTIONS: Record<string, string> = {
-  prime:
-    "Prime lending path — standard institutional mortgage products are likely to be applicable.",
-  alternative:
-    "Alternative lending path — lenders who specialise in non-traditional income or credit profiles may be more suitable.",
-  manual_review: "Tailored review — your file requires a case-by-case assessment by an advisor.",
-  unknown: "Your preliminary lending path has not yet been determined.",
-};
-
-function pathDescription(value?: PreliminaryPathValue | null): string {
-  return PATH_DESCRIPTIONS[value ?? "unknown"] ?? PATH_DESCRIPTIONS.unknown;
-}
-
 // ── Route hint resolver ───────────────────────────────────────────────────────
 
 function resolveRoute(hint?: string | null): string {
@@ -164,6 +155,69 @@ function resolveRoute(hint?: string | null): string {
     return trimmed;
   }
   return "/portal";
+}
+
+function productMatchStatusFor(
+  reviewStatus?: string | null,
+  readiness?: BorrowerOfferReviewSummary["readiness"],
+): ProductMatchStatus {
+  const missingItems = readiness?.missing_items?.filter(Boolean) ?? [];
+  const applicationReady = readiness?.application_ready === true;
+  const snapshotReady = readiness?.snapshot_ready === true;
+  const documentsReady = readiness?.documents_ready === true;
+
+  if (
+    reviewStatus === "needs_more_information" ||
+    reviewStatus === "documents_required" ||
+    missingItems.length > 0
+  ) {
+    return "missing_information";
+  }
+
+  if (reviewStatus === "options_pending") return "options_being_prepared";
+  if (reviewStatus === "ready_for_advisor_review") return "options_ready_placeholder";
+  if (reviewStatus === "submitted_to_lender" || reviewStatus === "lender_review") {
+    return "lender_review_placeholder";
+  }
+  if (reviewStatus === "advisor_review_in_progress" || reviewStatus === "pending_review") {
+    return "advisor_review";
+  }
+  if (!applicationReady || !snapshotReady || !documentsReady) return "not_ready";
+
+  return "advisor_review";
+}
+
+function productMatchStatusConfig(status: ProductMatchStatus): ProductMatchStatusCopy {
+  if (status === "not_ready") {
+    return getProductMatchStatusCopy(status, {
+      headline: "Product options will appear only after advisor review.",
+      body: "Complete your application, documents, and required review steps first. Potential mortgage paths are not shown until your file is ready for approvU review.",
+      primaryCta: {
+        label: PRODUCT_MATCH_CTA_LABELS.applicationWorkspace,
+        route: "/portal/application",
+      },
+    });
+  }
+
+  if (status === "missing_information") {
+    return getProductMatchStatusCopy(status, {
+      primaryCta: {
+        label: PRODUCT_MATCH_CTA_LABELS.applicationWorkspace,
+        route: "/portal/application",
+      },
+    });
+  }
+
+  if (status === "options_ready_placeholder") {
+    return getProductMatchStatusCopy(status, {
+      secondaryCta: {
+        label: PRODUCT_MATCH_CTA_LABELS.applicationWorkspace,
+        route: "/portal/application",
+      },
+    });
+  }
+
+  return getProductMatchStatusCopy(status);
 }
 
 // ── Page component ────────────────────────────────────────────────────────────
@@ -236,13 +290,13 @@ function OffersReviewPage() {
   }
 
   const reviewStatus = summary.review_status;
-  const prelimPath = summary.preliminary_path;
   const readiness = summary.readiness;
   const sections = summary.offer_sections ?? [];
   const primaryAction = summary.primary_action;
   const disclaimers = summary.disclaimers?.filter(Boolean) ?? [];
   const primaryRoute = resolveRoute(primaryAction?.route_hint);
   const { label: statusLabel, chipClass } = reviewStatusConfig(reviewStatus?.status);
+  const productMatchStatus = productMatchStatusFor(reviewStatus?.status, readiness);
 
   return (
     <div className="space-y-6">
@@ -252,11 +306,11 @@ function OffersReviewPage() {
           Offers &amp; review status
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-          Your Mortgage Options
+          Product Match Status
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This page shows where your file stands in the review process. Real mortgage options will
-          be discussed once your application and documents are complete.
+          This page shows where your file stands in the product matching review process. Product
+          options will appear only after advisor review.
         </p>
       </div>
 
@@ -284,43 +338,17 @@ function OffersReviewPage() {
         {reviewStatus?.message && (
           <p className="mt-4 text-sm text-muted-foreground">{reviewStatus.message}</p>
         )}
+        <p className="mt-3 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
       </div>
 
-      {/* ── Preliminary path card ─────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <FileText className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Preliminary lending path
-            </p>
-            <p className="mt-0.5 text-lg font-semibold text-foreground">
-              {prelimPath?.label ?? "Not yet determined"}
-            </p>
-          </div>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">{pathDescription(prelimPath?.value)}</p>
-        {prelimPath?.source && prelimPath.source !== "unknown" && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Source:{" "}
-            <span className="font-medium text-foreground capitalize">{prelimPath.source}</span>
-          </p>
-        )}
-        <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-2.5">
-          <p className="text-xs text-yellow-800">
-            <span className="font-semibold">Note:</span> This helps guide the review process. It is
-            not an approval decision.
-          </p>
-        </div>
-      </div>
+      {/* ── Product match status scaffold ─────────────────────────────────── */}
+      <ProductMatchStatusCard status={productMatchStatus} />
 
       {/* ── Readiness checklist ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h2 className="text-base font-semibold text-foreground">Application readiness</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          These three things must be in place before your mortgage options can be fully reviewed.
+          These items help approvU decide when potential mortgage paths can be assessed.
         </p>
         <ul className="mt-4 space-y-3">
           <ReadinessRow
@@ -391,6 +419,16 @@ function OffersReviewPage() {
       )}
 
       {/* ── Conservative disclaimer ───────────────────────────────────────── */}
+      <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-5 py-4">
+        <p className="text-xs font-semibold uppercase tracking-widest text-yellow-800">
+          Product matching guardrails
+        </p>
+        <p className="mt-2 text-xs text-yellow-800">
+          This page does not show lender names, rates, match scores, product cards, selected
+          products, or approval decisions. Your advisor will confirm next steps.
+        </p>
+      </div>
+
       {disclaimers.length > 0 && (
         <div className="rounded-xl border border-border bg-muted/40 px-5 py-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -433,6 +471,52 @@ function OffersReviewPage() {
 }
 
 // ── Supporting components ─────────────────────────────────────────────────────
+
+function ProductMatchStatusCard({ status }: { status: ProductMatchStatus }) {
+  const config = productMatchStatusConfig(status);
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Product match status</h2>
+              <span className="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[11px] font-semibold text-secondary">
+                {config.badge}
+              </span>
+            </div>
+            <p className="mt-1 text-lg font-semibold text-foreground">{config.headline}</p>
+            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{config.body}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          {config.secondaryCta && (
+            <Link
+              to={config.secondaryCta.route}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              {config.secondaryCta.label}
+            </Link>
+          )}
+          {config.primaryCta && (
+            <Link
+              to={config.primaryCta.route}
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              {config.primaryCta.label}
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
   return (
