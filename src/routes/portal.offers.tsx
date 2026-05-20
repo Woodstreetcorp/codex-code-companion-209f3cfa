@@ -22,6 +22,7 @@ import {
 import {
   getBorrowerProductMatchStatus,
   storeBorrowerProductMatchStatus,
+  type ProductMatchStatusResponse,
 } from "@/lib/api/borrowerProductMatchStatusApi";
 import {
   getProductMatchDisclaimer,
@@ -228,9 +229,10 @@ function productMatchStatusConfig(status: ProductMatchStatus): ProductMatchStatu
 
 function OffersReviewPage() {
   const [summary, setSummary] = useState<BorrowerOfferReviewSummary | null>(null);
-  const [apiProductMatchStatus, setApiProductMatchStatus] = useState<ProductMatchStatus | null>(
+  const [productMatchResult, setProductMatchResult] = useState<ProductMatchStatusResponse | null>(
     null,
   );
+  const [productMatchLoading, setProductMatchLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -239,21 +241,18 @@ function OffersReviewPage() {
 
     async function load() {
       setLoading(true);
+      setProductMatchLoading(true);
       setError(null);
       try {
-        const [result, productMatchResult] = await Promise.all([
+        const [result, productMatchStatusResult] = await Promise.all([
           getBorrowerOfferReviewStatus(),
           getBorrowerProductMatchStatus(),
         ]);
         if (!active) return;
         storeBorrowerOfferReviewStatus(result);
         setSummary(result);
-        storeBorrowerProductMatchStatus(productMatchResult);
-        setApiProductMatchStatus(
-          productMatchResult.endpoint_available && productMatchResult.ok !== false
-            ? (productMatchResult.status ?? null)
-            : null,
-        );
+        storeBorrowerProductMatchStatus(productMatchStatusResult);
+        setProductMatchResult(productMatchStatusResult);
       } catch (failure) {
         if (!active) return;
         setError(
@@ -262,7 +261,10 @@ function OffersReviewPage() {
             : "Your offer review status could not be loaded.",
         );
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setProductMatchLoading(false);
+        }
       }
     }
 
@@ -312,6 +314,12 @@ function OffersReviewPage() {
   const disclaimers = summary.disclaimers?.filter(Boolean) ?? [];
   const primaryRoute = resolveRoute(primaryAction?.route_hint);
   const { label: statusLabel, chipClass } = reviewStatusConfig(reviewStatus?.status);
+  const apiProductMatchStatus =
+    productMatchResult?.endpoint_available &&
+    productMatchResult.ok !== false &&
+    productMatchResult.status
+      ? productMatchResult.status
+      : null;
   const productMatchStatus =
     apiProductMatchStatus ?? productMatchStatusFor(reviewStatus?.status, readiness);
 
@@ -359,9 +367,13 @@ function OffersReviewPage() {
       </div>
 
       {/* ── Product match status scaffold ─────────────────────────────────── */}
-      <ProductMatchStatusCard status={productMatchStatus} />
+      <ProductMatchStatusCard
+        status={productMatchStatus}
+        apiStatus={productMatchResult}
+        loading={productMatchLoading}
+      />
 
-      <ProductOptionsPlaceholder status={productMatchStatus} />
+      <ProductOptionsPlaceholder status={productMatchStatus} apiStatus={productMatchResult} />
 
       {/* ── Readiness checklist ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -491,7 +503,15 @@ function OffersReviewPage() {
 
 // ── Supporting components ─────────────────────────────────────────────────────
 
-function ProductMatchStatusCard({ status }: { status: ProductMatchStatus }) {
+function ProductMatchStatusCard({
+  status,
+  apiStatus,
+  loading,
+}: {
+  status: ProductMatchStatus;
+  apiStatus: ProductMatchStatusResponse | null;
+  loading: boolean;
+}) {
   const config = productMatchStatusConfig(status);
 
   return (
@@ -510,6 +530,10 @@ function ProductMatchStatusCard({ status }: { status: ProductMatchStatus }) {
             </div>
             <p className="mt-1 text-lg font-semibold text-foreground">{config.headline}</p>
             <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{config.body}</p>
+            {loading && (
+              <p className="mt-2 text-xs text-muted-foreground">Checking product match status...</p>
+            )}
+            <ProductMatchSafeFacts apiStatus={apiStatus} />
             <p className="mt-3 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
           </div>
         </div>
@@ -537,7 +561,13 @@ function ProductMatchStatusCard({ status }: { status: ProductMatchStatus }) {
   );
 }
 
-function ProductOptionsPlaceholder({ status }: { status: ProductMatchStatus }) {
+function ProductOptionsPlaceholder({
+  status,
+  apiStatus,
+}: {
+  status: ProductMatchStatus;
+  apiStatus: ProductMatchStatusResponse | null;
+}) {
   const config = productMatchStatusConfig(status);
   const nextSteps = [
     {
@@ -590,6 +620,7 @@ function ProductOptionsPlaceholder({ status }: { status: ProductMatchStatus }) {
           <p className="mt-3 text-xs font-medium text-muted-foreground">
             {getProductMatchDisclaimer()}
           </p>
+          <ProductMatchSafeFacts apiStatus={apiStatus} />
         </div>
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 lg:max-w-xs">
           No product cards, lender names, rates, match scores, selected products, or approval
@@ -614,6 +645,52 @@ function ProductOptionsPlaceholder({ status }: { status: ProductMatchStatus }) {
       </div>
     </section>
   );
+}
+
+function ProductMatchSafeFacts({ apiStatus }: { apiStatus: ProductMatchStatusResponse | null }) {
+  const facts = [
+    {
+      label: "Visible options",
+      value:
+        typeof apiStatus?.borrower_visible_count === "number"
+          ? String(apiStatus.borrower_visible_count)
+          : null,
+    },
+    {
+      label: "Advisor-reviewed options",
+      value:
+        typeof apiStatus?.advisor_reviewed_count === "number"
+          ? String(apiStatus.advisor_reviewed_count)
+          : null,
+    },
+    {
+      label: "Last status update",
+      value: apiStatus?.last_matched_at ? formatProductMatchDate(apiStatus.last_matched_at) : null,
+    },
+  ].filter((fact) => fact.value);
+
+  if (!apiStatus?.endpoint_available || facts.length === 0) return null;
+
+  return (
+    <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+      {facts.map((fact) => (
+        <div key={fact.label} className="rounded-lg border border-border bg-background px-3 py-2">
+          <dt className="font-semibold text-muted-foreground">{fact.label}</dt>
+          <dd className="mt-0.5 text-foreground">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function formatProductMatchDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(parsed);
 }
 
 function ReadinessRow({ label, ready }: { label: string; ready: boolean }) {
