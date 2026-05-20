@@ -20,6 +20,10 @@ import {
   type OfferSectionStatus,
 } from "@/lib/api/borrowerOfferReviewApi";
 import {
+  getBorrowerProductMatchStatus,
+  storeBorrowerProductMatchStatus,
+} from "@/lib/api/borrowerProductMatchStatusApi";
+import {
   getProductMatchDisclaimer,
   getProductMatchStatusCopy,
   PRODUCT_MATCH_CTA_LABELS,
@@ -224,6 +228,9 @@ function productMatchStatusConfig(status: ProductMatchStatus): ProductMatchStatu
 
 function OffersReviewPage() {
   const [summary, setSummary] = useState<BorrowerOfferReviewSummary | null>(null);
+  const [apiProductMatchStatus, setApiProductMatchStatus] = useState<ProductMatchStatus | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -234,10 +241,19 @@ function OffersReviewPage() {
       setLoading(true);
       setError(null);
       try {
-        const result = await getBorrowerOfferReviewStatus();
+        const [result, productMatchResult] = await Promise.all([
+          getBorrowerOfferReviewStatus(),
+          getBorrowerProductMatchStatus(),
+        ]);
         if (!active) return;
         storeBorrowerOfferReviewStatus(result);
         setSummary(result);
+        storeBorrowerProductMatchStatus(productMatchResult);
+        setApiProductMatchStatus(
+          productMatchResult.endpoint_available && productMatchResult.ok !== false
+            ? (productMatchResult.status ?? null)
+            : null,
+        );
       } catch (failure) {
         if (!active) return;
         setError(
@@ -296,7 +312,8 @@ function OffersReviewPage() {
   const disclaimers = summary.disclaimers?.filter(Boolean) ?? [];
   const primaryRoute = resolveRoute(primaryAction?.route_hint);
   const { label: statusLabel, chipClass } = reviewStatusConfig(reviewStatus?.status);
-  const productMatchStatus = productMatchStatusFor(reviewStatus?.status, readiness);
+  const productMatchStatus =
+    apiProductMatchStatus ?? productMatchStatusFor(reviewStatus?.status, readiness);
 
   return (
     <div className="space-y-6">
@@ -343,6 +360,8 @@ function OffersReviewPage() {
 
       {/* ── Product match status scaffold ─────────────────────────────────── */}
       <ProductMatchStatusCard status={productMatchStatus} />
+
+      <ProductOptionsPlaceholder status={productMatchStatus} />
 
       {/* ── Readiness checklist ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -513,6 +532,85 @@ function ProductMatchStatusCard({ status }: { status: ProductMatchStatus }) {
             </Link>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductOptionsPlaceholder({ status }: { status: ProductMatchStatus }) {
+  const config = productMatchStatusConfig(status);
+  const nextSteps = [
+    {
+      label: "View Application Status",
+      route: "/portal/application/review-submit",
+      description: "Check submission readiness and current review status.",
+    },
+    {
+      label: "Review Requested Items",
+      route: "/portal/application",
+      description: "Return to the workspace if approvU needs more information.",
+    },
+    {
+      label: "Upload Documents",
+      route: "/portal/documents",
+      description: "Add documents that may be needed before advisor review can continue.",
+    },
+    {
+      label: "Complete Consents",
+      route: "/portal/application/consents",
+      description: "Review required consents before submission and advisor review.",
+    },
+    {
+      label: "Review & Submit",
+      route: "/portal/application/review-submit",
+      description: "Submit when your application is ready for approvU review.",
+    },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+              Product options
+            </p>
+            <span className="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[11px] font-semibold text-secondary">
+              {config.badge}
+            </span>
+          </div>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            Product Options Coming After Advisor Review
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Product options are not visible yet because approvU must first review your application
+            details and confirm what is borrower-safe to show. When options are ready, they will be
+            presented as advisor-reviewed possible paths, not approvals.
+          </p>
+          <p className="mt-3 text-xs font-medium text-muted-foreground">
+            {getProductMatchDisclaimer()}
+          </p>
+        </div>
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 lg:max-w-xs">
+          No product cards, lender names, rates, match scores, selected products, or approval
+          decisions are shown in this placeholder.
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {nextSteps.map((step) => (
+          <Link
+            key={step.label}
+            to={step.route}
+            className="rounded-xl border border-border bg-background p-4 transition hover:bg-muted"
+          >
+            <span className="flex items-center justify-between gap-3 text-sm font-semibold text-foreground">
+              {step.label}
+              <ArrowRight className="h-4 w-4 shrink-0 text-secondary" />
+            </span>
+            <span className="mt-1 block text-xs text-muted-foreground">{step.description}</span>
+          </Link>
+        ))}
       </div>
     </section>
   );
