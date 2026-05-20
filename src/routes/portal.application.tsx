@@ -47,6 +47,13 @@ import {
   storeBorrowerApplicationSubmission,
   type SubmissionReadinessResponse,
 } from "@/lib/api/borrowerApplicationSubmissionApi";
+import {
+  getProductMatchDisclaimer,
+  getProductMatchStatusCopy,
+  PRODUCT_MATCH_CTA_LABELS,
+  type ProductMatchStatus,
+  type ProductMatchStatusCopy,
+} from "@/lib/productMatching/productMatchCopy";
 
 export const Route = createFileRoute("/portal/application")({
   head: () => ({
@@ -98,22 +105,6 @@ type WorkspaceAction = {
   route: string;
   description: string;
   disabled?: boolean;
-};
-
-type ProductMatchStatus =
-  | "not_ready"
-  | "missing_information"
-  | "advisor_review"
-  | "options_being_prepared"
-  | "options_ready_placeholder"
-  | "lender_review_placeholder";
-
-type ProductMatchStatusConfig = {
-  badge: string;
-  headline: string;
-  body: string;
-  primaryCta: { label: string; route: string } | null;
-  secondaryCta: { label: string; route: string } | null;
 };
 
 const FULL_APPLICATION_ROUTE = "/internal/full-application";
@@ -428,58 +419,28 @@ function productMatchStatusFor(
 function productMatchStatusConfig(
   status: ProductMatchStatus,
   firstOpenRequest?: BorrowerApplicationReviewRequest | null,
-): ProductMatchStatusConfig {
+): ProductMatchStatusCopy {
   const requestedItemRoute = reviewRequestRoute(firstOpenRequest) ?? "/portal/application";
 
-  const configs: Record<ProductMatchStatus, ProductMatchStatusConfig> = {
-    not_ready: {
-      badge: "Not ready",
-      headline: "Product matching will begin after advisor review.",
-      body: "Complete your application, documents, and consents first. Potential mortgage paths are not shown until your file is ready for approvU review.",
-      primaryCta: { label: "Continue Application", route: FULL_APPLICATION_ROUTE },
-      secondaryCta: { label: "View Documents", route: "/portal/documents" },
-    },
-    missing_information: {
-      badge: "Information needed",
-      headline: "More information is needed before matching can continue.",
-      body: "The approvU team needs a few updates before potential mortgage paths can be assessed.",
-      primaryCta: { label: "Review Requested Items", route: requestedItemRoute },
-      secondaryCta: { label: "View Documents", route: "/portal/documents" },
-    },
-    advisor_review: {
-      badge: "Advisor review",
-      headline: "Your application is being reviewed.",
-      body: "The approvU team is reviewing your application details before preparing any product options. Your advisor will confirm next steps.",
-      primaryCta: { label: "View Application Status", route: "/portal/application/review-submit" },
-      secondaryCta: { label: "View Documents", route: "/portal/documents" },
-    },
-    options_being_prepared: {
-      badge: "Preparing options",
-      headline: "Potential mortgage paths are being assessed.",
-      body: "Your advisor is reviewing possible options. These are not approvals, and final terms depend on lender review.",
-      primaryCta: { label: "View Review Status", route: "/portal/application/review-submit" },
-      secondaryCta: null,
-    },
-    options_ready_placeholder: {
-      badge: "Advisor reviewed",
-      headline: "Advisor-reviewed next steps are being prepared.",
-      body: "Potential mortgage paths may be discussed with your advisor. These are not approvals, and final terms depend on lender review.",
-      primaryCta: { label: "View Next Steps", route: "/portal/application/review-submit" },
-      secondaryCta: { label: "View Documents", route: "/portal/documents" },
-    },
-    lender_review_placeholder: {
-      badge: "Lender review",
-      headline: "Your file is in lender review status.",
-      body: "Final terms depend on lender review. Your advisor will confirm next steps as updates become available.",
+  if (status === "not_ready") {
+    return getProductMatchStatusCopy(status, {
       primaryCta: {
-        label: "View Lender Review Status",
-        route: "/portal/application/review-submit",
+        label: PRODUCT_MATCH_CTA_LABELS.continueApplication,
+        route: FULL_APPLICATION_ROUTE,
       },
-      secondaryCta: { label: "View Documents", route: "/portal/documents" },
-    },
-  };
+    });
+  }
 
-  return configs[status];
+  if (status === "missing_information") {
+    return getProductMatchStatusCopy(status, {
+      primaryCta: {
+        label: PRODUCT_MATCH_CTA_LABELS.reviewRequestedItems,
+        route: requestedItemRoute,
+      },
+    });
+  }
+
+  return getProductMatchStatusCopy(status);
 }
 
 const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
@@ -1037,9 +998,7 @@ function ProductMatchStatusCard({
             </div>
             <p className="mt-1 text-base font-semibold text-foreground">{config.headline}</p>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{config.body}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              These are not approvals. Final terms depend on lender review.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
