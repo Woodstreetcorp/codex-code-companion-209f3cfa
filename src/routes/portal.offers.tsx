@@ -25,6 +25,12 @@ import {
   type ProductMatchStatusResponse,
 } from "@/lib/api/borrowerProductMatchStatusApi";
 import {
+  getBorrowerLenderPackagingReadiness,
+  storeBorrowerLenderPackagingReadiness,
+  type LenderPackagingReadinessResponse,
+  type LenderPackagingSummary,
+} from "@/lib/api/borrowerLenderPackagingReadinessApi";
+import {
   getBorrowerProductOptions,
   storeBorrowerProductOptions,
   type BorrowerProductOption,
@@ -249,6 +255,8 @@ function OffersReviewPage() {
     useState<BorrowerProductOptionsResponse | null>(null);
   const [selectedProductsResult, setSelectedProductsResult] =
     useState<BorrowerSelectedProductsResponse | null>(null);
+  const [lenderPackagingReadiness, setLenderPackagingReadiness] =
+    useState<LenderPackagingReadinessResponse | null>(null);
   const [selectingOptionReference, setSelectingOptionReference] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
@@ -264,13 +272,19 @@ function OffersReviewPage() {
       setProductMatchLoading(true);
       setError(null);
       try {
-        const [result, productMatchStatusResult, productOptionsResult, selectedProductsResult] =
-          await Promise.all([
-            getBorrowerOfferReviewStatus(),
-            getBorrowerProductMatchStatus(),
-            getBorrowerProductOptions(),
-            listBorrowerSelectedProducts(),
-          ]);
+        const [
+          result,
+          productMatchStatusResult,
+          productOptionsResult,
+          selectedProductsResult,
+          lenderPackagingReadinessResult,
+        ] = await Promise.all([
+          getBorrowerOfferReviewStatus(),
+          getBorrowerProductMatchStatus(),
+          getBorrowerProductOptions(),
+          listBorrowerSelectedProducts(),
+          getBorrowerLenderPackagingReadiness(),
+        ]);
         if (!active) return;
         storeBorrowerOfferReviewStatus(result);
         setSummary(result);
@@ -280,6 +294,8 @@ function OffersReviewPage() {
         setProductOptionsResult(productOptionsResult);
         storeBorrowerSelectedProducts(selectedProductsResult);
         setSelectedProductsResult(selectedProductsResult);
+        storeBorrowerLenderPackagingReadiness(lenderPackagingReadinessResult);
+        setLenderPackagingReadiness(lenderPackagingReadinessResult);
       } catch (failure) {
         if (!active) return;
         setError(
@@ -327,6 +343,9 @@ function OffersReviewPage() {
     storeBorrowerProductOptions(optionsRefresh);
     setSelectedProductsResult(selectedRefresh);
     setProductOptionsResult(optionsRefresh);
+    const packagingRefresh = await getBorrowerLenderPackagingReadiness();
+    storeBorrowerLenderPackagingReadiness(packagingRefresh);
+    setLenderPackagingReadiness(packagingRefresh);
     setSelectingOptionReference(null);
   }
 
@@ -393,6 +412,8 @@ function OffersReviewPage() {
       .map((product) => selectedProductOptionReference(product))
       .filter((value): value is string => Boolean(value)),
   );
+  const showPackagingGuidance =
+    selectedProducts.length > 0 || lenderPackagingReadiness?.endpoint_available === true;
 
   return (
     <div className="space-y-6">
@@ -444,7 +465,16 @@ function OffersReviewPage() {
         loading={productMatchLoading}
       />
 
+      <PackagingNextStepsOverview hasSelectedProducts={selectedProducts.length > 0} />
+
       {selectedProducts.length > 0 && <SelectedProductPathsSummary products={selectedProducts} />}
+
+      {showPackagingGuidance && (
+        <LenderPackagingReadinessCard
+          readiness={lenderPackagingReadiness}
+          selectedProductsCount={selectedProducts.length}
+        />
+      )}
 
       {selectionNotice && (
         <div className="rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm text-mint-foreground">
@@ -650,6 +680,78 @@ function ProductMatchStatusCard({
             </Link>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function PackagingNextStepsOverview({ hasSelectedProducts }: { hasSelectedProducts: boolean }) {
+  const steps = [
+    {
+      label: "Selected path",
+      body: hasSelectedProducts
+        ? "Your selected path has been saved for advisor review."
+        : "Choose an advisor-reviewed path when one is available.",
+      active: hasSelectedProducts,
+    },
+    {
+      label: "Packaging readiness",
+      body: "approvU checks documents, consents, and requested items before packaging can continue.",
+      active: hasSelectedProducts,
+    },
+    {
+      label: "Advisor review",
+      body: "Your advisor will confirm next steps before any possible lender packaging.",
+      active: false,
+    },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            What happens next
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            From selected path to packaging review
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your selected path is being prepared for advisor review. This is not a lender approval.
+            Final terms depend on lender review. Your advisor will confirm next steps.
+          </p>
+        </div>
+        <Link
+          to="/portal/application"
+          className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          Back to Application
+        </Link>
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <div
+            key={step.label}
+            className={`rounded-xl border p-4 ${
+              step.active ? "border-secondary/30 bg-secondary/5" : "border-border bg-background"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ${
+                  step.active
+                    ? "bg-secondary text-secondary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {index + 1}
+              </span>
+              <p className="text-sm font-semibold text-foreground">{step.label}</p>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{step.body}</p>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -922,6 +1024,126 @@ function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct
   );
 }
 
+function LenderPackagingReadinessCard({
+  readiness,
+  selectedProductsCount,
+}: {
+  readiness: LenderPackagingReadinessResponse | null;
+  selectedProductsCount: number;
+}) {
+  const endpointReady = readiness?.endpoint_available === true && readiness.ok !== false;
+  const isReady = endpointReady && readiness.ready === true;
+  const blockers = endpointReady ? (readiness.blockers?.filter(Boolean) ?? []) : [];
+  const nextStep =
+    endpointReady && readiness.next_step
+      ? readiness.next_step
+      : "Your advisor will confirm next steps.";
+  const selectedCount =
+    endpointReady && typeof readiness.selected_products_count === "number"
+      ? readiness.selected_products_count
+      : selectedProductsCount;
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Lender packaging readiness
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            {isReady ? "Ready for advisor packaging review" : "Packaging review is being prepared"}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your selected path is being prepared for advisor review. This is not a lender approval.
+            Final terms depend on lender review. Your advisor will confirm next steps.
+          </p>
+        </div>
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+            isReady ? "bg-mint/15 text-mint-foreground" : "bg-secondary/10 text-secondary"
+          }`}
+        >
+          {isReady ? "Ready" : "Not ready"}
+        </span>
+      </div>
+
+      <dl className="mt-5 grid gap-3 text-xs md:grid-cols-3">
+        <PackagingFact label="Selected paths" value={String(selectedCount)} />
+        <PackagingFact
+          label="Documents"
+          value={formatPackagingSummary(readiness?.document_summary)}
+        />
+        <PackagingFact
+          label="Consents"
+          value={formatPackagingSummary(readiness?.consent_summary)}
+        />
+      </dl>
+
+      {blockers.length > 0 ? (
+        <div className="mt-5 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-yellow-800">
+            Items to review
+          </p>
+          <ul className="mt-2 grid gap-2 md:grid-cols-2">
+            {blockers.map((blocker) => (
+              <li key={blocker} className="flex items-start gap-2 text-sm text-yellow-800">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>{blocker}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="mt-5 rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm text-mint-foreground">
+          No packaging blockers are showing right now. Your advisor will confirm what happens next.
+        </div>
+      )}
+
+      <p className="mt-4 text-sm text-muted-foreground">{nextStep}</p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {readiness?.disclaimer || getProductMatchDisclaimer()}
+      </p>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <Link
+          to="/portal/documents"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          View Documents
+        </Link>
+        <Link
+          to="/portal/application/review-submit"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          Review Application Status
+        </Link>
+        <Link
+          to="/portal/application"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          Review Requested Items
+        </Link>
+        <Link
+          to="/portal/application/consents"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Complete Consents
+          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function PackagingFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-background px-3 py-2">
+      <dt className="font-semibold text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-foreground">{value}</dd>
+    </div>
+  );
+}
+
 function ProductOptionsPlaceholder({
   status,
   apiStatus,
@@ -1020,6 +1242,24 @@ function selectedProductOptionReference(product: BorrowerSelectedProduct): strin
     typeof product.option_public_reference === "string" ? product.option_public_reference : null,
   ];
   return candidates.find(Boolean) ?? null;
+}
+
+function formatPackagingSummary(summary?: LenderPackagingSummary | null): string {
+  if (!summary) return "Not available";
+
+  const completed = summary.completed ?? summary.ready ?? null;
+  const total = summary.total ?? summary.required ?? null;
+  const pending = summary.pending ?? summary.missing ?? null;
+
+  if (typeof completed === "number" && typeof total === "number") {
+    return `${completed} of ${total} ready`;
+  }
+
+  if (typeof pending === "number") {
+    return pending > 0 ? `${pending} pending` : "No pending items";
+  }
+
+  return "Review in progress";
 }
 
 function formatProductOptionValue(value?: string | null): string | null {
