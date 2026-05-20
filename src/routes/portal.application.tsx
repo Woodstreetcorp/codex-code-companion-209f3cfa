@@ -8,6 +8,7 @@ import {
   FileText,
   Loader2,
   ShieldCheck,
+  Sparkles,
   UploadCloud,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -97,6 +98,22 @@ type WorkspaceAction = {
   route: string;
   description: string;
   disabled?: boolean;
+};
+
+type ProductMatchStatus =
+  | "not_ready"
+  | "missing_information"
+  | "advisor_review"
+  | "options_being_prepared"
+  | "options_ready_placeholder"
+  | "lender_review_placeholder";
+
+type ProductMatchStatusConfig = {
+  badge: string;
+  headline: string;
+  body: string;
+  primaryCta: { label: string; route: string } | null;
+  secondaryCta: { label: string; route: string } | null;
 };
 
 const FULL_APPLICATION_ROUTE = "/internal/full-application";
@@ -382,6 +399,89 @@ function workspaceActionForStatus(
 // Maps backend section keys to the closest existing Lovable route.
 // applicationId "current" is a placeholder — the real application is resolved
 // server-side from the session cookie.
+function productMatchStatusFor(
+  status: ApplicationCycleStatus | null,
+  openRequestCount: number,
+): ProductMatchStatus {
+  if (openRequestCount > 0 || status === "needs_more_information") return "missing_information";
+
+  switch (status) {
+    case "borrower_submitted":
+    case "advisor_review":
+      return "advisor_review";
+    case "ready_for_lender_packaging":
+      return "options_ready_placeholder";
+    case "submitted_to_lender":
+    case "approved":
+    case "declined":
+      return "lender_review_placeholder";
+    case "draft":
+    case "in_progress":
+    case "documents_requested":
+    case "withdrawn":
+    case "closed":
+    default:
+      return "not_ready";
+  }
+}
+
+function productMatchStatusConfig(
+  status: ProductMatchStatus,
+  firstOpenRequest?: BorrowerApplicationReviewRequest | null,
+): ProductMatchStatusConfig {
+  const requestedItemRoute = reviewRequestRoute(firstOpenRequest) ?? "/portal/application";
+
+  const configs: Record<ProductMatchStatus, ProductMatchStatusConfig> = {
+    not_ready: {
+      badge: "Not ready",
+      headline: "Product matching will begin after advisor review.",
+      body: "Complete your application, documents, and consents first. Potential mortgage paths are not shown until your file is ready for approvU review.",
+      primaryCta: { label: "Continue Application", route: FULL_APPLICATION_ROUTE },
+      secondaryCta: { label: "View Documents", route: "/portal/documents" },
+    },
+    missing_information: {
+      badge: "Information needed",
+      headline: "More information is needed before matching can continue.",
+      body: "The approvU team needs a few updates before potential mortgage paths can be assessed.",
+      primaryCta: { label: "Review Requested Items", route: requestedItemRoute },
+      secondaryCta: { label: "View Documents", route: "/portal/documents" },
+    },
+    advisor_review: {
+      badge: "Advisor review",
+      headline: "Your application is being reviewed.",
+      body: "The approvU team is reviewing your application details before preparing any product options. Your advisor will confirm next steps.",
+      primaryCta: { label: "View Application Status", route: "/portal/application/review-submit" },
+      secondaryCta: { label: "View Documents", route: "/portal/documents" },
+    },
+    options_being_prepared: {
+      badge: "Preparing options",
+      headline: "Potential mortgage paths are being assessed.",
+      body: "Your advisor is reviewing possible options. These are not approvals, and final terms depend on lender review.",
+      primaryCta: { label: "View Review Status", route: "/portal/application/review-submit" },
+      secondaryCta: null,
+    },
+    options_ready_placeholder: {
+      badge: "Advisor reviewed",
+      headline: "Advisor-reviewed next steps are being prepared.",
+      body: "Potential mortgage paths may be discussed with your advisor. These are not approvals, and final terms depend on lender review.",
+      primaryCta: { label: "View Next Steps", route: "/portal/application/review-submit" },
+      secondaryCta: { label: "View Documents", route: "/portal/documents" },
+    },
+    lender_review_placeholder: {
+      badge: "Lender review",
+      headline: "Your file is in lender review status.",
+      body: "Final terms depend on lender review. Your advisor will confirm next steps as updates become available.",
+      primaryCta: {
+        label: "View Lender Review Status",
+        route: "/portal/application/review-submit",
+      },
+      secondaryCta: { label: "View Documents", route: "/portal/documents" },
+    },
+  };
+
+  return configs[status];
+}
+
 const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
   borrower_profile: FULL_APPLICATION_ROUTE,
   property: "/applications/current/property-financing/target-property",
@@ -580,6 +680,7 @@ function ApplicationWorkspacePage() {
     primaryAction?.label,
     primaryRoute,
   );
+  const productMatchStatus = productMatchStatusFor(cycleStatus, openRequests.length);
 
   return (
     <div className="space-y-6">
@@ -652,6 +753,8 @@ function ApplicationWorkspacePage() {
       />
 
       <ReviewSubmitWorkspaceCard status={submittedStatus} />
+
+      <ProductMatchStatusCard status={productMatchStatus} firstOpenRequest={firstOpenRequest} />
 
       <div className="grid gap-4 md:grid-cols-3">
         {/* Qualification */}
@@ -904,6 +1007,60 @@ function SubmittedStatusCard({
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Link>
         )}
+      </div>
+    </section>
+  );
+}
+
+function ProductMatchStatusCard({
+  status,
+  firstOpenRequest,
+}: {
+  status: ProductMatchStatus;
+  firstOpenRequest: BorrowerApplicationReviewRequest | null;
+}) {
+  const config = productMatchStatusConfig(status, firstOpenRequest);
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Product match status</h2>
+              <span className="inline-flex rounded-full bg-secondary/10 px-2 py-0.5 text-[11px] font-semibold text-secondary">
+                {config.badge}
+              </span>
+            </div>
+            <p className="mt-1 text-base font-semibold text-foreground">{config.headline}</p>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{config.body}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              These are not approvals. Final terms depend on lender review.
+            </p>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+          {config.secondaryCta && (
+            <Link
+              to={config.secondaryCta.route}
+              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {config.secondaryCta.label}
+            </Link>
+          )}
+          {config.primaryCta && (
+            <Link
+              to={config.primaryCta.route}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              {config.primaryCta.label}
+              <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Link>
+          )}
+        </div>
       </div>
     </section>
   );
