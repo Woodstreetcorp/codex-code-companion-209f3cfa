@@ -97,6 +97,10 @@ const REVIEW_STATUS_CONFIG: Record<string, ReviewConfig> = {
     label: "Ready for Advisor Review",
     chipClass: "bg-mint/15 text-mint-foreground",
   },
+  ready_for_lender_packaging: {
+    label: "Package Being Prepared",
+    chipClass: "bg-secondary/10 text-secondary",
+  },
 };
 
 function reviewStatusConfig(status?: string | null): ReviewConfig {
@@ -200,6 +204,7 @@ function productMatchStatusFor(
 
   if (reviewStatus === "options_pending") return "options_being_prepared";
   if (reviewStatus === "ready_for_advisor_review") return "options_ready_placeholder";
+  if (reviewStatus === "ready_for_lender_packaging") return "options_ready_placeholder";
   if (reviewStatus === "submitted_to_lender" || reviewStatus === "lender_review") {
     return "lender_review_placeholder";
   }
@@ -396,6 +401,9 @@ function OffersReviewPage() {
       : null;
   const productMatchStatus =
     apiProductMatchStatus ?? productMatchStatusFor(reviewStatus?.status, readiness);
+  const packagingInProgress =
+    reviewStatus?.status === "ready_for_lender_packaging" ||
+    lenderPackagingReadiness?.status === "ready_for_lender_packaging";
   const safeProductOptions =
     productOptionsResult?.options?.filter((option) => option?.advisor_reviewed === true) ?? [];
   const productOptionsAvailable =
@@ -455,6 +463,17 @@ function OffersReviewPage() {
         {reviewStatus?.message && (
           <p className="mt-4 text-sm text-muted-foreground">{reviewStatus.message}</p>
         )}
+        {packagingInProgress && (
+          <div className="mt-4 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-3">
+            <p className="text-sm font-semibold text-foreground">
+              Your advisor is preparing your package.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Your selected path is being prepared for advisor review and possible packaging. This
+              is not a lender submission, not a lender approval, and does not include final terms.
+            </p>
+          </div>
+        )}
         <p className="mt-3 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
       </div>
 
@@ -463,9 +482,13 @@ function OffersReviewPage() {
         status={productMatchStatus}
         apiStatus={productMatchResult}
         loading={productMatchLoading}
+        packagingInProgress={packagingInProgress}
       />
 
-      <PackagingNextStepsOverview hasSelectedProducts={selectedProducts.length > 0} />
+      <PackagingNextStepsOverview
+        hasSelectedProducts={selectedProducts.length > 0}
+        packagingInProgress={packagingInProgress}
+      />
 
       {selectedProducts.length > 0 && <SelectedProductPathsSummary products={selectedProducts} />}
 
@@ -473,6 +496,7 @@ function OffersReviewPage() {
         <LenderPackagingReadinessCard
           readiness={lenderPackagingReadiness}
           selectedProductsCount={selectedProducts.length}
+          packagingInProgress={packagingInProgress}
         />
       )}
 
@@ -631,12 +655,28 @@ function ProductMatchStatusCard({
   status,
   apiStatus,
   loading,
+  packagingInProgress,
 }: {
   status: ProductMatchStatus;
   apiStatus: ProductMatchStatusResponse | null;
   loading: boolean;
+  packagingInProgress: boolean;
 }) {
-  const config = productMatchStatusConfig(status);
+  const config = packagingInProgress
+    ? getProductMatchStatusCopy("options_ready_placeholder", {
+        badge: "Package being prepared",
+        headline: "Your advisor is preparing your package.",
+        body: "Your selected path is being prepared for advisor review and possible packaging. This is not a lender submission, not a lender approval, and final terms depend on lender review.",
+        primaryCta: {
+          label: PRODUCT_MATCH_CTA_LABELS.viewApplicationStatus,
+          route: "/portal/application/review-submit",
+        },
+        secondaryCta: {
+          label: PRODUCT_MATCH_CTA_LABELS.viewDocuments,
+          route: "/portal/documents",
+        },
+      })
+    : productMatchStatusConfig(status);
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -685,7 +725,13 @@ function ProductMatchStatusCard({
   );
 }
 
-function PackagingNextStepsOverview({ hasSelectedProducts }: { hasSelectedProducts: boolean }) {
+function PackagingNextStepsOverview({
+  hasSelectedProducts,
+  packagingInProgress,
+}: {
+  hasSelectedProducts: boolean;
+  packagingInProgress: boolean;
+}) {
   const steps = [
     {
       label: "Selected path",
@@ -696,13 +742,15 @@ function PackagingNextStepsOverview({ hasSelectedProducts }: { hasSelectedProduc
     },
     {
       label: "Packaging readiness",
-      body: "approvU checks documents, consents, and requested items before packaging can continue.",
-      active: hasSelectedProducts,
+      body: packagingInProgress
+        ? "Your advisor is preparing your package and confirming readiness before any possible lender step."
+        : "approvU checks documents, consents, and requested items before packaging can continue.",
+      active: hasSelectedProducts || packagingInProgress,
     },
     {
       label: "Advisor review",
       body: "Your advisor will confirm next steps before any possible lender packaging.",
-      active: false,
+      active: packagingInProgress,
     },
   ];
 
@@ -717,8 +765,9 @@ function PackagingNextStepsOverview({ hasSelectedProducts }: { hasSelectedProduc
             From selected path to packaging review
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your selected path is being prepared for advisor review. This is not a lender approval.
-            Final terms depend on lender review. Your advisor will confirm next steps.
+            {packagingInProgress
+              ? "Your advisor is preparing your package from the selected path and confirming the next steps. This is not a lender submission or lender approval. Final terms depend on lender review."
+              : "Your selected path is being prepared for advisor review. This is not a lender approval. Final terms depend on lender review. Your advisor will confirm next steps."}
           </p>
         </div>
         <Link
@@ -788,8 +837,8 @@ function ProductOptionsList({
           </p>
         </div>
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 lg:max-w-xs">
-          Lender names, rates, match scores, product IDs, selected products, and approval decisions
-          are intentionally hidden.
+          Lender names, rates, match scores, product IDs, and approval decisions are intentionally
+          hidden.
         </div>
       </div>
 
@@ -1027,9 +1076,11 @@ function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct
 function LenderPackagingReadinessCard({
   readiness,
   selectedProductsCount,
+  packagingInProgress,
 }: {
   readiness: LenderPackagingReadinessResponse | null;
   selectedProductsCount: number;
+  packagingInProgress: boolean;
 }) {
   const endpointReady = readiness?.endpoint_available === true && readiness.ok !== false;
   const isReady = endpointReady && readiness.ready === true;
@@ -1051,11 +1102,16 @@ function LenderPackagingReadinessCard({
             Lender packaging readiness
           </p>
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
-            {isReady ? "Ready for advisor packaging review" : "Packaging review is being prepared"}
+            {packagingInProgress
+              ? "Your advisor is preparing your package"
+              : isReady
+                ? "Ready for advisor packaging review"
+                : "Packaging review is being prepared"}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your selected path is being prepared for advisor review. This is not a lender approval.
-            Final terms depend on lender review. Your advisor will confirm next steps.
+            {packagingInProgress
+              ? "Your selected path is being prepared for advisor review and possible packaging. This is not a lender submission, not a lender approval, and final terms depend on lender review."
+              : "Your selected path is being prepared for advisor review. This is not a lender approval. Final terms depend on lender review. Your advisor will confirm next steps."}
           </p>
         </div>
         <span
@@ -1102,6 +1158,10 @@ function LenderPackagingReadinessCard({
       <p className="mt-4 text-sm text-muted-foreground">{nextStep}</p>
       <p className="mt-2 text-xs text-muted-foreground">
         {readiness?.disclaimer || getProductMatchDisclaimer()}
+      </p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        No lender submission has been completed from this screen. Your advisor will confirm before
+        any possible lender packaging or review step.
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
@@ -1206,8 +1266,8 @@ function ProductOptionsPlaceholder({
           <ProductMatchSafeFacts apiStatus={apiStatus} />
         </div>
         <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 lg:max-w-xs">
-          No product cards, lender names, rates, match scores, selected products, or approval
-          decisions are shown in this placeholder.
+          No lender names, rates, match scores, unsafe product details, or approval decisions are
+          shown in this placeholder.
         </div>
       </div>
 
