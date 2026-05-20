@@ -28,6 +28,9 @@ export type ProductMatchStatusResponse = {
   endpoint_available?: boolean;
   application_public_reference?: string | null;
   status?: ProductMatchStatus | null;
+  borrower_visible_count?: number | null;
+  advisor_reviewed_count?: number | null;
+  last_matched_at?: string | null;
   readiness?: ProductMatchReadiness | null;
   next_step?: ProductMatchNextStep | string | null;
   message?: string | null;

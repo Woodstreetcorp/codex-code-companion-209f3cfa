@@ -48,6 +48,11 @@ import {
   type SubmissionReadinessResponse,
 } from "@/lib/api/borrowerApplicationSubmissionApi";
 import {
+  getBorrowerProductMatchStatus,
+  storeBorrowerProductMatchStatus,
+  type ProductMatchStatusResponse,
+} from "@/lib/api/borrowerProductMatchStatusApi";
+import {
   getProductMatchDisclaimer,
   getProductMatchStatusCopy,
   PRODUCT_MATCH_CTA_LABELS,
@@ -462,6 +467,10 @@ function ApplicationWorkspacePage() {
   const [reviewRequests, setReviewRequests] = useState<ReviewRequestsResponse | null>(null);
   const [reviewRequestsError, setReviewRequestsError] = useState<string | null>(null);
   const [responseSentNotice, setResponseSentNotice] = useState<string | null>(null);
+  const [productMatchResult, setProductMatchResult] = useState<ProductMatchStatusResponse | null>(
+    null,
+  );
+  const [productMatchLoading, setProductMatchLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -563,6 +572,25 @@ function ApplicationWorkspacePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadProductMatchStatus() {
+      setProductMatchLoading(true);
+      const result = await getBorrowerProductMatchStatus();
+      if (!active) return;
+      storeBorrowerProductMatchStatus(result);
+      setProductMatchResult(result);
+      setProductMatchLoading(false);
+    }
+
+    void loadProductMatchStatus();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   if (loading) {
     return (
       <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
@@ -641,7 +669,13 @@ function ApplicationWorkspacePage() {
     primaryAction?.label,
     primaryRoute,
   );
-  const productMatchStatus = productMatchStatusFor(cycleStatus, openRequests.length);
+  const derivedProductMatchStatus = productMatchStatusFor(cycleStatus, openRequests.length);
+  const productMatchStatus =
+    productMatchResult?.endpoint_available &&
+    productMatchResult.ok !== false &&
+    productMatchResult.status
+      ? productMatchResult.status
+      : derivedProductMatchStatus;
 
   return (
     <div className="space-y-6">
@@ -715,7 +749,12 @@ function ApplicationWorkspacePage() {
 
       <ReviewSubmitWorkspaceCard status={submittedStatus} />
 
-      <ProductMatchStatusCard status={productMatchStatus} firstOpenRequest={firstOpenRequest} />
+      <ProductMatchStatusCard
+        status={productMatchStatus}
+        firstOpenRequest={firstOpenRequest}
+        apiStatus={productMatchResult}
+        loading={productMatchLoading}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         {/* Qualification */}
@@ -976,9 +1015,13 @@ function SubmittedStatusCard({
 function ProductMatchStatusCard({
   status,
   firstOpenRequest,
+  apiStatus,
+  loading,
 }: {
   status: ProductMatchStatus;
   firstOpenRequest: BorrowerApplicationReviewRequest | null;
+  apiStatus: ProductMatchStatusResponse | null;
+  loading: boolean;
 }) {
   const config = productMatchStatusConfig(status, firstOpenRequest);
 
@@ -998,6 +1041,10 @@ function ProductMatchStatusCard({
             </div>
             <p className="mt-1 text-base font-semibold text-foreground">{config.headline}</p>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{config.body}</p>
+            {loading && (
+              <p className="mt-2 text-xs text-muted-foreground">Checking product match status...</p>
+            )}
+            <ProductMatchSafeFacts apiStatus={apiStatus} />
             <p className="mt-2 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
           </div>
         </div>
@@ -1022,6 +1069,42 @@ function ProductMatchStatusCard({
         </div>
       </div>
     </section>
+  );
+}
+
+function ProductMatchSafeFacts({ apiStatus }: { apiStatus: ProductMatchStatusResponse | null }) {
+  const facts = [
+    {
+      label: "Visible options",
+      value:
+        typeof apiStatus?.borrower_visible_count === "number"
+          ? String(apiStatus.borrower_visible_count)
+          : null,
+    },
+    {
+      label: "Advisor-reviewed options",
+      value:
+        typeof apiStatus?.advisor_reviewed_count === "number"
+          ? String(apiStatus.advisor_reviewed_count)
+          : null,
+    },
+    {
+      label: "Last status update",
+      value: apiStatus?.last_matched_at ? formatDate(apiStatus.last_matched_at) : null,
+    },
+  ].filter((fact) => fact.value);
+
+  if (!apiStatus?.endpoint_available || facts.length === 0) return null;
+
+  return (
+    <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+      {facts.map((fact) => (
+        <div key={fact.label} className="rounded-lg border border-border bg-background px-3 py-2">
+          <dt className="font-semibold text-muted-foreground">{fact.label}</dt>
+          <dd className="mt-0.5 text-foreground">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
