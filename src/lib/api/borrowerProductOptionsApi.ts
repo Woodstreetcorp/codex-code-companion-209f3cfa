@@ -1,6 +1,7 @@
 import { buildApiUrl, fetchWithLaravelSession } from "./laravelSession";
 
 export type BorrowerProductOption = {
+  public_reference?: string | null;
   option_label?: string | null;
   product_category?: string | null;
   product_class_label?: string | null;

@@ -31,6 +31,13 @@ import {
   type BorrowerProductOptionsResponse,
 } from "@/lib/api/borrowerProductOptionsApi";
 import {
+  listBorrowerSelectedProducts,
+  selectBorrowerProductOption,
+  storeBorrowerSelectedProducts,
+  type BorrowerSelectedProduct,
+  type BorrowerSelectedProductsResponse,
+} from "@/lib/api/borrowerSelectedProductsApi";
+import {
   getProductMatchDisclaimer,
   getProductMatchStatusCopy,
   PRODUCT_MATCH_CTA_LABELS,
@@ -240,6 +247,11 @@ function OffersReviewPage() {
   );
   const [productOptionsResult, setProductOptionsResult] =
     useState<BorrowerProductOptionsResponse | null>(null);
+  const [selectedProductsResult, setSelectedProductsResult] =
+    useState<BorrowerSelectedProductsResponse | null>(null);
+  const [selectingOptionReference, setSelectingOptionReference] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
   const [productMatchLoading, setProductMatchLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -252,11 +264,13 @@ function OffersReviewPage() {
       setProductMatchLoading(true);
       setError(null);
       try {
-        const [result, productMatchStatusResult, productOptionsResult] = await Promise.all([
-          getBorrowerOfferReviewStatus(),
-          getBorrowerProductMatchStatus(),
-          getBorrowerProductOptions(),
-        ]);
+        const [result, productMatchStatusResult, productOptionsResult, selectedProductsResult] =
+          await Promise.all([
+            getBorrowerOfferReviewStatus(),
+            getBorrowerProductMatchStatus(),
+            getBorrowerProductOptions(),
+            listBorrowerSelectedProducts(),
+          ]);
         if (!active) return;
         storeBorrowerOfferReviewStatus(result);
         setSummary(result);
@@ -264,6 +278,8 @@ function OffersReviewPage() {
         setProductMatchResult(productMatchStatusResult);
         storeBorrowerProductOptions(productOptionsResult);
         setProductOptionsResult(productOptionsResult);
+        storeBorrowerSelectedProducts(selectedProductsResult);
+        setSelectedProductsResult(selectedProductsResult);
       } catch (failure) {
         if (!active) return;
         setError(
@@ -285,6 +301,34 @@ function OffersReviewPage() {
       active = false;
     };
   }, []);
+
+  async function handleSelectProductOption(publicReference: string) {
+    setSelectingOptionReference(publicReference);
+    setSelectionError(null);
+    setSelectionNotice(null);
+
+    const selectionResult = await selectBorrowerProductOption(publicReference);
+
+    if (!selectionResult.endpoint_available || selectionResult.ok === false) {
+      setSelectionError("We could not select this path right now. Please try again.");
+      setSelectingOptionReference(null);
+      return;
+    }
+
+    storeBorrowerSelectedProducts(selectionResult);
+    setSelectedProductsResult(selectionResult);
+    setSelectionNotice("This path was selected for advisor review. This is not a lender approval.");
+
+    const [selectedRefresh, optionsRefresh] = await Promise.all([
+      listBorrowerSelectedProducts(),
+      getBorrowerProductOptions(),
+    ]);
+    storeBorrowerSelectedProducts(selectedRefresh);
+    storeBorrowerProductOptions(optionsRefresh);
+    setSelectedProductsResult(selectedRefresh);
+    setProductOptionsResult(optionsRefresh);
+    setSelectingOptionReference(null);
+  }
 
   if (loading) {
     return (
@@ -340,6 +384,15 @@ function OffersReviewPage() {
     productOptionsResult.ok !== false &&
     productOptionsResult.options_available === true &&
     safeProductOptions.length > 0;
+  const selectedProducts =
+    selectedProductsResult?.endpoint_available === true && selectedProductsResult.ok !== false
+      ? (selectedProductsResult.selected_products?.filter(Boolean) ?? [])
+      : [];
+  const selectedOptionReferences = new Set(
+    selectedProducts
+      .map((product) => selectedProductOptionReference(product))
+      .filter((value): value is string => Boolean(value)),
+  );
 
   return (
     <div className="space-y-6">
@@ -391,8 +444,27 @@ function OffersReviewPage() {
         loading={productMatchLoading}
       />
 
+      {selectedProducts.length > 0 && <SelectedProductPathsSummary products={selectedProducts} />}
+
+      {selectionNotice && (
+        <div className="rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm text-mint-foreground">
+          {selectionNotice}
+        </div>
+      )}
+
+      {selectionError && (
+        <div className="rounded-xl border border-coral/20 bg-coral/10 px-4 py-3 text-sm text-coral">
+          {selectionError}
+        </div>
+      )}
+
       {productOptionsAvailable ? (
-        <ProductOptionsList options={safeProductOptions} />
+        <ProductOptionsList
+          options={safeProductOptions}
+          selectedOptionReferences={selectedOptionReferences}
+          selectingOptionReference={selectingOptionReference}
+          onSelect={handleSelectProductOption}
+        />
       ) : (
         <ProductOptionsPlaceholder status={productMatchStatus} apiStatus={productMatchResult} />
       )}
@@ -583,7 +655,17 @@ function ProductMatchStatusCard({
   );
 }
 
-function ProductOptionsList({ options }: { options: BorrowerProductOption[] }) {
+function ProductOptionsList({
+  options,
+  selectedOptionReferences,
+  selectingOptionReference,
+  onSelect,
+}: {
+  options: BorrowerProductOption[];
+  selectedOptionReferences: Set<string>;
+  selectingOptionReference: string | null;
+  onSelect: (publicReference: string) => void;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -614,6 +696,12 @@ function ProductOptionsList({ options }: { options: BorrowerProductOption[] }) {
           <ProductOptionCard
             key={[option.option_label, option.path_label, option.created_at, index].join("-")}
             option={option}
+            isSelected={
+              Boolean(option.public_reference) &&
+              selectedOptionReferences.has(option.public_reference ?? "")
+            }
+            isSelecting={selectingOptionReference === option.public_reference}
+            onSelect={onSelect}
           />
         ))}
       </div>
@@ -621,7 +709,17 @@ function ProductOptionsList({ options }: { options: BorrowerProductOption[] }) {
   );
 }
 
-function ProductOptionCard({ option }: { option: BorrowerProductOption }) {
+function ProductOptionCard({
+  option,
+  isSelected,
+  isSelecting,
+  onSelect,
+}: {
+  option: BorrowerProductOption;
+  isSelected: boolean;
+  isSelecting: boolean;
+  onSelect: (publicReference: string) => void;
+}) {
   const notes = productOptionTextList(option.notes);
   const documentsNeeded = option.documents_needed?.filter(Boolean) ?? [];
   const details = [
@@ -695,6 +793,10 @@ function ProductOptionCard({ option }: { option: BorrowerProductOption }) {
       <p className="mt-4 text-xs text-muted-foreground">
         {option.disclaimer || getProductMatchDisclaimer()}
       </p>
+      <p className="mt-2 text-xs text-muted-foreground">
+        This selection tells the approvU team which path you want reviewed for packaging. This is
+        not a lender approval. Final terms depend on lender review.
+      </p>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
@@ -711,12 +813,111 @@ function ProductOptionCard({ option }: { option: BorrowerProductOption }) {
         </Link>
         <Link
           to="/portal/application"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
         >
           Review Requested Items
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Link>
+        {option.public_reference ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (option.public_reference) onSelect(option.public_reference);
+            }}
+            disabled={isSelected || isSelecting}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+          >
+            {isSelected
+              ? "Selected for advisor review"
+              : isSelecting
+                ? "Selecting..."
+                : "Select this path for advisor review"}
+          </button>
+        ) : (
+          <span className="inline-flex h-9 items-center justify-center rounded-md bg-muted px-3 text-xs font-semibold text-muted-foreground">
+            Selection unavailable
+          </span>
+        )}
       </div>
+    </article>
+  );
+}
+
+function SelectedProductPathsSummary({ products }: { products: BorrowerSelectedProduct[] }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Selected paths
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            Paths selected for advisor review
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+            These selections tell the approvU team which paths you want reviewed for packaging. They
+            are not lender approvals, and final terms depend on lender review.
+          </p>
+        </div>
+        <span className="inline-flex rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
+          {products.length} selected
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
+        {products.map((product, index) => (
+          <SelectedProductPathCard
+            key={[product.option_label, product.path_label, product.selected_at, index].join("-")}
+            product={product}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct }) {
+  const details = [
+    { label: "Category", value: formatProductOptionValue(product.product_category) },
+    { label: "Class", value: product.product_class_label },
+    { label: "Path", value: product.path_label },
+    { label: "Status", value: formatProductOptionValue(product.selection_status) },
+    {
+      label: "Selected",
+      value: product.selected_at ? formatProductMatchDate(product.selected_at) : null,
+    },
+  ].filter((detail) => detail.value);
+
+  return (
+    <article className="rounded-xl border border-border bg-background p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Selected mortgage path
+          </p>
+          <h3 className="mt-1 text-base font-semibold text-foreground">
+            {product.option_label || "Selected mortgage path"}
+          </h3>
+        </div>
+        <span className="inline-flex rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
+          Selected
+        </span>
+      </div>
+
+      {details.length > 0 && (
+        <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+          {details.map((detail) => (
+            <div key={detail.label} className="rounded-lg border border-border bg-card px-3 py-2">
+              <dt className="font-semibold text-muted-foreground">{detail.label}</dt>
+              <dd className="mt-0.5 text-foreground">{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        {product.disclaimer || getProductMatchDisclaimer()}
+      </p>
     </article>
   );
 }
@@ -811,6 +1012,14 @@ function productOptionTextList(value: BorrowerProductOption["notes"]): string[] 
   if (Array.isArray(value)) return value.filter(Boolean);
   if (typeof value === "string" && value.trim()) return [value.trim()];
   return [];
+}
+
+function selectedProductOptionReference(product: BorrowerSelectedProduct): string | null {
+  const candidates = [
+    product.product_option_public_reference,
+    typeof product.option_public_reference === "string" ? product.option_public_reference : null,
+  ];
+  return candidates.find(Boolean) ?? null;
 }
 
 function formatProductOptionValue(value?: string | null): string | null {
