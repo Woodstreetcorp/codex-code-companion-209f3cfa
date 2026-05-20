@@ -25,6 +25,12 @@ import {
   type ProductMatchStatusResponse,
 } from "@/lib/api/borrowerProductMatchStatusApi";
 import {
+  getBorrowerProductOptions,
+  storeBorrowerProductOptions,
+  type BorrowerProductOption,
+  type BorrowerProductOptionsResponse,
+} from "@/lib/api/borrowerProductOptionsApi";
+import {
   getProductMatchDisclaimer,
   getProductMatchStatusCopy,
   PRODUCT_MATCH_CTA_LABELS,
@@ -232,6 +238,8 @@ function OffersReviewPage() {
   const [productMatchResult, setProductMatchResult] = useState<ProductMatchStatusResponse | null>(
     null,
   );
+  const [productOptionsResult, setProductOptionsResult] =
+    useState<BorrowerProductOptionsResponse | null>(null);
   const [productMatchLoading, setProductMatchLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -244,15 +252,18 @@ function OffersReviewPage() {
       setProductMatchLoading(true);
       setError(null);
       try {
-        const [result, productMatchStatusResult] = await Promise.all([
+        const [result, productMatchStatusResult, productOptionsResult] = await Promise.all([
           getBorrowerOfferReviewStatus(),
           getBorrowerProductMatchStatus(),
+          getBorrowerProductOptions(),
         ]);
         if (!active) return;
         storeBorrowerOfferReviewStatus(result);
         setSummary(result);
         storeBorrowerProductMatchStatus(productMatchStatusResult);
         setProductMatchResult(productMatchStatusResult);
+        storeBorrowerProductOptions(productOptionsResult);
+        setProductOptionsResult(productOptionsResult);
       } catch (failure) {
         if (!active) return;
         setError(
@@ -322,6 +333,13 @@ function OffersReviewPage() {
       : null;
   const productMatchStatus =
     apiProductMatchStatus ?? productMatchStatusFor(reviewStatus?.status, readiness);
+  const safeProductOptions =
+    productOptionsResult?.options?.filter((option) => option?.advisor_reviewed === true) ?? [];
+  const productOptionsAvailable =
+    productOptionsResult?.endpoint_available === true &&
+    productOptionsResult.ok !== false &&
+    productOptionsResult.options_available === true &&
+    safeProductOptions.length > 0;
 
   return (
     <div className="space-y-6">
@@ -373,7 +391,11 @@ function OffersReviewPage() {
         loading={productMatchLoading}
       />
 
-      <ProductOptionsPlaceholder status={productMatchStatus} apiStatus={productMatchResult} />
+      {productOptionsAvailable ? (
+        <ProductOptionsList options={safeProductOptions} />
+      ) : (
+        <ProductOptionsPlaceholder status={productMatchStatus} apiStatus={productMatchResult} />
+      )}
 
       {/* ── Readiness checklist ───────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
@@ -561,6 +583,144 @@ function ProductMatchStatusCard({
   );
 }
 
+function ProductOptionsList({ options }: { options: BorrowerProductOption[] }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Product options
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            Advisor-reviewed mortgage paths
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            These possible paths have been reviewed for borrower display by approvU. These are not
+            approvals. Final terms depend on lender review, and your advisor will confirm next
+            steps.
+          </p>
+          <p className="mt-3 text-xs font-medium text-muted-foreground">
+            {getProductMatchDisclaimer()}
+          </p>
+        </div>
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-xs text-yellow-800 lg:max-w-xs">
+          Lender names, rates, match scores, product IDs, selected products, and approval decisions
+          are intentionally hidden.
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        {options.map((option, index) => (
+          <ProductOptionCard
+            key={[option.option_label, option.path_label, option.created_at, index].join("-")}
+            option={option}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProductOptionCard({ option }: { option: BorrowerProductOption }) {
+  const notes = productOptionTextList(option.notes);
+  const documentsNeeded = option.documents_needed?.filter(Boolean) ?? [];
+  const details = [
+    { label: "Category", value: formatProductOptionValue(option.product_category) },
+    { label: "Class", value: option.product_class_label },
+    { label: "Path", value: option.path_label },
+    {
+      label: "Created",
+      value: option.created_at ? formatProductMatchDate(option.created_at) : null,
+    },
+  ].filter((detail) => detail.value);
+
+  return (
+    <article className="rounded-xl border border-border bg-background p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Advisor-reviewed mortgage path
+          </p>
+          <h3 className="mt-1 text-base font-semibold text-foreground">
+            {option.option_label || "Advisor-reviewed mortgage path"}
+          </h3>
+        </div>
+        <span className="inline-flex rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
+          Advisor reviewed
+        </span>
+      </div>
+
+      {details.length > 0 && (
+        <dl className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+          {details.map((detail) => (
+            <div key={detail.label} className="rounded-lg border border-border bg-card px-3 py-2">
+              <dt className="font-semibold text-muted-foreground">{detail.label}</dt>
+              <dd className="mt-0.5 text-foreground">{detail.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {notes.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Notes
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {notes.map((note) => (
+              <li key={note} className="text-sm text-muted-foreground">
+                {note}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {documentsNeeded.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Documents needed
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {documentsNeeded.map((document) => (
+              <li key={document} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-secondary" />
+                {document}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        {option.disclaimer || getProductMatchDisclaimer()}
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          to="/portal/documents"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          View Documents
+        </Link>
+        <Link
+          to="/portal/application/review-submit"
+          className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted"
+        >
+          View Application Status
+        </Link>
+        <Link
+          to="/portal/application"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Review Requested Items
+          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+        </Link>
+      </div>
+    </article>
+  );
+}
+
 function ProductOptionsPlaceholder({
   status,
   apiStatus,
@@ -645,6 +805,21 @@ function ProductOptionsPlaceholder({
       </div>
     </section>
   );
+}
+
+function productOptionTextList(value: BorrowerProductOption["notes"]): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+}
+
+function formatProductOptionValue(value?: string | null): string | null {
+  if (!value) return null;
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function ProductMatchSafeFacts({ apiStatus }: { apiStatus: ProductMatchStatusResponse | null }) {
