@@ -291,20 +291,21 @@ export function MortgageSnapshot({
 }
 
 function ServerSnapshotSummary({ snapshot }: { snapshot: BorrowerMortgageSnapshot }) {
-  const pathLabel = {
-    prime: "Prime path",
-    alternative: "Alternative path",
-    manual_review: "Tailored review",
-  }[snapshot.preliminary_lending_path ?? ""] ?? "Tailored review";
+  const pathLabel =
+    {
+      prime: "Prime path",
+      alternative: "Alternative path",
+      manual_review: "Tailored review",
+    }[snapshot.preliminary_lending_path ?? ""] ?? "Tailored review";
 
-  const readinessLabel = {
-    ready_to_review: "Ready for review",
-    needs_more_information: "Needs more information",
-    not_enough_data: "Not enough data",
-  }[snapshot.readiness_status ?? ""] ?? "Needs review";
+  const readinessLabel =
+    {
+      ready_to_review: "Ready for review",
+      needs_more_information: "Needs more information",
+      not_enough_data: "Not enough data",
+    }[snapshot.readiness_status ?? ""] ?? "Needs review";
 
-  const propertyValue =
-    snapshot.property_value ?? snapshot.target_property_value ?? undefined;
+  const propertyValue = snapshot.property_value ?? snapshot.target_property_value ?? undefined;
   const location = [snapshot.city, snapshot.province].filter(Boolean).join(", ");
 
   return (
@@ -360,7 +361,10 @@ function ServerSnapshotSummary({ snapshot }: { snapshot: BorrowerMortgageSnapsho
           <p className="text-sm font-semibold text-foreground">Missing information</p>
           <ul className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
             {snapshot.missing_items.map((item) => (
-              <li key={item} className="rounded-full border border-yellow/40 bg-background px-3 py-1">
+              <li
+                key={item}
+                className="rounded-full border border-yellow/40 bg-background px-3 py-1"
+              >
                 {item.replace(/_/g, " ")}
               </li>
             ))}
@@ -370,7 +374,10 @@ function ServerSnapshotSummary({ snapshot }: { snapshot: BorrowerMortgageSnapsho
 
       {snapshot.next_step && (
         <p className="mt-4 text-sm text-muted-foreground">
-          Next step: <span className="font-medium text-foreground">{snapshot.next_step.replace(/_/g, " ")}</span>
+          Next step:{" "}
+          <span className="font-medium text-foreground">
+            {snapshot.next_step.replace(/_/g, " ")}
+          </span>
         </p>
       )}
       {snapshot.disclaimer && (
@@ -421,8 +428,7 @@ function PurchaseSnapshot({
   const score = getCreditScore(answers);
   const path = getLendingPath(answers);
   const baseCategory = getMortgageCategory(flowKey, answers);
-  const category: MortgageCategory =
-    path === "Alternative Fit" ? "Confirming" : baseCategory;
+  const category: MortgageCategory = path === "Alternative Fit" ? "Confirming" : baseCategory;
   const primeSubtype = classifyPrimeSubtype({
     credit_score: score,
     income_type: answers.income as string | undefined,
@@ -430,9 +436,7 @@ function PurchaseSnapshot({
     meets_minimum_dp: true,
   });
   const altResult =
-    path === "Alternative Fit"
-      ? classifyAlternative(buildAlternativeInput(answers))
-      : null;
+    path === "Alternative Fit" ? classifyAlternative(buildAlternativeInput(answers)) : null;
   const creditPosition = getCreditPosition(score);
   const incomeProfile = getIncomeProfile(answers);
   const nextStep = getNextStep(path);
@@ -638,10 +642,7 @@ function PurchaseHero({
           </p>
 
           <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
-            <HeroStat
-              label={isPre ? "Target price" : "Purchase price"}
-              value={formatCAD(price)}
-            />
+            <HeroStat label={isPre ? "Target price" : "Purchase price"} value={formatCAD(price)} />
             <HeroStat
               label={isPre ? "Saved down" : "Down payment"}
               value={down ? formatCAD(down) : "—"}
@@ -689,7 +690,8 @@ function PurchaseHero({
         <p className="text-sm leading-relaxed text-foreground">{interpretation}</p>
         {primeSubtype && (
           <p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground/80">
-            Internal classification: {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
+            Internal classification:{" "}
+            {primeSubtype === "PRIME_PLUS" ? "Prime-Plus" : "Standard-Prime"}
           </p>
         )}
         {altResult && altResult.alternative_class && (
@@ -727,9 +729,11 @@ function RefinanceSnapshot({
   onEdit: () => void;
 }) {
   const value = parseCurrency(answers.value as string);
-  const mortgages = (Array.isArray(answers.mortgages)
-    ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
-    : []) as MortgageEntry[];
+  const mortgages = (
+    Array.isArray(answers.mortgages)
+      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+      : []
+  ) as MortgageEntry[];
   const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
   const cashOut = parseCurrency(answers.cashAmount as string);
   const requested = balance + cashOut;
@@ -744,10 +748,7 @@ function RefinanceSnapshot({
   const requestCard = (
     <Card title="Your Refinance Request" icon={<FileText className="h-4 w-4" />}>
       <Row label="Property Value" value={value ? formatCAD(value) : "—"} />
-      <Row
-        label="Existing Mortgage Balance(s)"
-        value={balance ? formatCAD(balance) : "—"}
-      />
+      <Row label="Existing Mortgage Balance(s)" value={balance ? formatCAD(balance) : "—"} />
       <Row label="Cash-Out Requested" value={cashOut ? formatCAD(cashOut) : "—"} />
       <Row
         label="Total New Loan Requested"
@@ -755,10 +756,7 @@ function RefinanceSnapshot({
         emphasis
       />
       <Row label="Property Use" value={prettifyUse(answers.use as string)} />
-      <Row
-        label="Property Type"
-        value={prettifyType(answers.propertyType as string)}
-      />
+      <Row label="Property Type" value={prettifyType(answers.propertyType as string)} />
       <Row label="Program Lane" value="Uninsurable" />
       <Row
         label="Refinance Status"
@@ -771,8 +769,8 @@ function RefinanceSnapshot({
         }
       />
       <p className="mt-3 rounded-lg bg-secondary/5 p-3 text-xs text-muted-foreground">
-        The total new loan requested includes your existing mortgage balance(s) plus any
-        additional cash-out requested.
+        The total new loan requested includes your existing mortgage balance(s) plus any additional
+        cash-out requested.
       </p>
     </Card>
   );
@@ -781,14 +779,8 @@ function RefinanceSnapshot({
     <Card title="Your Equity Position" icon={<TrendingUp className="h-4 w-4" />}>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric label="Property Value" value={value ? formatCAD(value) : "—"} />
-        <Metric
-          label="Max @ 80% LTV"
-          value={value ? formatCAD(maxAllowed) : "—"}
-        />
-        <Metric
-          label="Requested Loan"
-          value={requested ? formatCAD(requested) : "—"}
-        />
+        <Metric label="Max @ 80% LTV" value={value ? formatCAD(maxAllowed) : "—"} />
+        <Metric label="Requested Loan" value={requested ? formatCAD(requested) : "—"} />
         <Metric label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
       </div>
       <div className="mt-5">
@@ -805,9 +797,9 @@ function RefinanceSnapshot({
         </Pill>
       </div>
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-        In many refinance scenarios, lenders review the total mortgage balance against the
-        property value. If the requested loan amount is above the typical maximum, the
-        request may need to be adjusted or reviewed more closely.
+        In many refinance scenarios, lenders review the total mortgage balance against the property
+        value. If the requested loan amount is above the typical maximum, the request may need to be
+        adjusted or reviewed more closely.
       </p>
     </Card>
   );
@@ -817,10 +809,9 @@ function RefinanceSnapshot({
       {withinLimit ? (
         <>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Based on your property value and current mortgage balances, your refinance
-            request appears to fit within the estimated loan-to-value range. Final options
-            are still subject to lender review, income qualification, and supporting
-            documents.
+            Based on your property value and current mortgage balances, your refinance request
+            appears to fit within the estimated loan-to-value range. Final options are still subject
+            to lender review, income qualification, and supporting documents.
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             {[
@@ -838,10 +829,10 @@ function RefinanceSnapshot({
       ) : (
         <>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Your requested refinance amount appears to be above the estimated maximum loan
-            amount for this property. This does not mean there are no options. It means the
-            cash-out request, property value, mortgage balance, or refinance structure may
-            need a closer review.
+            Your requested refinance amount appears to be above the estimated maximum loan amount
+            for this property. This does not mean there are no options. It means the cash-out
+            request, property value, mortgage balance, or refinance structure may need a closer
+            review.
           </p>
           <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
             {[
@@ -888,10 +879,7 @@ function RefinanceSnapshot({
       </ul>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <MiniStat label="Available equity" value={value ? formatCAD(availableEquity) : "—"} />
-        <MiniStat
-          label="Max standard refinance"
-          value={value ? formatCAD(maxAllowed) : "—"}
-        />
+        <MiniStat label="Max standard refinance" value={value ? formatCAD(maxAllowed) : "—"} />
         <MiniStat
           label="Requested loan"
           value={requested ? formatCAD(requested) : "—"}
@@ -901,9 +889,7 @@ function RefinanceSnapshot({
     </Card>
   );
 
-  const reviewCard = (
-    <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />
-  );
+  const reviewCard = <ReviewAnswers visible={visible} answers={answers} onEdit={onEdit} />;
 
   return (
     <SnapshotShell
@@ -1089,10 +1075,10 @@ function HeroStat({
 }) {
   return (
     <div className="min-w-0 rounded-lg border border-border/60 bg-background/60 p-2.5">
-      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className={`mt-0.5 truncate text-sm font-semibold ${tone === "yellow" ? "text-foreground" : "text-foreground"}`}>
+      <p className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p
+        className={`mt-0.5 truncate text-sm font-semibold ${tone === "yellow" ? "text-foreground" : "text-foreground"}`}
+      >
         {value}
       </p>
     </div>
@@ -1134,11 +1120,31 @@ function ShareDialog({ onClose }: { onClose: () => void }) {
   const url = SHARE_URL;
   const enc = encodeURIComponent;
   const links = [
-    { label: "Twitter / X", icon: Twitter, href: `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}` },
-    { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}` },
-    { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}` },
-    { label: "WhatsApp", icon: MessageCircle, href: `https://wa.me/?text=${enc(`${text} ${url}`)}` },
-    { label: "Email", icon: Mail, href: `mailto:?subject=${enc("My approvU refinance snapshot")}&body=${enc(`${text}\n\n${url}`)}` },
+    {
+      label: "Twitter / X",
+      icon: Twitter,
+      href: `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}`,
+    },
+    {
+      label: "LinkedIn",
+      icon: Linkedin,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`,
+    },
+    {
+      label: "Facebook",
+      icon: Facebook,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`,
+    },
+    {
+      label: "WhatsApp",
+      icon: MessageCircle,
+      href: `https://wa.me/?text=${enc(`${text} ${url}`)}`,
+    },
+    {
+      label: "Email",
+      icon: Mail,
+      href: `mailto:?subject=${enc("My approvU refinance snapshot")}&body=${enc(`${text}\n\n${url}`)}`,
+    },
   ];
   const copy = async () => {
     try {
@@ -1229,13 +1235,19 @@ function ShareWinCard({
 
         <div className="rounded-2xl bg-primary-foreground/10 p-4 ring-1 ring-primary-foreground/20 backdrop-blur">
           <p className="text-xs uppercase tracking-wide text-primary-foreground/70">Preview</p>
-          <p className="mt-2 text-sm leading-snug text-primary-foreground">
-            "{shareText}"
-          </p>
+          <p className="mt-2 text-sm leading-snug text-primary-foreground">"{shareText}"</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <SocialPill href={xHref} icon={<Twitter className="h-3.5 w-3.5" />} label="Post on X" />
-            <SocialPill href={liHref} icon={<Linkedin className="h-3.5 w-3.5" />} label="LinkedIn" />
-            <SocialPill href={waHref} icon={<MessageCircle className="h-3.5 w-3.5" />} label="WhatsApp" />
+            <SocialPill
+              href={liHref}
+              icon={<Linkedin className="h-3.5 w-3.5" />}
+              label="LinkedIn"
+            />
+            <SocialPill
+              href={waHref}
+              icon={<MessageCircle className="h-3.5 w-3.5" />}
+              label="WhatsApp"
+            />
           </div>
         </div>
       </div>
@@ -1259,20 +1271,36 @@ function SocialPill({ href, icon, label }: { href: string; icon: ReactNode; labe
 
 function ReferralCard() {
   // placeholder anchor (no-op)
-  return _ReferralCardImpl();
+  return ReferralCardImpl();
 }
 
-function HomeLifeOfferBundle({
-  variant = "refinance",
-}: {
-  variant?: "refinance" | "purchase";
-}) {
+function HomeLifeOfferBundle({ variant = "refinance" }: { variant?: "refinance" | "purchase" }) {
   const purchaseOffers = [
-    { icon: <Scale className="h-4 w-4" />, title: "Legal Fee Credit", desc: "Save on closing legal costs with our partner network." },
-    { icon: <FileText className="h-4 w-4" />, title: "Appraisal Fee Credit", desc: "Up to $400 credited toward your property appraisal." },
-    { icon: <Briefcase className="h-4 w-4" />, title: "Moving Service Discount", desc: "Preferred rates with vetted local movers." },
-    { icon: <ShieldCheck className="h-4 w-4" />, title: "Home Insurance Referral", desc: "Get matched with insurers tailored to your home." },
-    { icon: <Activity className="h-4 w-4" />, title: "Mortgage Strategy Review", desc: "Annual check-in to keep your mortgage optimized." },
+    {
+      icon: <Scale className="h-4 w-4" />,
+      title: "Legal Fee Credit",
+      desc: "Save on closing legal costs with our partner network.",
+    },
+    {
+      icon: <FileText className="h-4 w-4" />,
+      title: "Appraisal Fee Credit",
+      desc: "Up to $400 credited toward your property appraisal.",
+    },
+    {
+      icon: <Briefcase className="h-4 w-4" />,
+      title: "Moving Service Discount",
+      desc: "Preferred rates with vetted local movers.",
+    },
+    {
+      icon: <ShieldCheck className="h-4 w-4" />,
+      title: "Home Insurance Referral",
+      desc: "Get matched with insurers tailored to your home.",
+    },
+    {
+      icon: <Activity className="h-4 w-4" />,
+      title: "Mortgage Strategy Review",
+      desc: "Annual check-in to keep your mortgage optimized.",
+    },
   ];
   const refinanceOffers = [
     {
@@ -1318,14 +1346,14 @@ function HomeLifeOfferBundle({
                 Preview
               </span>
             </div>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              {helper}
-            </p>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{helper}</p>
           </div>
         </div>
       </div>
 
-      <div className={`grid gap-3 sm:grid-cols-2 ${offers.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+      <div
+        className={`grid gap-3 sm:grid-cols-2 ${offers.length >= 5 ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}
+      >
         {offers.map((o) => (
           <div
             key={o.title}
@@ -1372,7 +1400,7 @@ function HomeLifeOfferBundle({
   );
 }
 
-function _ReferralCardImpl() {
+function ReferralCardImpl() {
   const [copied, setCopied] = useState(false);
   const code = "REFI-YOU50";
   const link = `${SHARE_URL}?ref=${code}`;
@@ -1496,15 +1524,7 @@ function SummaryCard({
   );
 }
 
-function HeroFact({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
+function HeroFact({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="min-w-0">
       <dt className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -1530,27 +1550,19 @@ function WhatThisMeans() {
       <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
         <li>• Prime programs typically offer the most competitive pricing.</li>
         <li>
-          • Alternative programs may offer flexible solutions for transitional income,
-          self-employed income, or credit situations.
+          • Alternative programs may offer flexible solutions for transitional income, self-employed
+          income, or credit situations.
         </li>
         <li>
-          • Tailored Review helps ensure more complex files are reviewed accurately before
-          lender matching.
+          • Tailored Review helps ensure more complex files are reviewed accurately before lender
+          matching.
         </li>
       </ul>
     </details>
   );
 }
 
-function Card({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon?: ReactNode;
-  children: ReactNode;
-}) {
+function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   return (
     <div className="min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-primary">
@@ -1562,15 +1574,7 @@ function Card({
   );
 }
 
-function Row({
-  label,
-  value,
-  emphasis,
-}: {
-  label: string;
-  value: string;
-  emphasis?: boolean;
-}) {
+function Row({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border/60 py-2.5 last:border-0">
       <span className="min-w-0 shrink-0 max-w-[45%] text-sm text-muted-foreground">{label}</span>
@@ -1674,7 +1678,9 @@ function LtvBar({
             Above range
           </span>
         )}
-        <span className={`inline-flex items-center gap-1.5 font-medium ${withinLimit ? "text-primary" : "text-accent"}`}>
+        <span
+          className={`inline-flex items-center gap-1.5 font-medium ${withinLimit ? "text-primary" : "text-accent"}`}
+        >
           <span className={`h-2 w-2 rounded-full ${withinLimit ? "bg-primary" : "bg-accent"}`} />
           Requested
         </span>
@@ -1699,14 +1705,15 @@ function RequestCard({
   const down = getEffectiveDown(answers);
   const loan = price > down ? price - down : 0;
   const lvr = price > 0 && loan > 0 ? ltv(loan, price) : null;
-  const policy = price > 0
-    ? getMinimumDownPaymentPolicy({
-        property_usage: mapUsage(answers.use as string | undefined),
-        property_value: price,
-        unit_count: Number(answers.units) || 1,
-        down_payment_amount: down || undefined,
-      })
-    : null;
+  const policy =
+    price > 0
+      ? getMinimumDownPaymentPolicy({
+          property_usage: mapUsage(answers.use as string | undefined),
+          property_value: price,
+          unit_count: Number(answers.units) || 1,
+          down_payment_amount: down || undefined,
+        })
+      : null;
   const score = getCreditScore(answers);
   const lane = classifyLane({
     credit_score: score,
@@ -1739,15 +1746,12 @@ function RequestCard({
       <Row label="Property Use" value={prettifyUse(answers.use as string)} />
       {isPre ? (
         <>
-          <Row label="Target Price Range" value={prettifyPriceRange(answers.priceRange as string)} />
           <Row
-            label="Estimated Property Value"
-            value={price ? formatCAD(price) : "—"}
+            label="Target Price Range"
+            value={prettifyPriceRange(answers.priceRange as string)}
           />
-          <Row
-            label="Saved Down Payment"
-            value={down ? formatCAD(down) : "—"}
-          />
+          <Row label="Estimated Property Value" value={price ? formatCAD(price) : "—"} />
+          <Row label="Saved Down Payment" value={down ? formatCAD(down) : "—"} />
           <Row label="Estimated Loan Amount" value={loan ? formatCAD(loan) : "—"} />
           <Row label="Estimated LTV" value={lvr ? `${lvr}%` : "—"} />
         </>
@@ -1765,9 +1769,7 @@ function RequestCard({
         label="Property Location"
         value={(answers.address as string) || (answers.location as string) || "—"}
       />
-      {policy && (
-        <Row label="Rule Applied" value={ruleLabel ?? policy.rule_applied_label} />
-      )}
+      {policy && <Row label="Rule Applied" value={ruleLabel ?? policy.rule_applied_label} />}
       {policy && minDpAmount > 0 && (
         <Row
           label="Estimated Minimum Down Payment"
@@ -1783,13 +1785,7 @@ function RequestCard({
   );
 }
 
-function CreditPositionCard({
-  score,
-  position,
-}: {
-  score: number;
-  position: CreditPosition;
-}) {
+function CreditPositionCard({ score, position }: { score: number; position: CreditPosition }) {
   const range = getCreditRange(score);
   return (
     <Card title="Credit Position" icon={<CreditCard className="h-4 w-4" />}>
@@ -1820,8 +1816,8 @@ function CreditPositionCard({
           </div>
         </div>
         <p className="text-xs">
-          Credit score helps determine program eligibility and pricing. Scores below 500 may
-          require a more specialized review and may have fewer available options.
+          Credit score helps determine program eligibility and pricing. Scores below 500 may require
+          a more specialized review and may have fewer available options.
         </p>
       </div>
     </Card>
@@ -1961,8 +1957,12 @@ function ReviewAnswers({
             key={`${r.label}-${i}`}
             className="flex items-start justify-between gap-3 border-b border-border/50 py-2.5"
           >
-            <dt className="min-w-0 shrink-0 max-w-[50%] text-sm text-muted-foreground">{r.label}</dt>
-            <dd className="min-w-0 break-words text-right text-sm font-medium text-foreground">{r.value}</dd>
+            <dt className="min-w-0 shrink-0 max-w-[50%] text-sm text-muted-foreground">
+              {r.label}
+            </dt>
+            <dd className="min-w-0 break-words text-right text-sm font-medium text-foreground">
+              {r.value}
+            </dd>
           </div>
         ))}
       </dl>
@@ -2062,7 +2062,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
       </p>
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
-          to="/portal"
+          to="/create-account"
           className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90 sm:w-auto"
         >
           {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}
@@ -2084,7 +2084,8 @@ function BottomCTA({ path }: { path: LendingPath }) {
         </button>
       </div>
       <p className="mt-3 text-xs text-primary-foreground/70">
-        This snapshot is not a mortgage approval. {tailored ? "No credit impact at this stage." : "Takes under 30 seconds. No obligation."}
+        This snapshot is not a mortgage approval.{" "}
+        {tailored ? "No credit impact at this stage." : "Takes under 30 seconds. No obligation."}
       </p>
     </section>
   );
