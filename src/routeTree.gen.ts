@@ -31,6 +31,7 @@ import { Route as PortalSettingsRouteImport } from './routes/portal.settings'
 import { Route as PortalOffersRouteImport } from './routes/portal.offers'
 import { Route as PortalNotificationsRouteImport } from './routes/portal.notifications'
 import { Route as PortalMessagesRouteImport } from './routes/portal.messages'
+import { Route as PortalHomeLifeBundleRouteImport } from './routes/portal.home-life-bundle'
 import { Route as PortalHomeRouteImport } from './routes/portal.home'
 import { Route as PortalHelpRouteImport } from './routes/portal.help'
 import { Route as PortalDocumentsRouteImport } from './routes/portal.documents'
@@ -208,6 +209,11 @@ const PortalNotificationsRoute = PortalNotificationsRouteImport.update({
 const PortalMessagesRoute = PortalMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalHomeLifeBundleRoute = PortalHomeLifeBundleRouteImport.update({
+  id: '/home-life-bundle',
+  path: '/home-life-bundle',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalHomeRoute = PortalHomeRouteImport.update({
@@ -621,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
   '/portal/home': typeof PortalHomeRouteWithChildren
+  '/portal/home-life-bundle': typeof PortalHomeLifeBundleRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/offers': typeof PortalOffersRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/portal/disclosures': typeof PortalDisclosuresRoute
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
+  '/portal/home-life-bundle': typeof PortalHomeLifeBundleRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/offers': typeof PortalOffersRoute
@@ -804,6 +812,7 @@ export interface FileRoutesById {
   '/portal/documents': typeof PortalDocumentsRoute
   '/portal/help': typeof PortalHelpRoute
   '/portal/home': typeof PortalHomeRouteWithChildren
+  '/portal/home-life-bundle': typeof PortalHomeLifeBundleRoute
   '/portal/messages': typeof PortalMessagesRoute
   '/portal/notifications': typeof PortalNotificationsRoute
   '/portal/offers': typeof PortalOffersRoute
@@ -898,6 +907,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/help'
     | '/portal/home'
+    | '/portal/home-life-bundle'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/offers'
@@ -988,6 +998,7 @@ export interface FileRouteTypes {
     | '/portal/disclosures'
     | '/portal/documents'
     | '/portal/help'
+    | '/portal/home-life-bundle'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/offers'
@@ -1080,6 +1091,7 @@ export interface FileRouteTypes {
     | '/portal/documents'
     | '/portal/help'
     | '/portal/home'
+    | '/portal/home-life-bundle'
     | '/portal/messages'
     | '/portal/notifications'
     | '/portal/offers'
@@ -1330,6 +1342,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/portal/messages'
       preLoaderRoute: typeof PortalMessagesRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/home-life-bundle': {
+      id: '/portal/home-life-bundle'
+      path: '/home-life-bundle'
+      fullPath: '/portal/home-life-bundle'
+      preLoaderRoute: typeof PortalHomeLifeBundleRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/home': {
@@ -1933,6 +1952,7 @@ interface PortalRouteChildren {
   PortalDocumentsRoute: typeof PortalDocumentsRoute
   PortalHelpRoute: typeof PortalHelpRoute
   PortalHomeRoute: typeof PortalHomeRouteWithChildren
+  PortalHomeLifeBundleRoute: typeof PortalHomeLifeBundleRoute
   PortalMessagesRoute: typeof PortalMessagesRoute
   PortalNotificationsRoute: typeof PortalNotificationsRoute
   PortalOffersRoute: typeof PortalOffersRoute
@@ -1961,6 +1981,7 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalDocumentsRoute: PortalDocumentsRoute,
   PortalHelpRoute: PortalHelpRoute,
   PortalHomeRoute: PortalHomeRouteWithChildren,
+  PortalHomeLifeBundleRoute: PortalHomeLifeBundleRoute,
   PortalMessagesRoute: PortalMessagesRoute,
   PortalNotificationsRoute: PortalNotificationsRoute,
   PortalOffersRoute: PortalOffersRoute,
