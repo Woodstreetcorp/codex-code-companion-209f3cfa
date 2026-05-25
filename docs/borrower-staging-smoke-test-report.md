@@ -6,10 +6,16 @@ flow.
 
 ## 1. Environment Details
 
+> **Note:** `app.approvu.com` is the **legacy PHP application** that remains live while the new
+> Vite borrower frontend is being staged. It is **not** the target for the new borrower staging
+> environment. The correct borrower frontend staging URL is `https://borrower-staging.approvu.com`
+> and the backend API staging URL is `https://api-staging.approvu.com` (neither was deployed at
+> time of this report). Probes against `app.approvu.com` describe the legacy app, not the new stack.
+
 | Field                                            | Value                                                                                                                                                                                                        |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Backend API URL                                  | Not confirmed. `.com` candidates checked: `https://app.approvu.com/v2/health`, `https://api.approvu.com/v2/health`, `https://api-staging.approvu.com/v2/health`, `https://api.staging.approvu.com/v2/health` |
-| Frontend URL                                     | Candidate tested: `https://app.approvu.com`                                                                                                                                                                  |
+| Backend API URL                                  | Not confirmed. Target staging URL: `https://api-staging.approvu.com`. Candidates checked: `https://app.approvu.com/v2/health`, `https://api.approvu.com/v2/health`, `https://api-staging.approvu.com/v2/health`, `https://api.staging.approvu.com/v2/health` |
+| Frontend URL                                     | Target staging URL: `https://borrower-staging.approvu.com`. Legacy app candidate tested: `https://app.approvu.com`                                                                                            |
 | API base env value (`VITE_APPROVU_API_BASE_URL`) | Not visible from deployed app; local `.env.example` supports blank same-origin or cross-origin Laravel API origin.                                                                                           |
 | Deployment mode                                  | Not confirmed                                                                                                                                                                                                |
 | Backend environment                              | Not confirmed; no Laravel `/v2/health` JSON response found.                                                                                                                                                  |
@@ -223,11 +229,11 @@ Status key:
 
 | ID   | Check ID            | Description                                                                                       | Owner           | Target Fix                                                                        | Status |
 | ---- | ------------------- | ------------------------------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------- | ------ |
-| B-01 | BR-01, BR-02        | Borrower entry on `app.approvu.com` redirects to `transaction-start.php`, which returns HTTP 500. | Frontend/deploy | Deploy/route the Vite borrower frontend entry or fix the transaction entry error. | Open   |
-| B-02 | BR-04, BR-05, BR-08 | Expected borrower routes `/create-account`, `/login`, `/resume`, and `/portal` return 404.        | Frontend/deploy | Configure SPA fallback/routing for deployed borrower frontend routes.             | Open   |
-| B-03 | BR-22, API          | No `.com` Laravel `/v2/health` endpoint returned API JSON; API DNS candidates failed.             | Backend/deploy  | Provide the correct Laravel v2 staging API origin and health endpoint.            | Open   |
-| B-04 | CSRF/session        | `/v2/csrf-cookie` returned 404 on `app.approvu.com`.                                              | Backend/deploy  | Confirm same-origin proxy or cross-origin API URL for CSRF/session flows.         | Open   |
-| B-05 | Auth testing        | No safe staging borrower credentials or test qualification reference were used.                   | QA/product      | Provide safe staging test data after frontend/API reachability is fixed.          | Open   |
+| B-01 | BR-01, BR-02        | Borrower entry on `app.approvu.com` (legacy PHP app) redirects to `transaction-start.php`, which returns HTTP 500. Legacy app is not the new stack target. | Frontend/deploy | Deploy the Vite borrower frontend to `https://borrower-staging.approvu.com`.                        | Open   |
+| B-02 | BR-04, BR-05, BR-08 | Expected borrower routes `/create-account`, `/login`, `/resume`, and `/portal` return 404 on legacy app. | Frontend/deploy | Configure SPA fallback/routing on the new `https://borrower-staging.approvu.com` host.          | Open   |
+| B-03 | BR-22, API          | No `.com` Laravel `/v2/health` endpoint returned API JSON; `https://api-staging.approvu.com` DNS did not resolve (not yet deployed). | Backend/deploy  | Deploy the Laravel v2 backend to `https://api-staging.approvu.com` and configure DNS.          | Open   |
+| B-04 | CSRF/session        | `/v2/csrf-cookie` returned 404 on `app.approvu.com` (legacy app — does not run Laravel v2).       | Backend/deploy  | Confirm `https://api-staging.approvu.com/v2/csrf-cookie` once backend is deployed.               | Open   |
+| B-05 | Auth testing        | No safe staging borrower credentials or test qualification reference were used.                   | QA/product      | Provide safe staging test data after `https://borrower-staging.approvu.com` and API are live.   | Open   |
 
 ## 19. Non-Blocking Issues
 
@@ -286,8 +292,9 @@ ERROR: The remote name could not be resolved: 'api.approvu.com'
 Final notes:
 
 ```text
-NO-GO. The borrower frontend staging smoke test cannot proceed beyond reachability. The known app host
-responds but does not serve the expected borrower frontend routes, the transaction entry returns HTTP
-500, and no Laravel v2 API origin was confirmed. Fix deployment routing/API origin first, then rerun
-with safe borrower staging credentials and test data.
+NO-GO. The borrower frontend staging smoke test cannot proceed beyond reachability. app.approvu.com
+is the legacy PHP application and does not serve the new Vite borrower frontend. The new staging
+targets — https://borrower-staging.approvu.com (frontend) and https://api-staging.approvu.com
+(Laravel v2 API) — had not been deployed at the time of this report. Deploy to the correct .com
+staging hosts and then rerun with safe borrower staging credentials and test data.
 ```
