@@ -16,7 +16,7 @@ uses relative `/v2/...` URLs and the web server should proxy those requests to L
 For cross-origin staging deployments, set `VITE_APPROVU_API_BASE_URL` to the Laravel API origin only:
 
 ```env
-VITE_APPROVU_API_BASE_URL=https://api-staging.example.com
+VITE_APPROVU_API_BASE_URL=https://api-staging.approvu.com
 ```
 
 Do not hardcode localhost, staging, or production URLs in source code.
