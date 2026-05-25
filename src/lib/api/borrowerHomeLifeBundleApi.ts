@@ -54,6 +54,15 @@ export type BorrowerHomeLifeBundlePortalData = {
   message?: string | null;
 };
 
+export type BorrowerHomeLifeBundleRedemptionResult = {
+  ok: boolean;
+  status?: string | null;
+  message?: string | null;
+  public_reference?: string | null;
+  code_label?: string | null;
+  display_code?: string | null;
+};
+
 const HOME_LIFE_BUNDLE_STORAGE_KEY = "approvu:borrower-home-life-bundle";
 
 const ENDPOINTS = {
@@ -63,6 +72,8 @@ const ENDPOINTS = {
   redeemableCodes: "/v2/borrower/home-life-bundle/redeemable-codes/summary",
   offerDetail: (publicReference: string) =>
     `/v2/borrower/home-life-bundle/offers/${encodeURIComponent(publicReference)}`,
+  redeemCode: (publicReference: string) =>
+    `/v2/borrower/home-life-bundle/redeemable-codes/${encodeURIComponent(publicReference)}/redeem`,
 };
 
 function unavailable(message?: string | null): BorrowerHomeLifeBundlePortalData {
@@ -215,6 +226,40 @@ export async function getBorrowerHomeLifeBundleOfferDetail(
 ): Promise<BorrowerHomeLifeBundleOffer | null> {
   const body = await fetchJson(ENDPOINTS.offerDetail(publicReference));
   return sanitizeOffers(body)[0] ?? sanitizeOffers({ offers: [body] })[0] ?? null;
+}
+
+export async function redeemBorrowerHomeLifeBundleCode(
+  publicReference: string,
+): Promise<BorrowerHomeLifeBundleRedemptionResult> {
+  const response = await fetchWithLaravelSession(
+    buildApiUrl(ENDPOINTS.redeemCode(publicReference)),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ public_reference: publicReference }),
+    },
+  );
+  const body = asRecord(await response.json().catch(() => ({})));
+
+  if (!response.ok) {
+    throw new Error(asString(body.message) ?? "This offer could not be claimed right now.");
+  }
+
+  const canDisplayCode =
+    asBoolean(body.can_display_code) === true ||
+    asBoolean(body.display_code_allowed) === true ||
+    asBoolean(body.expose_code) === true;
+
+  return {
+    ok: asBoolean(body.ok) ?? true,
+    status: asString(body.status),
+    message: asString(body.message),
+    public_reference: asString(body.public_reference),
+    code_label: asString(body.code_label),
+    display_code: canDisplayCode
+      ? asString(body.display_code ?? body.redemption_code ?? body.code)
+      : null,
+  };
 }
 
 export function storeBorrowerHomeLifeBundlePortalData(
