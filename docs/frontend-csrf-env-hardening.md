@@ -119,16 +119,16 @@ VITE_APPROVU_API_BASE_URL=
 
 ### Cross-origin
 
-SPA is served from `https://app.approvu.ca`; API is at `https://api.approvu.ca`.
+SPA is served from `https://borrower-staging.approvu.com`; API is at `https://api-staging.approvu.com`.
 
 ```dotenv
-VITE_APPROVU_API_BASE_URL=https://api.approvu.ca
+VITE_APPROVU_API_BASE_URL=https://api-staging.approvu.com
 ```
 
 Laravel backend must have:
 
 ```dotenv
-FRONTEND_URL=https://app.approvu.ca
+FRONTEND_URL=https://borrower-staging.approvu.com
 SESSION_SAME_SITE=none
 SESSION_SECURE_COOKIE=true
 ```
