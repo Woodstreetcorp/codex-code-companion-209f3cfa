@@ -23,6 +23,8 @@ All API calls use the shared Laravel session helper with `credentials: "include"
 - Shows selected offers.
 - Shows redeemable code summary.
 - Loads safe standard offer detail when the borrower selects an offer.
+- Shows a claim CTA only when the backend marks a code as `redeemable`.
+- Calls the borrower redemption endpoint by public reference and refreshes bundle data afterward.
 - Links back to `/portal`.
 - Shows loading, error, and empty states.
 
@@ -36,13 +38,31 @@ The adapter maps responses into explicit borrower-safe display fields only:
 - borrower-safe descriptions
 - dates
 - selected/redeemable summary counts
+- redemption success messages
+- raw/display redemption code only when the backend explicitly permits display
 
 The page does not render internal IDs, admin-only fields, partner internal metadata, private notes,
 or operational assignment data.
 
+## Redemption Behavior
+
+The frontend posts to:
+
+- `POST /v2/borrower/home-life-bundle/redeemable-codes/{publicReference}/redeem`
+
+The request uses only the borrower-safe public reference. After a successful response, the page
+reloads:
+
+- summary
+- assignments
+- selected offers
+- redeemable code summary
+
+The UI does not expose raw redemption codes unless the backend response includes an explicit display
+permission flag such as `can_display_code`, `display_code_allowed`, or `expose_code`.
+
 ## Deferred
 
-- Offer redemption actions.
 - Partner terms and conditions detail pages.
 - Full Home Life Wallet replacement.
 - Real-time bundle status updates.

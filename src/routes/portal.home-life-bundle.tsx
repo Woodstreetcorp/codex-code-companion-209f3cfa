@@ -13,9 +13,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   getBorrowerHomeLifeBundleOfferDetail,
   getBorrowerHomeLifeBundlePortalData,
+  redeemBorrowerHomeLifeBundleCode,
   storeBorrowerHomeLifeBundlePortalData,
+  type BorrowerHomeLifeBundleCodeSummary,
   type BorrowerHomeLifeBundleOffer,
   type BorrowerHomeLifeBundlePortalData,
+  type BorrowerHomeLifeBundleRedemptionResult,
 } from "@/lib/api/borrowerHomeLifeBundleApi";
 
 export const Route = createFileRoute("/portal/home-life-bundle")({
@@ -36,6 +39,10 @@ function HomeLifeBundleDetailPage() {
   const [result, setResult] = useState<BorrowerHomeLifeBundlePortalData | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<BorrowerHomeLifeBundleOffer | null>(null);
   const [selectedOfferReference, setSelectedOfferReference] = useState<string | null>(null);
+  const [redeemingReference, setRedeemingReference] = useState<string | null>(null);
+  const [redemptionResult, setRedemptionResult] =
+    useState<BorrowerHomeLifeBundleRedemptionResult | null>(null);
+  const [redemptionError, setRedemptionError] = useState<string | null>(null);
   const [offerLoading, setOfferLoading] = useState(false);
   const [offerError, setOfferError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,6 +95,37 @@ function HomeLifeBundleDetailPage() {
       );
     } finally {
       setOfferLoading(false);
+    }
+  }
+
+  async function refreshBundle() {
+    const response = await getBorrowerHomeLifeBundlePortalData();
+    storeBorrowerHomeLifeBundlePortalData(response);
+    setResult(response);
+    if (!response.endpoint_available || response.ok === false) {
+      setError(response.message ?? "Home Life Bundle details could not be loaded.");
+    } else {
+      setError(null);
+    }
+  }
+
+  async function redeemCode(code: BorrowerHomeLifeBundleCodeSummary) {
+    const publicReference = code.public_reference;
+    if (!publicReference || code.redeemable !== true) return;
+
+    setRedeemingReference(publicReference);
+    setRedemptionResult(null);
+    setRedemptionError(null);
+    try {
+      const claim = await redeemBorrowerHomeLifeBundleCode(publicReference);
+      setRedemptionResult(claim);
+      await refreshBundle();
+    } catch (failure) {
+      setRedemptionError(
+        failure instanceof Error ? failure.message : "This offer could not be claimed right now.",
+      );
+    } finally {
+      setRedeemingReference(null);
     }
   }
 
@@ -207,21 +245,29 @@ function HomeLifeBundleDetailPage() {
           {redeemableCodes.length > 0 ? (
             <div className="grid gap-3">
               {redeemableCodes.map((code, index) => (
-                <SafeCard
+                <RedeemableCodeCard
                   key={`${code.public_reference ?? code.offer_label ?? "code"}-${index}`}
-                  title={code.offer_label ?? code.code_label ?? "Redeemable offer"}
-                  eyebrow={formatValue(code.status ?? "pending")}
-                  description={
-                    code.redeemable === false
-                      ? "This offer is not redeemable yet."
-                      : "Redeemable when bundle conditions are met."
-                  }
-                  facts={[{ label: "Expires", value: code.expires_at }]}
+                  code={code}
+                  isRedeeming={redeemingReference === code.public_reference}
+                  onRedeem={() => void redeemCode(code)}
                 />
               ))}
             </div>
           ) : (
             <EmptyState message="No redeemable codes are available yet." />
+          )}
+          {redemptionResult && (
+            <div className="mt-4 rounded-xl border border-mint/30 bg-mint/10 px-4 py-3 text-sm text-mint-foreground">
+              {redemptionResult.message ?? "Offer claim requested successfully."}
+              {redemptionResult.display_code && (
+                <p className="mt-2 font-semibold">Code: {redemptionResult.display_code}</p>
+              )}
+            </div>
+          )}
+          {redemptionError && (
+            <div className="mt-4 rounded-xl border border-coral/20 bg-coral/10 px-4 py-3 text-sm text-coral">
+              {redemptionError}
+            </div>
           )}
         </Panel>
       </section>
@@ -388,6 +434,65 @@ function SafeCard({
           ))}
         </dl>
       )}
+    </article>
+  );
+}
+
+function RedeemableCodeCard({
+  code,
+  isRedeeming,
+  onRedeem,
+}: {
+  code: BorrowerHomeLifeBundleCodeSummary;
+  isRedeeming: boolean;
+  onRedeem: () => void;
+}) {
+  const canRedeem = code.redeemable === true && Boolean(code.public_reference);
+
+  return (
+    <article className="rounded-xl border border-border bg-background p-4">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {formatValue(code.status ?? "pending")}
+      </p>
+      <h3 className="mt-1 text-sm font-semibold text-foreground">
+        {code.offer_label ?? code.code_label ?? "Redeemable offer"}
+      </h3>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {canRedeem
+          ? "This offer is available to claim. Your code will only display if the backend explicitly permits it."
+          : "This offer is not redeemable yet."}
+      </p>
+      {code.expires_at && (
+        <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card px-3 py-2">
+            <dt className="font-semibold text-muted-foreground">Expires</dt>
+            <dd className="mt-0.5 text-foreground">{code.expires_at}</dd>
+          </div>
+        </dl>
+      )}
+      <div className="mt-4">
+        {canRedeem ? (
+          <button
+            type="button"
+            onClick={onRedeem}
+            disabled={isRedeeming}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+          >
+            {isRedeeming ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Claiming...
+              </>
+            ) : (
+              "Claim offer"
+            )}
+          </button>
+        ) : (
+          <span className="inline-flex h-9 items-center justify-center rounded-md bg-muted px-3 text-xs font-semibold text-muted-foreground">
+            Claim unavailable
+          </span>
+        )}
+      </div>
     </article>
   );
 }
