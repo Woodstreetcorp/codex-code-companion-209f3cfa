@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:staging:node": "bun scripts/build-staging-node.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "preview:staging:node": "node dist/server/node-server.mjs",
+    "start:staging:node": "node dist/server/node-server.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
