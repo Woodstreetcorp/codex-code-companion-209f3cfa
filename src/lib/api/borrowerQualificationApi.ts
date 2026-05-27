@@ -44,6 +44,7 @@ type BorrowerQualificationPayload = {
 
 const CONSENT_VERSION = "borrower-qualification-v1";
 const HANDOFF_STORAGE_KEY = "approvu:qualification-session";
+const PENDING_QUALIFICATION_STORAGE_KEY = "approvu:pending-qualification";
 
 function flowTransactionType(flowKey: FlowKey): BorrowerQualificationPayload["transaction_type"] {
   return flowKey === "pre" ? "pre_purchase" : flowKey;
@@ -190,4 +191,57 @@ export function storeQualificationHandoff(result: BorrowerQualificationResponse)
       saved_at: new Date().toISOString(),
     }),
   );
+}
+
+// ── Pending qualification helpers ─────────────────────────────────────────────
+//
+// The FlowRunner collects answers in React state without calling the API.
+// When the user reaches the Mortgage Snapshot ("done=true") we write those
+// answers here so the create-account page can submit them to the backend —
+// using the real contact info the borrower provides — before the account
+// handoff POST. This avoids the need for a separate anonymous-qualification
+// endpoint while still producing the qualification_session_token required by
+// the account-handoff validator.
+
+export type PendingQualification = {
+  flowKey: FlowKey;
+  answers: QualificationAnswers;
+  stored_at: string;
+};
+
+/**
+ * Persists the in-progress qualification answers to sessionStorage so they
+ * survive navigation to /create-account without a backend round-trip.
+ * Called by FlowRunner whenever the snapshot view becomes visible.
+ */
+export function storePendingQualification(flowKey: FlowKey, answers: QualificationAnswers): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(
+    PENDING_QUALIFICATION_STORAGE_KEY,
+    JSON.stringify({ flowKey, answers, stored_at: new Date().toISOString() }),
+  );
+}
+
+/**
+ * Reads the pending qualification from sessionStorage.
+ * Returns null when absent or when the stored value cannot be parsed.
+ */
+export function getPendingQualification(): PendingQualification | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.sessionStorage.getItem(PENDING_QUALIFICATION_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as PendingQualification;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Removes the pending qualification from sessionStorage.
+ * Called by create-account after the qualification has been submitted.
+ */
+export function clearPendingQualification(): void {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(PENDING_QUALIFICATION_STORAGE_KEY);
 }

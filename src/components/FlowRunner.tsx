@@ -17,6 +17,7 @@ import {
   type PropertyUsage,
 } from "@/lib/calculations";
 import { classifyLane, getMinimumDownPaymentPolicy, mapUsage } from "@/lib/policy";
+import { storePendingQualification } from "@/lib/api/borrowerQualificationApi";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -189,6 +190,16 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   useEffect(() => {
     nextRef.current = next;
   });
+
+  // Persist qualification answers to sessionStorage while the snapshot is
+  // visible. create-account.tsx reads this and submits it to the backend
+  // (with the user's real contact info) before creating the borrower account.
+  // This fires again whenever answers change while done=true (e.g. after edit).
+  useEffect(() => {
+    if (!done) return;
+    storePendingQualification(flowKey, answers);
+  }, [done, flowKey, answers]);
+
   const back = () => {
     if (done) {
       setDone(false);
