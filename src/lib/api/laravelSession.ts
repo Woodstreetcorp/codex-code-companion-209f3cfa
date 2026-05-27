@@ -22,8 +22,10 @@
  *   - getApiBaseUrl()         — reads VITE_APPROVU_API_BASE_URL
  *   - buildApiUrl(path)       — combines base URL with path
  *   - getXsrfTokenFromCookie() — reads and decodes the XSRF-TOKEN cookie
- *   - initializeCsrfCookie()  — calls GET /v2/csrf-cookie if token absent
- *   - csrfHeaders()           — returns { 'X-XSRF-TOKEN': token } or {}
+ *   - initializeCsrfCookie()  — calls GET /v2/csrf-cookie if token absent;
+ *                               caches raw token from body for cross-origin
+ *   - csrfHeaders()           — returns X-CSRF-TOKEN (cross-origin, raw token)
+ *                               or X-XSRF-TOKEN (same-origin, cookie) or {}
  *   - fetchWithLaravelSession() — main fetch wrapper for all API calls
  *
  * Same-origin deployment
@@ -61,9 +63,33 @@ export function buildApiUrl(path: string): string {
 // ── CSRF cookie helpers ───────────────────────────────────────────────────────
 
 /**
+ * In-memory CSRF token cache for cross-origin deployments.
+ *
+ * When the SPA runs on a different domain from the API (e.g. a Cloudflare
+ * Workers deployment at workers.dev vs. api-staging.approvu.com),
+ * document.cookie on the SPA's domain cannot read cookies set by the API
+ * domain. This means getXsrfTokenFromCookie() always returns "" and the
+ * X-XSRF-TOKEN header is never sent — resulting in a 419 CSRF mismatch.
+ *
+ * To handle this, GET /v2/csrf-cookie also returns the raw CSRF token in its
+ * JSON body as { token: "..." }. initializeCsrfCookie() extracts and caches
+ * it here for the lifetime of the page. csrfHeaders() then uses X-CSRF-TOKEN
+ * (which Laravel validates directly without decryption, unlike X-XSRF-TOKEN
+ * which expects the encrypted cookie value).
+ *
+ * Same-origin deployments fall through to the XSRF-TOKEN cookie path and are
+ * unaffected by this change.
+ */
+let _csrfTokenFromBody: string | null = null;
+
+/**
  * Reads the XSRF-TOKEN cookie set by Laravel's VerifyCsrfToken middleware.
  * The value is URL-encoded by the browser; we decode it before use.
  * Returns an empty string in SSR environments or when the cookie is absent.
+ *
+ * Note: in cross-origin deployments this always returns "" because the cookie
+ * is set on the API domain, not the SPA domain. Use _csrfTokenFromBody in
+ * that case (populated by initializeCsrfCookie from the response body).
  */
 export function getXsrfTokenFromCookie(): string {
   if (typeof document === "undefined") return "";
@@ -77,30 +103,60 @@ export function getXsrfTokenFromCookie(): string {
 }
 
 /**
- * Ensures the XSRF-TOKEN cookie is set by calling GET /v2/csrf-cookie.
- * Skips the request if the cookie is already present (idempotent).
+ * Ensures a CSRF token is available before any mutating request.
+ *
+ * Idempotent: skips the network call when the token is already cached
+ * (either in memory from the response body or from the cookie for same-origin).
+ *
+ * On success in cross-origin deployments, extracts { token } from the JSON
+ * response body and caches it in _csrfTokenFromBody so that csrfHeaders()
+ * can include it as X-CSRF-TOKEN on the next mutation.
+ *
  * Errors are swallowed — the subsequent mutation will fail with 419
  * rather than crashing the app at initialization time.
  */
 export async function initializeCsrfCookie(): Promise<void> {
+  // Already have a token from the response body (cross-origin path).
+  if (_csrfTokenFromBody !== null) return;
+  // Already have a readable cookie (same-origin path).
   if (getXsrfTokenFromCookie() !== "") return;
 
   try {
-    await fetch(buildApiUrl("/v2/csrf-cookie"), {
+    const res = await fetch(buildApiUrl("/v2/csrf-cookie"), {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" },
     });
+    // Cross-origin: parse the raw token from the response body.
+    // Laravel returns { ok: true, token: "<csrf_token()>" } so the SPA can
+    // cache it when document.cookie is unreadable across domains.
+    if (res.ok) {
+      const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (typeof json.token === "string" && json.token) {
+        _csrfTokenFromBody = json.token;
+      }
+    }
   } catch {
     // Non-fatal. The caller will get a 419 if CSRF is still required.
   }
 }
 
 /**
- * Returns the X-XSRF-TOKEN header object to include on mutating requests.
- * Returns an empty object when no token is available (SSR or cookie absent).
+ * Returns the CSRF header object to include on mutating requests.
+ *
+ * Cross-origin path (token from response body):
+ *   Returns { "X-CSRF-TOKEN": token }
+ *   Laravel validates this header against the session token directly
+ *   (no decryption), matching the raw csrf_token() value we send.
+ *
+ * Same-origin path (token from XSRF-TOKEN cookie):
+ *   Returns { "X-XSRF-TOKEN": token }
+ *   Laravel decrypts the encrypted cookie value and compares it.
+ *
+ * Returns {} when no token is available (SSR or uninitialised).
  */
 export function csrfHeaders(): Record<string, string> {
+  if (_csrfTokenFromBody !== null) return { "X-CSRF-TOKEN": _csrfTokenFromBody };
   const token = getXsrfTokenFromCookie();
   return token ? { "X-XSRF-TOKEN": token } : {};
 }
@@ -115,8 +171,9 @@ export function csrfHeaders(): Record<string, string> {
  *   - Adds credentials: "include"
  *
  * For mutating requests (POST / PUT / PATCH / DELETE):
- *   - Calls initializeCsrfCookie() if XSRF-TOKEN cookie is absent
- *   - Adds X-XSRF-TOKEN header from the cookie value
+ *   - Calls initializeCsrfCookie() to ensure a CSRF token is available
+ *   - Adds X-CSRF-TOKEN header (cross-origin: raw token from body) or
+ *     X-XSRF-TOKEN header (same-origin: encrypted cookie value)
  *
  * Content-Type:
  *   - Callers set Content-Type: application/json for JSON bodies
@@ -138,12 +195,13 @@ export async function fetchWithLaravelSession(
   const isMutating =
     method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
 
-  // Resolve the X-XSRF-TOKEN for mutating requests.
-  const xsrfHeader: Record<string, string> = {};
+  // Resolve the correct CSRF header for mutating requests.
+  // csrfHeaders() returns X-CSRF-TOKEN (raw token, cross-origin) or
+  // X-XSRF-TOKEN (encrypted cookie, same-origin) as appropriate.
+  const csrfHeader: Record<string, string> = {};
   if (isMutating) {
     await initializeCsrfCookie();
-    const token = getXsrfTokenFromCookie();
-    if (token) xsrfHeader["X-XSRF-TOKEN"] = token;
+    Object.assign(csrfHeader, csrfHeaders());
   }
 
   return fetch(url, {
@@ -152,7 +210,7 @@ export async function fetchWithLaravelSession(
     headers: {
       Accept: "application/json",
       ...flattenHeaders(init.headers),
-      ...xsrfHeader, // always last so it is not overridden by caller headers
+      ...csrfHeader, // always last so it is not overridden by caller headers
     },
   });
 }
