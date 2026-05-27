@@ -2063,6 +2063,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
           to="/create-account"
+          search={{ redirect: "/portal/offers" }}
           className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90 sm:w-auto"
         >
           {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}

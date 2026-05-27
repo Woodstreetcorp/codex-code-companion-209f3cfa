@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, Loader2, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
@@ -18,6 +18,10 @@ const searchSchema = z.object({
   email: z.string().optional(),
 });
 
+function normalizeRedirect(value?: string): "/portal" | "/portal/offers" {
+  return value === "/portal/offers" ? "/portal/offers" : "/portal";
+}
+
 export const Route = createFileRoute("/login")({
   validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
@@ -35,6 +39,8 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect, ref, email: emailFromSearch } = Route.useSearch();
+  const navigate = useNavigate();
+  const postLoginRoute = normalizeRedirect(redirect);
   const [email, setEmail] = useState<string>(emailFromSearch ?? "");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -69,6 +75,7 @@ function LoginPage() {
         const confirmed = await getBorrowerSession();
         storeBorrowerSession(confirmed);
         setSession(confirmed);
+        await navigate({ to: postLoginRoute });
       } finally {
         setCheckingSession(false);
       }
@@ -118,7 +125,7 @@ function LoginPage() {
             {checkingSession ? "Confirming your session..." : `Signed in as ${session.user.email}.`}
           </p>
           <Link
-            to={(redirect ?? "/portal") as "/portal"}
+            to={postLoginRoute}
             className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Continue to your borrower dashboard

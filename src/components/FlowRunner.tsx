@@ -6,17 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MortgageSnapshot } from "@/components/MortgageSnapshot";
 import {
-  storeQualificationHandoff,
-  submitQualification,
-  type BorrowerQualificationResponse,
-  type QualificationContact,
-} from "@/lib/api/borrowerQualificationApi";
-import {
-  generateMortgageSnapshot,
-  storeMortgageSnapshotHandoff,
-  type BorrowerMortgageSnapshot,
-} from "@/lib/api/borrowerMortgageSnapshotApi";
-import {
   calculateMinimumDownPayment,
   formatCAD,
   ltv,
@@ -32,8 +21,6 @@ import { classifyLane, getMinimumDownPaymentPolicy, mapUsage } from "@/lib/polic
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
 
-type ContactState = QualificationContact;
-
 function formatCurrency(v: string) {
   const digits = v.replace(/[^0-9]/g, "");
   if (!digits) return "";
@@ -46,21 +33,6 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const [answers, setAnswers] = useState<Answers>({});
   const [index, setIndex] = useState(0);
   const [done, setDone] = useState(false);
-  const [validatedAddresses, setValidatedAddresses] = useState<Record<string, boolean>>({});
-  const [contact, setContact] = useState<ContactState>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    consentAccepted: false,
-  });
-  const [qualificationResult, setQualificationResult] =
-    useState<BorrowerQualificationResponse | null>(null);
-  const [serverSnapshot, setServerSnapshot] = useState<BorrowerMortgageSnapshot | null>(null);
-  const [snapshotError, setSnapshotError] = useState<string | null>(null);
-  const [generatingSnapshot, setGeneratingSnapshot] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [savingQualification, setSavingQualification] = useState(false);
 
   const visible = useMemo(
     () => flow.questions.filter((q) => !q.showIf || q.showIf(answers)),
@@ -123,8 +95,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
       const price = parseCurrency(answers.price as string);
       const down = parseCurrency(stringValue);
       if (price > 0 && down > 0) {
-        const usage =
-          (answers.use as PropertyUsage) ?? "primary";
+        const usage = (answers.use as PropertyUsage) ?? "primary";
         const v = validateDownPayment(down, price, usage);
         const pct = downPaymentPercentage(down, price);
         return {
@@ -221,64 +192,8 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
   const back = () => {
     if (done) {
       setDone(false);
-      setQualificationResult(null);
-      setServerSnapshot(null);
-      setSnapshotError(null);
-      setSubmitError(null);
-    }
-    else if (index > 0) setIndex((i) => i - 1);
+    } else if (index > 0) setIndex((i) => i - 1);
     else navigate({ to: "/" });
-  };
-
-  const submitForSnapshot = async () => {
-    if (!contact.firstName.trim() || !contact.lastName.trim() || !contact.email.trim()) {
-      setSubmitError("Please add your first name, last name, and email before continuing.");
-      return;
-    }
-    if (!contact.email.includes("@")) {
-      setSubmitError("Please enter a valid email address.");
-      return;
-    }
-    if (!contact.consentAccepted) {
-      setSubmitError("Please confirm consent so we can save your qualification.");
-      return;
-    }
-
-    setSavingQualification(true);
-    setSubmitError(null);
-
-    try {
-      const result = await submitQualification(flowKey, answers, contact);
-      storeQualificationHandoff(result);
-      setQualificationResult(result);
-      setGeneratingSnapshot(true);
-      setSnapshotError(null);
-
-      try {
-        const snapshot = await generateMortgageSnapshot({
-          qualification_session_token: result.qualification_session_token,
-          public_reference: result.public_reference,
-        });
-        storeMortgageSnapshotHandoff(snapshot);
-        setServerSnapshot(snapshot);
-      } catch (snapshotFailure) {
-        setSnapshotError(
-          snapshotFailure instanceof Error
-            ? snapshotFailure.message
-            : "We saved your qualification, but could not prepare the server Snapshot yet.",
-        );
-      } finally {
-        setGeneratingSnapshot(false);
-      }
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "We could not save your qualification right now. Please try again.",
-      );
-    } finally {
-      setSavingQualification(false);
-    }
   };
 
   return (
@@ -436,10 +351,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
               )}
 
               {current.type === "mortgages" && (
-                <MortgagesEditor
-                  entries={mortgageValue}
-                  onChange={setMortgages}
-                />
+                <MortgagesEditor entries={mortgageValue} onChange={setMortgages} />
               )}
 
               {current.type === "locations" && (
@@ -460,11 +372,7 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
               <CashOutMaxCard answers={answers} />
             )}
             {validationHint && (
-              <p
-                className={`mt-3 text-sm ${
-                  validationHint.ok ? "text-secondary" : "text-accent"
-                }`}
-              >
+              <p className={`mt-3 text-sm ${validationHint.ok ? "text-secondary" : "text-accent"}`}>
                 {validationHint.message}
               </p>
             )}
@@ -484,163 +392,14 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
           </div>
         )}
 
-        {done && !qualificationResult && (
-          <QualificationSubmitStep
-            contact={contact}
-            onContactChange={setContact}
-            error={submitError}
-            saving={savingQualification}
-            onBack={back}
-            onSubmit={submitForSnapshot}
-          />
-        )}
-
-        {done && qualificationResult && (
-          <>
-            <div className="mb-5 rounded-2xl border border-secondary/30 bg-secondary/5 p-4 text-sm text-foreground">
-              <p className="font-semibold">Your qualification was saved.</p>
-              <p className="mt-1 text-muted-foreground">
-                Reference {serverSnapshot?.public_reference ?? qualificationResult.public_reference}
-                .{" "}
-                {serverSnapshot
-                  ? "Your Snapshot was prepared from your saved qualification."
-                  : "Your snapshot below uses the current local preview calculations while the server Snapshot is unavailable."}
-              </p>
-            </div>
-            {generatingSnapshot && (
-              <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm text-foreground">
-                <p className="font-semibold">Preparing your Mortgage Snapshot...</p>
-                <p className="mt-1 text-muted-foreground">
-                  We are generating the server-side version from your saved answers.
-                </p>
-              </div>
-            )}
-            {snapshotError && (
-              <div className="mb-5 rounded-2xl border border-yellow/40 bg-yellow/10 p-4 text-sm text-foreground">
-                <p className="font-semibold">Server Snapshot is temporarily unavailable.</p>
-                <p className="mt-1 text-muted-foreground">
-                  {snapshotError} You can still review the local preview below.
-                </p>
-              </div>
-            )}
-            <MortgageSnapshot
-              flowKey={flowKey}
-              answers={answers}
-              visible={visible}
-              onEdit={back}
-              serverSnapshot={serverSnapshot}
-            />
-          </>
+        {done && (
+          <MortgageSnapshot flowKey={flowKey} answers={answers} visible={visible} onEdit={back} />
         )}
       </main>
 
       <footer className="mx-auto max-w-3xl px-4 pb-10 text-center text-xs text-muted-foreground">
         Information shown helps us understand your situation — it is not a mortgage approval.
       </footer>
-    </div>
-  );
-}
-
-function QualificationSubmitStep({
-  contact,
-  onContactChange,
-  error,
-  saving,
-  onBack,
-  onSubmit,
-}: {
-  contact: ContactState;
-  onContactChange: (next: ContactState) => void;
-  error: string | null;
-  saving: boolean;
-  onBack: () => void;
-  onSubmit: () => void;
-}) {
-  const update = (patch: Partial<ContactState>) => {
-    onContactChange({ ...contact, ...patch });
-  };
-
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <p className="text-xs font-medium uppercase tracking-widest text-secondary">
-        Almost there
-      </p>
-      <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">
-        Save your qualification before viewing your snapshot.
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        We'll save your answers securely so an approvU team member can follow up if you
-        choose to continue after your preview.
-      </p>
-
-      <div className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="First name">
-            <Input
-              value={contact.firstName}
-              onChange={(e) => update({ firstName: e.target.value })}
-              autoComplete="given-name"
-              disabled={saving}
-            />
-          </Field>
-          <Field label="Last name">
-            <Input
-              value={contact.lastName}
-              onChange={(e) => update({ lastName: e.target.value })}
-              autoComplete="family-name"
-              disabled={saving}
-            />
-          </Field>
-          <Field label="Email address">
-            <Input
-              type="email"
-              value={contact.email}
-              onChange={(e) => update({ email: e.target.value })}
-              autoComplete="email"
-              disabled={saving}
-            />
-          </Field>
-          <Field label="Phone (optional)">
-            <Input
-              type="tel"
-              value={contact.phone ?? ""}
-              onChange={(e) => update({ phone: e.target.value })}
-              autoComplete="tel"
-              disabled={saving}
-            />
-          </Field>
-        </div>
-
-        <label className="mt-5 flex items-start gap-3 rounded-xl border border-border bg-background p-4 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={contact.consentAccepted}
-            onChange={(e) => update({ consentAccepted: e.target.checked })}
-            disabled={saving}
-            className="mt-1 h-4 w-4 rounded border-border"
-          />
-          <span>
-            I agree that approvU may save my qualification answers and contact me about my
-            mortgage options. This is not a mortgage approval and does not affect my credit.
-          </span>
-        </label>
-
-        {error && (
-          <div className="mt-4 rounded-xl border border-accent/40 bg-accent/10 p-3 text-sm text-accent">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          <Button variant="ghost" onClick={onBack} disabled={saving}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back
-          </Button>
-          <Button onClick={onSubmit} disabled={saving} size="lg">
-            {saving ? "Saving your qualification..." : "Save and view snapshot"}
-            {!saving && <ArrowRight className="ml-1 h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -657,14 +416,11 @@ function labelFor(q: Question, val: AnswerValue | undefined): string {
     return arr.map((v) => q.options.find((o) => o.value === v)?.label ?? v).join(", ");
   }
   if (q.type === "mortgages") {
-    const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "object") : []) as MortgageEntry[];
+    const arr = (
+      Array.isArray(val) ? val.filter((v) => typeof v === "object") : []
+    ) as MortgageEntry[];
     if (!arr.length) return "—";
-    return arr
-      .map(
-        (m) =>
-          `#${m.position} ${m.lender || "—"} · $${m.balance || "—"}`,
-      )
-      .join(" • ");
+    return arr.map((m) => `#${m.position} ${m.lender || "—"} · $${m.balance || "—"}`).join(" • ");
   }
   if (q.type === "locations") {
     const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "string") : []) as string[];
@@ -700,7 +456,9 @@ function MortgagesEditor({
     ]);
   };
   const remove = (i: number) => {
-    const next = entries.filter((_, idx) => idx !== i).map((e, idx) => ({ ...e, position: idx + 1 }));
+    const next = entries
+      .filter((_, idx) => idx !== i)
+      .map((e, idx) => ({ ...e, position: idx + 1 }));
     onChange(next);
   };
   const positionLabel = (p: number) =>
@@ -709,10 +467,7 @@ function MortgagesEditor({
   return (
     <div className="space-y-4">
       {entries.map((m, i) => (
-        <div
-          key={i}
-          className="rounded-xl border-2 border-border bg-card p-4 sm:p-5 space-y-3"
-        >
+        <div key={i} className="rounded-xl border-2 border-border bg-card p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-primary">{positionLabel(m.position)}</p>
             {entries.length > 1 && (
@@ -871,8 +626,8 @@ function Review({
 
         <p className="mt-4 text-sm text-muted-foreground">
           Based on what you shared, you <strong className="text-foreground">may qualify</strong> for
-          possible mortgage options. A licensed broker will review your details and walk you
-          through next steps.
+          possible mortgage options. A licensed broker will review your details and walk you through
+          next steps.
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -1013,9 +768,11 @@ function computeInsights(flowKey: FlowKey, answers: Answers): Insight[] {
   }
 
   if (flowKey === "refinance") {
-    const mortgages = (Array.isArray(answers.mortgages)
-      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
-      : []) as MortgageEntry[];
+    const mortgages = (
+      Array.isArray(answers.mortgages)
+        ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+        : []
+    ) as MortgageEntry[];
     const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
     const out: Insight[] = [];
@@ -1062,9 +819,9 @@ function CreditScoreEducation() {
     <div className="mt-6 space-y-4 max-w-md">
       <div className="rounded-lg border border-secondary/30 bg-secondary/5 p-4">
         <p className="text-sm text-foreground leading-relaxed">
-          <span className="font-semibold">We work with prime and alternative lenders.</span>{" "}
-          Whether you have excellent credit or are working to rebuild, we'll help you find
-          mortgage options that fit your situation.
+          <span className="font-semibold">We work with prime and alternative lenders.</span> Whether
+          you have excellent credit or are working to rebuild, we'll help you find mortgage options
+          that fit your situation.
         </p>
       </div>
       <details className="group rounded-lg">
@@ -1081,7 +838,9 @@ function CreditScoreEducation() {
             <CreditRow label="620–649" hint="Strong qualification range" />
           </div>
           <div className="border-l-4 border-yellow pl-3">
-            <p className="mb-2 font-semibold text-foreground">Alternative Mortgage Range (500–619)</p>
+            <p className="mb-2 font-semibold text-foreground">
+              Alternative Mortgage Range (500–619)
+            </p>
             <CreditRow label="550–619" hint="Alternative programs available" />
             <CreditRow label="500–549" hint="Alternative programs available" />
           </div>
@@ -1127,13 +886,7 @@ function priceRangeMidpoint(v?: string): number {
   }
 }
 
-function DownPaymentGuidanceCard({
-  answers,
-  flowKey,
-}: {
-  answers: Answers;
-  flowKey?: FlowKey;
-}) {
+function DownPaymentGuidanceCard({ answers, flowKey }: { answers: Answers; flowKey?: FlowKey }) {
   const isPre = flowKey === "pre";
   const price = isPre
     ? parseCurrency(answers.specificPrice as string) ||
@@ -1195,9 +948,7 @@ function DownPaymentGuidanceCard({
         </p>
         <p className="mt-2 text-2xl font-semibold text-primary">
           {formatCAD(minAmount)}{" "}
-          <span className="text-base font-medium text-muted-foreground">
-            ({minPercent}%)
-          </span>
+          <span className="text-base font-medium text-muted-foreground">({minPercent}%)</span>
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Based on {isPre ? "an estimated" : "a"} purchase price of {formatCAD(price)}
@@ -1207,30 +958,22 @@ function DownPaymentGuidanceCard({
         </p>
         <div className="mt-3 rounded-lg bg-background/60 p-3">
           <p className="text-xs font-medium text-foreground">Rule applied</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {ruleLabel}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{ruleLabel}</p>
           <details className="group mt-2">
             <summary className="cursor-pointer text-xs font-medium text-secondary hover:text-primary">
               Why this rule?
             </summary>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {ruleReference}
-            </p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{ruleReference}</p>
           </details>
-          {creditNote && (
-            <p className="mt-2 text-xs text-muted-foreground">{creditNote}</p>
-          )}
+          {creditNote && <p className="mt-2 text-xs text-muted-foreground">{creditNote}</p>}
         </div>
       </div>
       {down > 0 && !meets && (
         <div className="rounded-2xl border border-yellow/40 bg-yellow/10 p-5">
-          <p className="text-sm font-semibold text-foreground">
-            More down payment may be needed
-          </p>
+          <p className="text-sm font-semibold text-foreground">More down payment may be needed</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Based on the information provided, your down payment appears to be below the
-            estimated minimum required for this scenario.
+            Based on the information provided, your down payment appears to be below the estimated
+            minimum required for this scenario.
           </p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <Mini label="Minimum required" value={formatCAD(minAmount)} />
@@ -1323,7 +1066,9 @@ function LocationsEditor({
 
 function Mini({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`rounded-lg border p-2 ${accent ? "border-accent/40 bg-accent/5" : "border-border bg-background"}`}>
+    <div
+      className={`rounded-lg border p-2 ${accent ? "border-accent/40 bg-accent/5" : "border-border bg-background"}`}
+    >
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`mt-0.5 text-sm font-semibold ${accent ? "text-accent" : "text-foreground"}`}>
         {value}
@@ -1378,9 +1123,11 @@ function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
   }
 
   if (flowKey === "refinance") {
-    const mortgages = (Array.isArray(answers.mortgages)
-      ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
-      : []) as MortgageEntry[];
+    const mortgages = (
+      Array.isArray(answers.mortgages)
+        ? (answers.mortgages as MortgageEntry[]).filter((m) => typeof m === "object")
+        : []
+    ) as MortgageEntry[];
     const balance = mortgages.reduce((s, m) => s + parseCurrency(m.balance), 0);
     const value = parseCurrency(answers.value as string);
     const intents = Array.isArray(answers.intent) ? (answers.intent as string[]) : [];
