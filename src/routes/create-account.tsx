@@ -9,6 +9,12 @@ import {
   storeAccountHandoffResult,
   type BorrowerAccountHandoffResult,
 } from "@/lib/api/borrowerAccountHandoffApi";
+import {
+  clearPendingQualification,
+  getPendingQualification,
+  submitQualification,
+  storeQualificationHandoff,
+} from "@/lib/api/borrowerQualificationApi";
 
 const searchSchema = z.object({
   ref: z.string().optional(),
@@ -87,10 +93,35 @@ function CreateAccountPage() {
     const referenceIsPublic = trimmedReference.toUpperCase().startsWith("QS-");
 
     try {
+      // If there is no qualification session token already (e.g. from a previous
+      // sessionStorage write by storeQualificationHandoff) and the user has not
+      // entered a public resume code, attempt to submit the pending qualification
+      // that FlowRunner stored in sessionStorage when the Mortgage Snapshot appeared.
+      //
+      // This is the primary journey: qualification flow → Snapshot CTA → create-account.
+      // The backend requires first_name, last_name, email, and consent on the
+      // qualification endpoint, so we use the real values the borrower just entered.
+      let resolvedSessionToken = qualificationSessionToken;
+
+      if (!resolvedSessionToken && !referenceIsPublic) {
+        const pending = getPendingQualification();
+        if (pending) {
+          const qResult = await submitQualification(pending.flowKey, pending.answers, {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
+            consentAccepted: consent,
+          });
+          storeQualificationHandoff(qResult);
+          clearPendingQualification();
+          resolvedSessionToken = qResult.qualification_session_token;
+        }
+      }
+
       const response = await createBorrowerAccountHandoff({
         qualification_session_token: referenceIsPublic
-          ? qualificationSessionToken
-          : qualificationSessionToken || trimmedReference || undefined,
+          ? resolvedSessionToken
+          : resolvedSessionToken || trimmedReference || undefined,
         public_reference: referenceIsPublic ? trimmedReference : undefined,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
