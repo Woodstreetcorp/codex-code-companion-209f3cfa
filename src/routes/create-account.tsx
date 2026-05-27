@@ -47,6 +47,7 @@ function CreateAccountPage() {
   const [consent, setConsent] = useState(false);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showResumeCodeField, setShowResumeCodeField] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BorrowerAccountHandoffResult | null>(null);
 
@@ -65,21 +66,11 @@ function CreateAccountPage() {
       firstName: !firstName.trim(),
       lastName: !lastName.trim(),
       email: !/^\S+@\S+\.\S+$/.test(email),
-      reference: !reference.trim() && !qualificationSessionToken,
       password: password.length < 8,
       passwordConfirmation: !passwordConfirmation || passwordConfirmation !== password,
       consent: !consent,
     }),
-    [
-      firstName,
-      lastName,
-      email,
-      reference,
-      qualificationSessionToken,
-      password,
-      passwordConfirmation,
-      consent,
-    ],
+    [firstName, lastName, email, password, passwordConfirmation, consent],
   );
   const valid = !Object.values(errors).some(Boolean);
 
@@ -99,7 +90,7 @@ function CreateAccountPage() {
       const response = await createBorrowerAccountHandoff({
         qualification_session_token: referenceIsPublic
           ? qualificationSessionToken
-          : qualificationSessionToken || trimmedReference,
+          : qualificationSessionToken || trimmedReference || undefined,
         public_reference: referenceIsPublic ? trimmedReference : undefined,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
@@ -113,7 +104,7 @@ function CreateAccountPage() {
     } catch (failure) {
       setError(
         failure instanceof Error
-          ? failure.message
+          ? normalizeAccountHandoffError(failure.message)
           : "We could not create your account right now. Please try again.",
       );
     } finally {
@@ -177,7 +168,7 @@ function CreateAccountPage() {
     <AuthShell
       eyebrow="Save and continue"
       title="Create your approvU account"
-      description="Save your Mortgage Snapshot and continue your application later."
+      description="We'll securely save your Mortgage Snapshot and take you to your personalized mortgage options."
       footer={
         <>
           Already have an account?{" "}
@@ -231,20 +222,32 @@ function CreateAccountPage() {
             placeholder="you@example.com"
           />
         </AuthField>
-        <AuthField
-          label="Resume or secure reference code"
-          error={
-            touched && errors.reference ? "Enter your QS reference or resume token." : undefined
-          }
-        >
-          <input
-            className={inputCls}
-            value={reference}
-            onChange={(event) => setReference(event.target.value)}
-            autoComplete="off"
-            placeholder="QS-..."
-          />
-        </AuthField>
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
+          <button
+            type="button"
+            onClick={() => setShowResumeCodeField((current) => !current)}
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            {showResumeCodeField ? "Hide resume code" : "Have a resume code?"}
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">
+            If you came here from your Mortgage Snapshot, your saved reference is carried
+            automatically.
+          </p>
+          {showResumeCodeField && (
+            <div className="mt-3">
+              <AuthField label="Resume or secure reference code">
+                <input
+                  className={inputCls}
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
+                  autoComplete="off"
+                  placeholder="QS-..."
+                />
+              </AuthField>
+            </div>
+          )}
+        </div>
         <AuthField
           label="Password"
           error={touched && errors.password ? "Use at least 8 characters." : undefined}
@@ -313,6 +316,20 @@ function CreateAccountPage() {
       </form>
     </AuthShell>
   );
+}
+
+function normalizeAccountHandoffError(message: string): string {
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("reference") ||
+    lower.includes("resume token") ||
+    lower.includes("qualification_session_token") ||
+    lower.includes("public_reference")
+  ) {
+    return "We could not find the saved Mortgage Snapshot for this account handoff. Please return to your snapshot and try again, or use a resume code if you have one.";
+  }
+
+  return message;
 }
 
 function ReferenceLine({ reference }: { reference?: string }) {
