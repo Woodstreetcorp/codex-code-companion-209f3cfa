@@ -49,6 +49,8 @@ import {
 } from "@/lib/policy";
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
+const OFFERS_REDIRECT = "/portal/offers" as const;
+const SNAPSHOT_HANDOFF_SEARCH = { redirect: OFFERS_REDIRECT };
 
 // ---------- Derivations ----------
 
@@ -535,7 +537,8 @@ function PurchaseSnapshot({
           </Button>
           <Button variant="ghost">Talk to a Broker</Button>
           <Link
-            to="/portal"
+            to="/create-account"
+            search={SNAPSHOT_HANDOFF_SEARCH}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent px-4 text-sm font-semibold text-accent-foreground shadow hover:opacity-95"
           >
             Unlock Mortgage Options
@@ -548,7 +551,8 @@ function PurchaseSnapshot({
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md gap-2">
           <Link
-            to="/portal"
+            to="/create-account"
+            search={SNAPSHOT_HANDOFF_SEARCH}
             className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow"
           >
             {nextStep}
@@ -674,7 +678,8 @@ function PurchaseHero({
       {/* Primary actions */}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
         <Link
-          to="/portal"
+          to="/create-account"
+          search={SNAPSHOT_HANDOFF_SEARCH}
           className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
         >
           {nextStep}
@@ -940,7 +945,8 @@ function RefinanceSnapshot({
           </Button>
           <Button variant="ghost">Talk to a Broker</Button>
           <Link
-            to="/portal"
+            to="/create-account"
+            search={SNAPSHOT_HANDOFF_SEARCH}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-accent px-4 text-sm font-semibold text-accent-foreground shadow hover:opacity-95"
           >
             Unlock Mortgage Options
@@ -953,7 +959,8 @@ function RefinanceSnapshot({
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 p-3 shadow-lg backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-md gap-2">
           <Link
-            to="/portal"
+            to="/create-account"
+            search={SNAPSHOT_HANDOFF_SEARCH}
             className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow"
           >
             {withinLimit ? "See My Options" : "Adjust My Numbers"}
@@ -1049,7 +1056,8 @@ function RefinanceHero({
       {/* Primary actions */}
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
         <Link
-          to="/portal"
+          to="/create-account"
+          search={SNAPSHOT_HANDOFF_SEARCH}
           className="inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent/90 sm:w-auto"
         >
           {withinLimit ? "See My Refinance Options" : "Continue for Tailored Review"}
@@ -1377,7 +1385,8 @@ function HomeLifeOfferBundle({ variant = "refinance" }: { variant?: "refinance" 
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Link
-          to="/portal"
+          to="/create-account"
+          search={SNAPSHOT_HANDOFF_SEARCH}
           className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-accent-foreground shadow-sm hover:opacity-95 sm:flex-none sm:px-6"
         >
           View My Eligible Offers
@@ -1385,7 +1394,8 @@ function HomeLifeOfferBundle({ variant = "refinance" }: { variant?: "refinance" 
         </Link>
         {variant === "purchase" ? (
           <Link
-            to="/portal"
+            to="/create-account"
+            search={SNAPSHOT_HANDOFF_SEARCH}
             className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-input bg-background px-4 text-sm font-semibold text-foreground shadow-sm hover:bg-accent/5 sm:px-6"
           >
             {secondaryLabel}
@@ -2063,7 +2073,7 @@ function BottomCTA({ path }: { path: LendingPath }) {
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Link
           to="/create-account"
-          search={{ redirect: "/portal/offers" }}
+          search={SNAPSHOT_HANDOFF_SEARCH}
           className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-6 text-sm font-semibold text-accent-foreground shadow hover:bg-accent/90 sm:w-auto"
         >
           {tailored ? "Continue to Full Review" : "Unlock My Mortgage Options"}

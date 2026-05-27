@@ -156,7 +156,7 @@ function LoginPage() {
           New to approvU?{" "}
           <Link
             to="/create-account"
-            search={{ ref }}
+            search={{ ref, email, redirect: postLoginRoute }}
             className="font-semibold text-primary hover:underline"
           >
             Create an account
