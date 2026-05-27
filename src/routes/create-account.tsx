@@ -13,7 +13,12 @@ import {
 const searchSchema = z.object({
   ref: z.string().optional(),
   email: z.string().optional(),
+  redirect: z.string().optional(),
 });
+
+function normalizeRedirect(value?: string): "/portal" | "/portal/offers" {
+  return value === "/portal/offers" ? "/portal/offers" : "/portal";
+}
 
 export const Route = createFileRoute("/create-account")({
   validateSearch: (search) => searchSchema.parse(search),
@@ -30,7 +35,8 @@ export const Route = createFileRoute("/create-account")({
 });
 
 function CreateAccountPage() {
-  const { ref, email: emailFromSearch } = Route.useSearch();
+  const { ref, email: emailFromSearch, redirect } = Route.useSearch();
+  const loginRedirect = normalizeRedirect(redirect);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState<string>(emailFromSearch ?? "");
@@ -134,7 +140,7 @@ function CreateAccountPage() {
           </p>
           <Link
             to="/login"
-            search={{ email, ref: result.public_reference ?? reference }}
+            search={{ email, ref: result.public_reference ?? reference, redirect: loginRedirect }}
             className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Sign in to continue
@@ -157,7 +163,7 @@ function CreateAccountPage() {
       >
         <Link
           to="/login"
-          search={{ email, ref: result.public_reference ?? reference }}
+          search={{ email, ref: result.public_reference ?? reference, redirect: loginRedirect }}
           className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
           Sign in to continue
@@ -177,7 +183,7 @@ function CreateAccountPage() {
           Already have an account?{" "}
           <Link
             to="/login"
-            search={{ email, ref: reference }}
+            search={{ email, ref: reference, redirect: loginRedirect }}
             className="font-semibold text-primary hover:underline"
           >
             Sign in
