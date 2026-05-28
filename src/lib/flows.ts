@@ -66,9 +66,17 @@ const propertyUse: Option[] = [
 
 const propertyTypes: Option[] = [
   { value: "detached", label: "Detached house", hint: "A standalone single-family home." },
-  { value: "semi", label: "Semi-detached / townhouse", hint: "A home that shares one or more walls with neighbours." },
+  {
+    value: "semi",
+    label: "Semi-detached / townhouse",
+    hint: "A home that shares one or more walls with neighbours.",
+  },
   { value: "condo", label: "Condo apartment", hint: "A unit inside a condo building or complex." },
-  { value: "multi", label: "Multi-unit (2–4 units)", hint: "A property with multiple separate legal units." },
+  {
+    value: "multi",
+    label: "Multi-unit (2–4 units)",
+    hint: "A property with multiple separate legal units.",
+  },
 ];
 
 const unitCountOptions: Option[] = [
@@ -159,18 +167,38 @@ const ownsResidence: Option[] = [
 ];
 
 const offerStatus: Option[] = [
-  { value: "yes", label: "Yes, I have an accepted offer", hint: "You have a signed Agreement of Purchase and Sale." },
+  {
+    value: "yes",
+    label: "Yes, I have an accepted offer",
+    hint: "You have a signed Agreement of Purchase and Sale.",
+  },
   { value: "no", label: "No, not yet", hint: "You're still shopping or exploring options." },
 ];
 
 const targetPriceRange: Option[] = [
   { value: "u400", label: "Under $400,000", hint: "Lower-range purchase budget." },
-  { value: "400-600", label: "$400,000 – $600,000", hint: "Common entry-level range in many markets." },
+  {
+    value: "400-600",
+    label: "$400,000 – $600,000",
+    hint: "Common entry-level range in many markets.",
+  },
   { value: "600-900", label: "$600,000 – $900,000", hint: "Mid-range purchase budget." },
   { value: "900-1.2", label: "$900,000 – $1.2M", hint: "Upper mid-range budget." },
-  { value: "1.2-1.5", label: "$1.2M – $1.5M", hint: "Higher-value property range under the $1.5M insured threshold." },
-  { value: "1.5+", label: "Above $1.5M", hint: "Homes at or above $1.5M require a 20% minimum down payment." },
-  { value: "specific", label: "I have a specific amount in mind", hint: "Enter your target price on the next screen." },
+  {
+    value: "1.2-1.5",
+    label: "$1.2M – $1.5M",
+    hint: "Higher-value property range under the $1.5M insured threshold.",
+  },
+  {
+    value: "1.5+",
+    label: "Above $1.5M",
+    hint: "Homes at or above $1.5M require a 20% minimum down payment.",
+  },
+  {
+    value: "specific",
+    label: "I have a specific amount in mind",
+    hint: "Enter your target price on the next screen.",
+  },
 ];
 
 // Credit score is collected as a numeric input with educational ranges.
@@ -233,9 +261,9 @@ export const purchaseFlow: Question[] = [
   {
     id: "address",
     type: "text",
-    title: "Where is the property located?",
-    subtitle: "Start typing and select your address. Ontario, Canada only for now.",
-    placeholder: "Start typing your address…",
+    title: "What city is the property in?",
+    subtitle: "Enter the city or municipality where the property is located. Ontario, Canada only.",
+    placeholder: "e.g. Toronto",
   },
   {
     id: "propertyType",
@@ -359,34 +387,89 @@ export const prePurchaseFlow: Question[] = [
 
 // ---------- REFINANCE / RENEW / EQUITY ----------
 const refinanceIntents: Option[] = [
-  { value: "renew", label: "Renew my mortgage", hint: "Your current mortgage term is ending and you want to review your options." },
-  { value: "switch", label: "Switch lenders", hint: "You may want to move your mortgage to a different lender." },
-  { value: "lower-payment", label: "Lower my monthly payment", hint: "You want to explore ways to reduce your mortgage payment." },
-  { value: "better-rate", label: "Get a better rate", hint: "You want to compare available rate options." },
-  { value: "cash-out", label: "Access home equity / cash out", hint: "You want to borrow against your home equity." },
-  { value: "consolidate", label: "Consolidate debt", hint: "You want to combine higher-interest debts into your mortgage." },
-  { value: "heloc", label: "Add a HELOC", hint: "You want access to a revolving home equity line of credit." },
-  { value: "unsure", label: "I'm not sure yet", hint: "That's okay. We can help identify possible paths." },
+  {
+    value: "renew",
+    label: "Renew my mortgage",
+    hint: "Your current mortgage term is ending and you want to review your options.",
+  },
+  {
+    value: "switch",
+    label: "Switch lenders",
+    hint: "You may want to move your mortgage to a different lender.",
+  },
+  {
+    value: "lower-payment",
+    label: "Lower my monthly payment",
+    hint: "You want to explore ways to reduce your mortgage payment.",
+  },
+  {
+    value: "better-rate",
+    label: "Get a better rate",
+    hint: "You want to compare available rate options.",
+  },
+  {
+    value: "cash-out",
+    label: "Access home equity / cash out",
+    hint: "You want to borrow against your home equity.",
+  },
+  {
+    value: "consolidate",
+    label: "Consolidate debt",
+    hint: "You want to combine higher-interest debts into your mortgage.",
+  },
+  {
+    value: "heloc",
+    label: "Add a HELOC",
+    hint: "You want access to a revolving home equity line of credit.",
+  },
+  {
+    value: "unsure",
+    label: "I'm not sure yet",
+    hint: "That's okay. We can help identify possible paths.",
+  },
 ];
 
 const numMortgagesOptions: Option[] = [
   { value: "0", label: "No mortgage / paid off", hint: "The property is mortgage-free." },
   { value: "1", label: "1 mortgage", hint: "There is one mortgage registered on the property." },
   { value: "2", label: "2 mortgages", hint: "There are two mortgages registered on the property." },
-  { value: "3", label: "3 mortgages", hint: "There are three mortgages registered on the property." },
+  {
+    value: "3",
+    label: "3 mortgages",
+    hint: "There are three mortgages registered on the property.",
+  },
 ];
 
 const cashOutPurposes: Option[] = [
-  { value: "home_renovations", label: "Home renovations", hint: "Funds will be used to renovate or improve the property." },
-  { value: "debt_consolidation", label: "Pay off other debt", hint: "Funds will be used to pay down other debts." },
-  { value: "investment", label: "Investment", hint: "Funds will be used for an investment opportunity." },
-  { value: "education", label: "Education", hint: "Funds will be used for tuition or education costs." },
+  {
+    value: "home_renovations",
+    label: "Home renovations",
+    hint: "Funds will be used to renovate or improve the property.",
+  },
+  {
+    value: "debt_consolidation",
+    label: "Pay off other debt",
+    hint: "Funds will be used to pay down other debts.",
+  },
+  {
+    value: "investment",
+    label: "Investment",
+    hint: "Funds will be used for an investment opportunity.",
+  },
+  {
+    value: "education",
+    label: "Education",
+    hint: "Funds will be used for tuition or education costs.",
+  },
   { value: "other", label: "Other", hint: "Funds will be used for another purpose." },
 ];
 
 const wantsCashOut = (a: Record<string, unknown>) => {
   const intent = a.intent as string[] | undefined;
-  return Array.isArray(intent) && (intent.includes("cash-out") || intent.includes("consolidate") || intent.includes("heloc"));
+  return (
+    Array.isArray(intent) &&
+    (intent.includes("cash-out") || intent.includes("consolidate") || intent.includes("heloc"))
+  );
 };
 
 // "Lower my monthly payment" alone is ambiguous — ask a follow-up that may
@@ -423,8 +506,16 @@ const onlyLowerPayment = (a: Record<string, unknown>) => {
 };
 
 const wantsAccessEquity: Option[] = [
-  { value: "yes", label: "Yes, I'd like to access equity", hint: "You want to borrow additional funds against your home." },
-  { value: "no", label: "No, not at this time", hint: "You're not looking to take out additional funds." },
+  {
+    value: "yes",
+    label: "Yes, I'd like to access equity",
+    hint: "You want to borrow additional funds against your home.",
+  },
+  {
+    value: "no",
+    label: "No, not at this time",
+    hint: "You're not looking to take out additional funds.",
+  },
 ];
 
 export const refinanceFlow: Question[] = [
@@ -454,9 +545,9 @@ export const refinanceFlow: Question[] = [
   {
     id: "address",
     type: "text",
-    title: "Where is the property located?",
-    subtitle: "Start typing and select your address. Ontario, Canada only for now.",
-    placeholder: "Start typing your address…",
+    title: "What city is the property in?",
+    subtitle: "Enter the city or municipality where the property is located. Ontario, Canada only.",
+    placeholder: "e.g. Toronto",
   },
   {
     id: "use",
