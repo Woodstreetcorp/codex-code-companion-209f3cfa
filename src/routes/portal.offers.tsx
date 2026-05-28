@@ -491,7 +491,7 @@ function OffersReviewPage() {
         </div>
 
         {safeString(reviewStatus?.message) && (
-          <p className="mt-4 text-sm text-muted-foreground">{safeString(reviewStatus.message)}</p>
+          <p className="mt-4 text-sm text-muted-foreground">{safeString(reviewStatus?.message)}</p>
         )}
         {packagingInProgress && (
           <div className="mt-4 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-3">
