@@ -67,151 +67,7 @@ export const Route = createFileRoute("/portal/documents")({
   component: DocumentVaultPage,
 });
 
-// ─── Mock data specific to this hub ─────────────────────────────
-type RequestStatus = "Outstanding" | "Uploaded" | "Under Review" | "Approved" | "Rejected";
-type RequestSource = "lender" | "advisor" | "compliance";
-type LenderRequest = {
-  id: string;
-  app: string;
-  docType: string;
-  description: string;
-  sample: string;
-  dueIn: number; // days; negative = overdue
-  status: RequestStatus;
-  required: boolean;
-  source: RequestSource;
-  requestedBy: string;
-  requestedAt: string;
-  conditionId?: string;
-  conditionTitle?: string;
-};
-
-const LENDER_REQUESTS: LenderRequest[] = [
-  {
-    id: "REQ-9001",
-    app: "APP-2041",
-    docType: "Notice of Assessment (2024)",
-    description: "Most recent CRA NOA showing total income line 15000.",
-    sample:
-      "Look for the CRA letterhead, your SIN (last 3 digits), tax year, and 'Total income' on page 1.",
-    dueIn: 2,
-    status: "Outstanding",
-    required: true,
-    source: "advisor",
-    requestedBy: "Sarah Chen — Mortgage Broker",
-    requestedAt: "May 9, 2026",
-    conditionId: "C-101",
-    conditionTitle: "Confirm employment letter & income docs",
-  },
-  {
-    id: "REQ-9002",
-    app: "APP-2041",
-    docType: "Pay stub — most recent",
-    description: "Most recent pay stub within 30 days, showing YTD earnings.",
-    sample: "Must include employer name, pay period, gross pay, YTD totals, and your full name.",
-    dueIn: 5,
-    status: "Outstanding",
-    required: true,
-    source: "advisor",
-    requestedBy: "Sarah Chen — Mortgage Broker",
-    requestedAt: "May 9, 2026",
-    conditionId: "C-102",
-    conditionTitle: "Most recent 2 pay stubs",
-  },
-  {
-    id: "REQ-9003",
-    app: "APP-2041",
-    docType: "Bank statement — 90 days down payment",
-    description: "Last 90 days of statements for the account holding your down payment.",
-    sample: "Include all pages, account holder name, account #, and a clear running balance.",
-    dueIn: -1,
-    status: "Outstanding",
-    required: true,
-    source: "lender",
-    requestedBy: "Equitable Bank — Underwriting",
-    requestedAt: "May 8, 2026",
-    conditionId: "C-103",
-    conditionTitle: "Void cheque or PAD form",
-  },
-  {
-    id: "REQ-9004",
-    app: "APP-2041",
-    docType: "Letter of Employment",
-    description: "Signed letter on company letterhead with role, salary, start date.",
-    sample: "Must be dated within 30 days and signed by HR / supervisor.",
-    dueIn: 7,
-    status: "Under Review",
-    required: true,
-    source: "lender",
-    requestedBy: "Equitable Bank — Underwriting",
-    requestedAt: "May 8, 2026",
-    conditionId: "C-101",
-    conditionTitle: "Confirm employment letter & income docs",
-  },
-  {
-    id: "REQ-9005",
-    app: "APP-1801",
-    docType: "Property Insurance Binder",
-    description: "Proof of home insurance for closing.",
-    sample: "Must show effective date on or before closing, lender as loss payee.",
-    dueIn: 12,
-    status: "Approved",
-    required: true,
-    source: "lender",
-    requestedBy: "Scotiabank — Underwriting",
-    requestedAt: "Apr 18, 2026",
-    conditionId: "C-105",
-    conditionTitle: "Property insurance binder",
-  },
-];
-
-type Envelope = {
-  id: string;
-  app: string;
-  title: string;
-  sender: string;
-  provider: "DocuSign" | "OneSpan";
-  status: "Action Required" | "Awaiting Counterparty" | "Signed" | "Voided";
-  receivedAt: string;
-  dueAt: string;
-  pages: number;
-};
-
-const ENVELOPES: Envelope[] = [
-  {
-    id: "ENV-7701",
-    app: "APP-2041",
-    title: "Mortgage Application & Privacy Consent",
-    sender: "approvU Brokerage",
-    provider: "DocuSign",
-    status: "Action Required",
-    receivedAt: "May 10, 2026",
-    dueAt: "May 14, 2026",
-    pages: 6,
-  },
-  {
-    id: "ENV-7702",
-    app: "APP-2041",
-    title: "FCAC Cost-of-Borrowing Disclosure",
-    sender: "Lender — Equitable Bank",
-    provider: "OneSpan",
-    status: "Action Required",
-    receivedAt: "May 11, 2026",
-    dueAt: "May 16, 2026",
-    pages: 4,
-  },
-  {
-    id: "ENV-7703",
-    app: "APP-1801",
-    title: "Mortgage Commitment Letter",
-    sender: "Lender — Scotiabank",
-    provider: "DocuSign",
-    status: "Signed",
-    receivedAt: "Apr 22, 2026",
-    dueAt: "Apr 25, 2026",
-    pages: 12,
-  },
-];
+// ─── Mock data removed — all document requests and e-sign envelopes load from the real API ───
 
 type Connection = {
   id: string;
@@ -260,45 +116,8 @@ type ActivityEntry = {
   ip?: string;
 };
 
-const ACTIVITY: ActivityEntry[] = [
-  {
-    id: "A1",
-    doc: "Pay stubs — April 2026",
-    actor: "Lender Underwriter (Equitable Bank)",
-    action: "Viewed",
-    when: "2 hours ago",
-    ip: "Toronto, ON",
-  },
-  {
-    id: "A2",
-    doc: "Notice of Assessment 2024",
-    actor: "Sarah Chen — Mortgage Broker",
-    action: "Downloaded",
-    when: "Yesterday, 4:12 PM",
-  },
-  {
-    id: "A3",
-    doc: "Credit Bureau Consent",
-    actor: "approvU System",
-    action: "Shared",
-    when: "May 4, 2026",
-  },
-  {
-    id: "A4",
-    doc: "Government ID — Driver's Licence",
-    actor: "You",
-    action: "Uploaded",
-    when: "May 6, 2026",
-    ip: "Toronto, ON",
-  },
-  {
-    id: "A5",
-    doc: "Mortgage Commitment Letter",
-    actor: "Scotiabank Underwriter",
-    action: "Viewed",
-    when: "Apr 22, 2026",
-  },
-];
+// Activity log is populated from live API events — no static data.
+const ACTIVITY: ActivityEntry[] = [];
 
 // Expiry rules (days). Pay stubs 30, NOAs 365, IDs 365.
 function expiryDaysFor(doc: VaultDoc): number | null {
@@ -331,11 +150,10 @@ const SUB_TABS: { key: SubTab; label: string; icon: typeof FileText }[] = [
 
 function DocumentVaultPage() {
   const [scope, setScope] = useState<Scope>("personal");
-  const [binderApp, setBinderApp] = useState<string>("APP-2041");
+  const [binderApp, setBinderApp] = useState<string>("");
   const [tab, setTab] = useState<SubTab>("uploads");
   const [query, setQuery] = useState("");
   const [docs, setDocs] = useState<VaultDoc[]>(VAULT_DOCUMENTS);
-  const [requests, setRequests] = useState<LenderRequest[]>(LENDER_REQUESTS);
   const [connections, setConnections] = useState<Connection[]>(INITIAL_CONNECTIONS);
   const [pendingConn, setPendingConn] = useState<Connection | null>(null);
   const [activityOpen, setActivityOpen] = useState<string | null>(null);
@@ -354,16 +172,6 @@ function DocumentVaultPage() {
     if (scope === "personal") return docs.filter((d) => d.reusable || !d.app);
     return docs.filter((d) => d.app === binderApp);
   }, [docs, scope, binderApp]);
-
-  const scopedRequests = useMemo(() => {
-    if (scope === "personal") return [];
-    return requests.filter((r) => r.app === binderApp);
-  }, [requests, scope, binderApp]);
-
-  const scopedEnvelopes = useMemo(() => {
-    if (scope === "personal") return ENVELOPES;
-    return ENVELOPES.filter((e) => e.app === binderApp);
-  }, [scope, binderApp]);
 
   const expiringDocs = useMemo(() => {
     return docs
@@ -392,30 +200,17 @@ function DocumentVaultPage() {
   const counts = useMemo(() => {
     return {
       total: scopedDocs.filter((d) => !d.archived).length,
-      requests: scopedRequests.filter((r) => r.status === "Outstanding").length,
-      esign: scopedEnvelopes.filter((e) => e.status === "Action Required").length,
+      requests: 0,
+      esign: 0,
       expiring: expiringDocs.filter((x) => x.remaining <= 14).length,
     };
-  }, [scopedDocs, scopedRequests, scopedEnvelopes, expiringDocs]);
+  }, [scopedDocs, expiringDocs]);
 
   function handleArchive(id: string) {
     setDocs((prev) =>
       prev.map((d) => (d.id === id ? { ...d, archived: true, status: "Archived" } : d)),
     );
     toast.success("Moved to Archived");
-  }
-
-  function handleUploadFor(req: LenderRequest, source: "file" | "camera" | "connection") {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, status: "Under Review" } : r)),
-    );
-    const verb =
-      source === "camera"
-        ? "Captured & uploaded"
-        : source === "connection"
-          ? "Auto-pulled"
-          : "Uploaded";
-    toast.success(`${verb}: ${req.docType}`);
   }
 
   function connect(conn: Connection) {
@@ -565,7 +360,7 @@ function DocumentVaultPage() {
         />
       )}
       {tab === "requests" && <RequestedDocumentsView />}
-      {tab === "esign" && <EsignInboxView envelopes={scopedEnvelopes} />}
+      {tab === "esign" && <EsignInboxEmptyView />}
       {tab === "connections" && (
         <ConnectionsView connections={connections} onConnect={connect} onDisconnect={disconnect} />
       )}
@@ -1030,38 +825,35 @@ function DocumentRequestStatusPill({ status }: { status?: string | null }) {
 
 // ─── Requested Documents config & helpers ────────────
 
-const REQUEST_STATUS_CONFIG: Record<
-  string,
-  { label: string; message: string; pillTone: string }
-> = {
-  requested: {
-    label: "Needs Action",
-    message:
-      "Please upload this document so our team can continue reviewing your file.",
-    pillTone: "bg-yellow/20 text-foreground",
-  },
-  rejected: {
-    label: "Needs Attention",
-    message:
-      "This document needs attention. Please upload a replacement or contact the approvU team.",
-    pillTone: "bg-coral/15 text-coral",
-  },
-  uploaded: {
-    label: "Waiting for Review",
-    message: "Uploaded. Our team will review this document shortly.",
-    pillTone: "bg-secondary/15 text-secondary",
-  },
-  reviewed: {
-    label: "Complete",
-    message: "Reviewed by the approvU team.",
-    pillTone: "bg-mint/25 text-foreground",
-  },
-  waived: {
-    label: "Not Required",
-    message: "This document is no longer required.",
-    pillTone: "bg-muted text-muted-foreground",
-  },
-};
+const REQUEST_STATUS_CONFIG: Record<string, { label: string; message: string; pillTone: string }> =
+  {
+    requested: {
+      label: "Needs Action",
+      message: "Please upload this document so our team can continue reviewing your file.",
+      pillTone: "bg-yellow/20 text-foreground",
+    },
+    rejected: {
+      label: "Needs Attention",
+      message:
+        "This document needs attention. Please upload a replacement or contact the approvU team.",
+      pillTone: "bg-coral/15 text-coral",
+    },
+    uploaded: {
+      label: "Waiting for Review",
+      message: "Uploaded. Our team will review this document shortly.",
+      pillTone: "bg-secondary/15 text-secondary",
+    },
+    reviewed: {
+      label: "Complete",
+      message: "Reviewed by the approvU team.",
+      pillTone: "bg-mint/25 text-foreground",
+    },
+    waived: {
+      label: "Not Required",
+      message: "This document is no longer required.",
+      pillTone: "bg-muted text-muted-foreground",
+    },
+  };
 
 function fulfilledDocStatusLabel(status?: string | null): string {
   const map: Record<string, string> = {
@@ -1162,9 +954,7 @@ function RequestedDocumentsView() {
   const actionable = docRequests.filter((r) => r.status === "requested");
   const rejected = docRequests.filter((r) => r.status === "rejected");
   const inReview = docRequests.filter((r) => r.status === "uploaded");
-  const complete = docRequests.filter(
-    (r) => r.status === "reviewed" || r.status === "waived",
-  );
+  const complete = docRequests.filter((r) => r.status === "reviewed" || r.status === "waived");
 
   function RequestCard({ req }: { req: BorrowerDocumentRequest }) {
     const ref = req.public_reference ?? "";
@@ -1214,9 +1004,7 @@ function RequestedDocumentsView() {
               </p>
 
               {/* Per-status contextual message */}
-              {config && (
-                <p className="mt-1.5 text-sm text-muted-foreground">{config.message}</p>
-              )}
+              {config && <p className="mt-1.5 text-sm text-muted-foreground">{config.message}</p>}
 
               {req.description && (
                 <p className="mt-1.5 text-sm text-muted-foreground">{req.description}</p>
@@ -1273,9 +1061,7 @@ function RequestedDocumentsView() {
           {req.fulfilled_document && (
             <div
               className={`mt-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
-                isRejected
-                  ? "border-coral/20 bg-coral/5"
-                  : "border-secondary/20 bg-secondary/5"
+                isRejected ? "border-coral/20 bg-coral/5" : "border-secondary/20 bg-secondary/5"
               }`}
             >
               {isRejected ? (
@@ -1376,9 +1162,7 @@ function RequestedDocumentsView() {
               {uploadSuccess && !uploadError && (
                 <div className="flex items-start gap-2 rounded-lg border border-secondary/30 bg-secondary/5 p-3 text-sm text-secondary">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    Document uploaded for this request. Our team will review it shortly.
-                  </span>
+                  <span>Document uploaded for this request. Our team will review it shortly.</span>
                 </div>
               )}
 
@@ -1408,15 +1192,7 @@ function RequestedDocumentsView() {
     );
   }
 
-  function SectionHeading({
-    label,
-    count,
-    tone,
-  }: {
-    label: string;
-    count: number;
-    tone: string;
-  }) {
+  function SectionHeading({ label, count, tone }: { label: string; count: number; tone: string }) {
     return (
       <div className="flex items-center gap-2">
         <h3 className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</h3>
@@ -1510,11 +1286,7 @@ function RequestedDocumentsView() {
           {/* Needs Attention (rejected) */}
           {rejected.length > 0 && (
             <section className="space-y-3">
-              <SectionHeading
-                label="Needs Attention"
-                count={rejected.length}
-                tone="text-coral"
-              />
+              <SectionHeading label="Needs Attention" count={rejected.length} tone="text-coral" />
               {rejected.map((req) => (
                 <RequestCard key={req.public_reference ?? req.title} req={req} />
               ))}
@@ -1765,384 +1537,28 @@ function MobileCaptureButton({ context }: { context: string }) {
   );
 }
 
-// ─── Lender Requests ──────────────────────────────────
-function LenderRequestsView({
-  scope,
-  binderApp,
-  requests,
-  onUpload,
-  hasBankConnection,
-}: {
-  scope: Scope;
-  binderApp: string;
-  requests: LenderRequest[];
-  onUpload: (r: LenderRequest, src: "file" | "camera" | "connection") => void;
-  hasBankConnection: boolean;
-}) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [sourceFilter, setSourceFilter] = useState<"all" | RequestSource>("all");
-
-  if (scope === "personal") {
-    return (
-      <Card>
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="rounded-xl bg-secondary/15 p-2 text-secondary">
-              <Info className="h-4 w-4" />
-            </span>
-            <div>
-              <p className="font-medium text-foreground">
-                Lender requests live inside an application binder.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Switch to <strong>Application Binder</strong> above to see what your lender is
-                asking for.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (requests.length === 0) {
-    return (
-      <Card>
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          No outstanding lender requests for #{binderApp}. You&apos;re all caught up.
-        </p>
-      </Card>
-    );
-  }
-
-  const counts = {
-    all: requests.length,
-    advisor: requests.filter((r) => r.source === "advisor").length,
-    lender: requests.filter((r) => r.source === "lender").length,
-    compliance: requests.filter((r) => r.source === "compliance").length,
-  };
-  const visible =
-    sourceFilter === "all" ? requests : requests.filter((r) => r.source === sourceFilter);
-
+// ─── E-Sign Inbox (empty state — real e-sign envelopes not yet connected) ────
+function EsignInboxEmptyView() {
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-card p-3">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          <Inbox className="h-3 w-3" /> Inbox
-        </span>
-        <SourceChip
-          active={sourceFilter === "all"}
-          onClick={() => setSourceFilter("all")}
-          icon={ListChecks}
-          label="All"
-          count={counts.all}
-        />
-        <SourceChip
-          active={sourceFilter === "advisor"}
-          onClick={() => setSourceFilter("advisor")}
-          icon={UserCheck}
-          label="From advisor"
-          count={counts.advisor}
-        />
-        <SourceChip
-          active={sourceFilter === "lender"}
-          onClick={() => setSourceFilter("lender")}
-          icon={Building2}
-          label="From lender"
-          count={counts.lender}
-        />
-        {counts.compliance > 0 && (
-          <SourceChip
-            active={sourceFilter === "compliance"}
-            onClick={() => setSourceFilter("compliance")}
-            icon={ShieldCheck}
-            label="Compliance"
-            count={counts.compliance}
-          />
-        )}
-        <Link
-          to="/portal/applications/$applicationId/conditions"
-          params={{ applicationId: binderApp }}
-          className="ml-auto inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted"
-        >
-          Open conditions tracker <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
-
-      {visible.length === 0 && (
-        <Card>
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No requests match this filter.
-          </p>
-        </Card>
-      )}
-
-      {visible.map((r) => {
-        const open = openId === r.id;
-        const overdue = r.dueIn < 0;
-        const dueSoon = r.dueIn >= 0 && r.dueIn <= 3;
-        const SourceIcon =
-          r.source === "advisor" ? UserCheck : r.source === "lender" ? Building2 : ShieldCheck;
-        const sourceTone =
-          r.source === "advisor"
-            ? "bg-secondary/10 text-secondary border-secondary/30"
-            : r.source === "lender"
-              ? "bg-primary/10 text-primary border-primary/30"
-              : "bg-mint/20 text-mint-foreground border-mint/40";
-        return (
-          <article key={r.id} className="rounded-2xl border border-border bg-card shadow-sm">
-            <button
-              type="button"
-              onClick={() => setOpenId(open ? null : r.id)}
-              className="flex w-full items-start justify-between gap-3 p-4 text-left"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-foreground">{r.docType}</p>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${sourceTone}`}
-                  >
-                    <SourceIcon className="h-3 w-3" />
-                    {r.source === "advisor"
-                      ? "Requested by advisor"
-                      : r.source === "lender"
-                        ? "Requested by lender"
-                        : "Compliance"}
-                  </span>
-                  {r.required && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Required
-                    </span>
-                  )}
-                  <RequestStatusPill status={r.status} />
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      overdue
-                        ? "bg-coral/15 text-coral"
-                        : dueSoon
-                          ? "bg-yellow/20 text-foreground"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    <Clock className="h-3 w-3" />
-                    {overdue ? `Overdue by ${Math.abs(r.dueIn)}d` : `Due in ${r.dueIn}d`}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {r.requestedBy} · {r.requestedAt}
-                  {r.conditionTitle && (
-                    <>
-                      {" "}
-                      · linked to condition{" "}
-                      <span className="font-medium text-foreground">{r.conditionTitle}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-              {open ? (
-                <ChevronDown className="mt-1 h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="mt-1 h-4 w-4 text-muted-foreground" />
-              )}
-            </button>
-            {open && (
-              <div className="border-t border-border bg-muted/30 p-4">
-                <div className="mb-3 flex items-start gap-2 rounded-lg border border-border bg-background p-3 text-xs">
-                  <HelpCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-secondary" />
-                  <div>
-                    <p className="font-medium text-foreground">What to send</p>
-                    <p className="text-muted-foreground">{r.sample}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                    <Upload className="h-4 w-4" /> Upload file
-                    <input
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if ((e.target.files?.length ?? 0) > 0) onUpload(r, "file");
-                        e.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
-                    <Camera className="h-4 w-4" /> Scan with camera
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        if ((e.target.files?.length ?? 0) > 0) onUpload(r, "camera");
-                        e.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
-                  {/bank statement|pay stub|noa|notice of assessment/i.test(r.docType) && (
-                    <button
-                      onClick={() => {
-                        if (!hasBankConnection) {
-                          toast.message("Connect your bank under Bank & Payroll to auto-pull this");
-                        } else {
-                          onUpload(r, "connection");
-                        }
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
-                    >
-                      <Zap className="h-4 w-4 text-secondary" /> Auto-pull from bank
-                    </button>
-                  )}
-                  {r.conditionId && (
-                    <Link
-                      to="/portal/applications/$applicationId/conditions"
-                      params={{ applicationId: r.app }}
-                      className="ml-auto inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted"
-                    >
-                      View linked condition <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </article>
-        );
-      })}
-    </div>
+    <Card>
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        No e-sign envelopes yet. E-signature requests from your advisor or lender will appear here.
+      </p>
+    </Card>
   );
 }
 
-function SourceChip({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Inbox;
-  label: string;
-  count: number;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground hover:bg-muted"
-      }`}
-    >
-      <Icon className="h-3 w-3" /> {label}
-      <span
-        className={`rounded-full px-1.5 text-[10px] font-semibold ${active ? "bg-primary-foreground/20" : "bg-muted-foreground/15"}`}
-      >
-        {count}
-      </span>
-    </button>
-  );
-}
-
-function RequestStatusPill({ status }: { status: RequestStatus }) {
-  const map: Record<RequestStatus, string> = {
-    Outstanding: "bg-yellow/20 text-foreground",
-    Uploaded: "bg-secondary/15 text-secondary",
-    "Under Review": "bg-secondary/15 text-secondary",
-    Approved: "bg-mint/25 text-foreground",
-    Rejected: "bg-coral/15 text-coral",
-  };
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${map[status]}`}>
-      {status}
-    </span>
-  );
-}
-
-// ─── E-Sign Inbox ─────────────────────────────────────
-function EsignInboxView({ envelopes }: { envelopes: Envelope[] }) {
-  if (envelopes.length === 0) {
-    return (
-      <Card>
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          No e-sign envelopes in this view.
-        </p>
-      </Card>
-    );
-  }
-  return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      {envelopes.map((env) => {
-        const action = env.status === "Action Required";
-        return (
-          <article
-            key={env.id}
-            className={`rounded-2xl border bg-card p-4 shadow-sm ${action ? "border-primary/40" : "border-border"}`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{env.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  From {env.sender} · via {env.provider} · {env.pages} pages
-                </p>
-              </div>
-              <EnvelopePill status={env.status} />
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="rounded-lg bg-muted p-2">
-                <p className="text-muted-foreground">Received</p>
-                <p className="font-semibold text-foreground">{env.receivedAt}</p>
-              </div>
-              <div className="rounded-lg bg-muted p-2">
-                <p className="text-muted-foreground">Due</p>
-                <p className="font-semibold text-foreground">{env.dueAt}</p>
-              </div>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {action ? (
-                <button
-                  onClick={() => toast.success(`Opening ${env.provider} signing session…`)}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  <PenLine className="h-4 w-4" /> Review & sign
-                </button>
-              ) : (
-                <button
-                  onClick={() => toast.message(`Opening ${env.title}`)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
-                >
-                  <Eye className="h-4 w-4" /> View envelope
-                </button>
-              )}
-              <button
-                onClick={() => toast.success(`Downloading signed PDF for ${env.title}`)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
-              >
-                <Download className="h-4 w-4" /> PDF
-              </button>
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
-function EnvelopePill({ status }: { status: Envelope["status"] }) {
-  const map: Record<Envelope["status"], string> = {
+// kept for future use
+function EnvelopePill({ status }: { status: string }) {
+  const map: Record<string, string> = {
     "Action Required": "bg-coral/15 text-coral",
     "Awaiting Counterparty": "bg-yellow/20 text-foreground",
     Signed: "bg-mint/25 text-foreground",
     Voided: "bg-muted text-muted-foreground",
   };
+  const tone = map[status] ?? "bg-muted text-muted-foreground";
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${map[status]}`}>
-      {status}
-    </span>
+    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{status}</span>
   );
 }
 

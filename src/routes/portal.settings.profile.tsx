@@ -1,15 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   AtSign,
-  BadgeCheck,
   Briefcase,
   Building2,
   Calendar,
   CheckCircle2,
   Globe,
   Languages,
+  Loader2,
   Mail,
   MapPin,
   Phone,
@@ -19,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { Field, SelectField, SettingPane } from "@/components/portal/settings-fields";
+import { getBorrowerSession, type BorrowerUser } from "@/lib/api/borrowerAuthApi";
 
 export const Route = createFileRoute("/portal/settings/profile")({
   head: () => ({
@@ -59,48 +61,123 @@ type Profile = {
   initials: string;
 };
 
-const INITIAL: Profile = {
-  firstName: "Alex",
-  lastName: "Thompson",
-  preferredName: "Alex",
-  dob: "1990-04-12",
-  email: "alex.thompson@email.com",
-  phone: "(416) 555-0142",
-  language: "English",
-  timezone: "America/Toronto",
-  street: "123 Maple Avenue",
-  unit: "Apt 504",
-  city: "Toronto",
-  province: "Ontario",
-  postal: "M5V 2T6",
-  country: "Canada",
-  housing: "Rent",
-  yearsAtAddress: "3",
-  employer: "Northwind Technologies",
-  jobTitle: "Senior Product Manager",
-  employmentType: "Full-time",
-  yearsEmployed: "4",
-  income: "138000",
-  initials: "AT",
-};
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return (parts[0]?.[0] ?? "?").toUpperCase();
+  return ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
+}
+
+function buildProfile(user: BorrowerUser): Profile {
+  const parts = user.name.trim().split(/\s+/);
+  const firstName = parts[0] ?? "";
+  const lastName = parts.slice(1).join(" ");
+  return {
+    firstName,
+    lastName,
+    preferredName: "",
+    dob: "",
+    email: user.email,
+    phone: "",
+    language: "",
+    timezone: "",
+    street: "",
+    unit: "",
+    city: "",
+    province: "",
+    postal: "",
+    country: "",
+    housing: "",
+    yearsAtAddress: "",
+    employer: "",
+    jobTitle: "",
+    employmentType: "",
+    yearsEmployed: "",
+    income: "",
+    initials: initials(user.name),
+  };
+}
 
 function ProfilePage() {
-  const [profile, setProfile] = useState<Profile>(INITIAL);
+  const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
-  const update = <K extends keyof Profile>(k: K) => (v: string) =>
-    setProfile((p) => ({ ...p, [k]: v }));
-
-  const completion = useMemo(() => {
-    const fields = Object.values(profile).filter((v) => typeof v === "string");
-    const filled = fields.filter((v) => v && v.trim().length > 0).length;
-    return Math.round((filled / fields.length) * 100);
-  }, [profile]);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const result = await getBorrowerSession();
+        if (cancelled) return;
+        if (!result.user) {
+          setSessionError("Your profile could not be loaded. Please refresh or sign in again.");
+        } else {
+          setProfile(buildProfile(result.user));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSessionError(err instanceof Error ? err.message : "Could not load your profile.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const flash = (key: string) => {
     setSaved(key);
     setTimeout(() => setSaved((cur) => (cur === key ? null : cur)), 1800);
   };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-10 text-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading your profile…</p>
+      </div>
+    );
+  }
+
+  if (sessionError || !profile) {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl border border-coral/30 bg-coral/5 p-6">
+        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-coral" />
+        <div>
+          <p className="text-sm font-medium text-foreground">Could not load profile</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {sessionError ?? "Your session could not be loaded."}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Contact{" "}
+            <a
+              href="mailto:support@approvu.com"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              support@approvu.com
+            </a>{" "}
+            to update your details.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const update =
+    <K extends keyof Profile>(k: K) =>
+    (_v: string) => {
+      void k;
+      // Profile editing is not yet supported. Fields are read-only.
+    };
+
+  // Completion based only on verified fields (name + email from session).
+  const completionPct =
+    [profile.firstName, profile.lastName, profile.email].filter((v) => v.trim().length > 0).length /
+    3;
+  const completion = Math.round(completionPct * 100);
 
   return (
     <div className="space-y-6">
@@ -115,7 +192,9 @@ function ProfilePage() {
               </div>
               <button
                 aria-label="Upload photo"
-                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:bg-muted"
+                disabled
+                title="Photo upload coming soon"
+                className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm opacity-50"
               >
                 <Upload className="h-3.5 w-3.5" />
               </button>
@@ -123,18 +202,10 @@ function ProfilePage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="truncate text-xl font-semibold tracking-tight text-foreground">
-                  {profile.firstName} {profile.lastName}
+                  {[profile.firstName, profile.lastName].filter(Boolean).join(" ")}
                 </h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-medium text-mint">
-                  <BadgeCheck className="h-3 w-3" /> ID Verified
-                </span>
               </div>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {profile.email} · {profile.phone}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Member since 2023 · Customer ID #AT-90412
-              </p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{profile.email}</p>
             </div>
           </div>
 
@@ -157,22 +228,70 @@ function ProfilePage() {
         </div>
       </section>
 
+      {/* Coming soon notice */}
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 p-5 text-sm">
+        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div>
+          <p className="font-medium text-foreground">Profile editing is coming soon.</p>
+          <p className="mt-0.5 text-muted-foreground">
+            To update your details, contact{" "}
+            <a
+              href="mailto:support@approvu.com"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              support@approvu.com
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+
       {/* Personal */}
       <SettingPane
         title="Personal information"
         desc="Your legal name and date of birth as they appear on government ID. Used for credit and identity checks."
-        onSave={() => flash("personal")}
+        onSave={() => {
+          toast.message("Profile editing is coming soon. Contact support to update your details.");
+          flash("personal");
+        }}
         saved={saved === "personal"}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Legal first name" value={profile.firstName} onChange={update("firstName")} icon={User} />
-          <Field label="Legal last name" value={profile.lastName} onChange={update("lastName")} icon={User} />
-          <Field label="Preferred name" value={profile.preferredName} onChange={update("preferredName")} icon={AtSign} />
-          <Field label="Date of birth" value={profile.dob} onChange={update("dob")} type="date" icon={Calendar} />
+          <Field
+            label="Legal first name"
+            value={profile.firstName}
+            onChange={update("firstName")}
+            icon={User}
+            disabled
+          />
+          <Field
+            label="Legal last name"
+            value={profile.lastName}
+            onChange={update("lastName")}
+            icon={User}
+            disabled
+          />
+          <Field
+            label="Preferred name"
+            value={profile.preferredName}
+            onChange={update("preferredName")}
+            icon={AtSign}
+            disabled
+            placeholder="Coming soon"
+          />
+          <Field
+            label="Date of birth"
+            value={profile.dob}
+            onChange={update("dob")}
+            type="date"
+            icon={Calendar}
+            disabled
+          />
         </div>
         <div className="mt-4 flex items-start gap-2 rounded-lg border border-border/70 bg-muted/40 p-3 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          Legal name and date of birth are locked once an application is submitted to a lender. Reach out to support to make changes after that.
+          Legal name and date of birth are locked once an application is submitted to a lender.
+          Reach out to support to make changes after that.
         </div>
       </SettingPane>
 
@@ -180,18 +299,37 @@ function ProfilePage() {
       <SettingPane
         title="Contact"
         desc="Where we'll reach you about applications, conditions, and offers."
-        onSave={() => flash("contact")}
+        onSave={() => {
+          toast.message("Profile editing is coming soon. Contact support to update your details.");
+          flash("contact");
+        }}
         saved={saved === "contact"}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Email" value={profile.email} onChange={update("email")} type="email" icon={Mail} />
-          <Field label="Mobile phone" value={profile.phone} onChange={update("phone")} type="tel" icon={Phone} />
+          <Field
+            label="Email"
+            value={profile.email}
+            onChange={update("email")}
+            type="email"
+            icon={Mail}
+            disabled
+          />
+          <Field
+            label="Mobile phone"
+            value={profile.phone}
+            onChange={update("phone")}
+            type="tel"
+            icon={Phone}
+            disabled
+            placeholder="Coming soon"
+          />
           <SelectField
             label="Preferred language"
             value={profile.language}
             onChange={update("language")}
             options={["English", "French", "Spanish", "Mandarin", "Punjabi"]}
             icon={Languages}
+            disabled
           />
           <SelectField
             label="Time zone"
@@ -205,11 +343,12 @@ function ProfilePage() {
               "America/St_Johns",
             ]}
             icon={Globe}
+            disabled
           />
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <VerifyRow icon={Mail} label="Email verified" sub={profile.email} verified />
-          <VerifyRow icon={Phone} label="Phone verified" sub={profile.phone} verified />
+          <VerifyRow icon={Phone} label="Phone" sub="Not yet verified" verified={false} />
         </div>
       </SettingPane>
 
@@ -217,18 +356,40 @@ function ProfilePage() {
       <SettingPane
         title="Current address"
         desc="Your residential address. Lenders use this to confirm residency and tenure."
-        onSave={() => flash("address")}
+        onSave={() => {
+          toast.message("Profile editing is coming soon. Contact support to update your details.");
+          flash("address");
+        }}
         saved={saved === "address"}
       >
         <div className="grid gap-4 sm:grid-cols-6">
           <div className="sm:col-span-4">
-            <Field label="Street address" value={profile.street} onChange={update("street")} icon={MapPin} />
+            <Field
+              label="Street address"
+              value={profile.street}
+              onChange={update("street")}
+              icon={MapPin}
+              disabled
+              placeholder="Coming soon"
+            />
           </div>
           <div className="sm:col-span-2">
-            <Field label="Unit / suite" value={profile.unit} onChange={update("unit")} />
+            <Field
+              label="Unit / suite"
+              value={profile.unit}
+              onChange={update("unit")}
+              disabled
+              placeholder="Coming soon"
+            />
           </div>
           <div className="sm:col-span-2">
-            <Field label="City" value={profile.city} onChange={update("city")} />
+            <Field
+              label="City"
+              value={profile.city}
+              onChange={update("city")}
+              disabled
+              placeholder="Coming soon"
+            />
           </div>
           <div className="sm:col-span-2">
             <SelectField
@@ -247,10 +408,17 @@ function ProfilePage() {
                 "Newfoundland and Labrador",
                 "Prince Edward Island",
               ]}
+              disabled
             />
           </div>
           <div className="sm:col-span-2">
-            <Field label="Postal code" value={profile.postal} onChange={update("postal")} />
+            <Field
+              label="Postal code"
+              value={profile.postal}
+              onChange={update("postal")}
+              disabled
+              placeholder="Coming soon"
+            />
           </div>
           <div className="sm:col-span-3">
             <SelectField
@@ -258,6 +426,7 @@ function ProfilePage() {
               value={profile.housing}
               onChange={update("housing")}
               options={["Own", "Rent", "Live with family", "Other"]}
+              disabled
             />
           </div>
           <div className="sm:col-span-3">
@@ -266,6 +435,8 @@ function ProfilePage() {
               value={profile.yearsAtAddress}
               onChange={update("yearsAtAddress")}
               type="number"
+              disabled
+              placeholder="Coming soon"
             />
           </div>
         </div>
@@ -275,23 +446,43 @@ function ProfilePage() {
       <SettingPane
         title="Employment & income"
         desc="A snapshot of your work and gross annual income. Used for affordability calculations."
-        onSave={() => flash("employment")}
+        onSave={() => {
+          toast.message("Profile editing is coming soon. Contact support to update your details.");
+          flash("employment");
+        }}
         saved={saved === "employment"}
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Employer" value={profile.employer} onChange={update("employer")} icon={Building2} />
-          <Field label="Job title" value={profile.jobTitle} onChange={update("jobTitle")} icon={Briefcase} />
+          <Field
+            label="Employer"
+            value={profile.employer}
+            onChange={update("employer")}
+            icon={Building2}
+            disabled
+            placeholder="Coming soon"
+          />
+          <Field
+            label="Job title"
+            value={profile.jobTitle}
+            onChange={update("jobTitle")}
+            icon={Briefcase}
+            disabled
+            placeholder="Coming soon"
+          />
           <SelectField
             label="Employment type"
             value={profile.employmentType}
             onChange={update("employmentType")}
             options={["Full-time", "Part-time", "Self-employed", "Contract", "Retired", "Other"]}
+            disabled
           />
           <Field
             label="Years with employer"
             value={profile.yearsEmployed}
             onChange={update("yearsEmployed")}
             type="number"
+            disabled
+            placeholder="Coming soon"
           />
           <div className="sm:col-span-2">
             <Field
@@ -299,6 +490,8 @@ function ProfilePage() {
               value={profile.income}
               onChange={update("income")}
               type="number"
+              disabled
+              placeholder="Coming soon"
             />
           </div>
         </div>
@@ -308,18 +501,27 @@ function ProfilePage() {
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 sm:p-8">
         <h3 className="text-base font-semibold text-foreground">Account actions</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Download a copy of your data, or permanently close your account. Closing removes access; we may retain records required by law.
+          Download a copy of your data, or permanently close your account. Closing removes access;
+          we may retain records required by law.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button
-            onClick={() => toast.success("Data export requested", { description: "We'll email a download link within 24 hours." })}
+            onClick={() =>
+              toast.success("Data export requested", {
+                description: "We'll email a download link within 24 hours.",
+              })
+            }
             className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
           >
             Download my data
           </button>
           <button
             onClick={() => {
-              if (window.confirm("Close your account? This removes access. Some records are retained as required by law.")) {
+              if (
+                window.confirm(
+                  "Close your account? This removes access. Some records are retained as required by law.",
+                )
+              ) {
                 toast.success("Account closure request submitted");
               }
             }}
@@ -360,12 +562,9 @@ function VerifyRow({
           <CheckCircle2 className="h-3 w-3" /> Verified
         </span>
       ) : (
-        <button
-          onClick={() => toast(`Verification link sent for ${label.toLowerCase()}`)}
-          className="text-xs font-medium text-primary hover:underline"
-        >
-          Verify
-        </button>
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          Not verified
+        </span>
       )}
     </div>
   );

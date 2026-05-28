@@ -8,7 +8,11 @@ export const Route = createFileRoute("/portal/settings/emergency")({
   head: () => ({
     meta: [
       { title: "Emergency Contact & Beneficiary — approvU Settings" },
-      { name: "description", content: "Add an emergency contact and beneficiary so we can support your file during life events." },
+      {
+        name: "description",
+        content:
+          "Add an emergency contact and beneficiary so we can support your file during life events.",
+      },
     ],
   }),
   component: EmergencyPage,
@@ -24,14 +28,12 @@ type Person = {
 };
 
 function EmergencyPage() {
-  const [emergency, setEmergency] = useState<Person[]>([
-    { id: "p1", name: "Jamie Thompson", relationship: "Spouse", phone: "(416) 555-0199", email: "jamie@example.com", share: "Status only" },
-  ]);
+  const [emergency, setEmergency] = useState<Person[]>([]);
   const [beneficiary, setBeneficiary] = useState({
-    name: "Jamie Thompson",
+    name: "",
     relationship: "Spouse",
-    dob: "1990-08-12",
-    sin: "•••-•••-321",
+    dob: "",
+    sin: "",
     share: "100",
     notes: "",
   });
@@ -55,10 +57,37 @@ function EmergencyPage() {
           {emergency.map((p) => (
             <div key={p.id} className="space-y-3 rounded-xl border border-border bg-background p-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Full name" value={p.name} onChange={(v) => updateEmergency(p.id, { name: v })} />
-                <SelectField label="Relationship" value={p.relationship} onChange={(v) => updateEmergency(p.id, { relationship: v })} options={["Spouse", "Partner", "Parent", "Sibling", "Adult child", "Friend", "Lawyer", "Other"]} />
-                <Field label="Phone" value={p.phone} onChange={(v) => updateEmergency(p.id, { phone: v })} />
-                <Field label="Email" value={p.email} type="email" onChange={(v) => updateEmergency(p.id, { email: v })} />
+                <Field
+                  label="Full name"
+                  value={p.name}
+                  onChange={(v) => updateEmergency(p.id, { name: v })}
+                />
+                <SelectField
+                  label="Relationship"
+                  value={p.relationship}
+                  onChange={(v) => updateEmergency(p.id, { relationship: v })}
+                  options={[
+                    "Spouse",
+                    "Partner",
+                    "Parent",
+                    "Sibling",
+                    "Adult child",
+                    "Friend",
+                    "Lawyer",
+                    "Other",
+                  ]}
+                />
+                <Field
+                  label="Phone"
+                  value={p.phone}
+                  onChange={(v) => updateEmergency(p.id, { phone: v })}
+                />
+                <Field
+                  label="Email"
+                  value={p.email}
+                  type="email"
+                  onChange={(v) => updateEmergency(p.id, { email: v })}
+                />
               </div>
               <SelectField
                 label="What can we share with them?"
@@ -80,7 +109,14 @@ function EmergencyPage() {
             onClick={() =>
               setEmergency((l) => [
                 ...l,
-                { id: `p${Date.now()}`, name: "", relationship: "Spouse", phone: "", email: "", share: "Status only" },
+                {
+                  id: `p${Date.now()}`,
+                  name: "",
+                  relationship: "Spouse",
+                  phone: "",
+                  email: "",
+                  share: "Status only",
+                },
               ])
             }
             className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
@@ -96,15 +132,47 @@ function EmergencyPage() {
         onSave={() => toast.success("Beneficiary saved")}
       >
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Beneficiary name" value={beneficiary.name} onChange={(v) => setBeneficiary({ ...beneficiary, name: v })} />
-          <SelectField label="Relationship" value={beneficiary.relationship} onChange={(v) => setBeneficiary({ ...beneficiary, relationship: v })} options={["Spouse", "Partner", "Parent", "Sibling", "Adult child", "Trust / Estate", "Other"]} />
-          <Field label="Date of birth" value={beneficiary.dob} type="date" onChange={(v) => setBeneficiary({ ...beneficiary, dob: v })} />
-          <Field label="SIN (optional, encrypted)" value={beneficiary.sin} onChange={(v) => setBeneficiary({ ...beneficiary, sin: v })} />
-          <Field label="Allocation %" value={beneficiary.share} type="number" onChange={(v) => setBeneficiary({ ...beneficiary, share: v })} />
+          <Field
+            label="Beneficiary name"
+            value={beneficiary.name}
+            onChange={(v) => setBeneficiary({ ...beneficiary, name: v })}
+          />
+          <SelectField
+            label="Relationship"
+            value={beneficiary.relationship}
+            onChange={(v) => setBeneficiary({ ...beneficiary, relationship: v })}
+            options={[
+              "Spouse",
+              "Partner",
+              "Parent",
+              "Sibling",
+              "Adult child",
+              "Trust / Estate",
+              "Other",
+            ]}
+          />
+          <Field
+            label="Date of birth"
+            value={beneficiary.dob}
+            type="date"
+            onChange={(v) => setBeneficiary({ ...beneficiary, dob: v })}
+          />
+          <Field
+            label="SIN (optional, encrypted)"
+            value={beneficiary.sin}
+            onChange={(v) => setBeneficiary({ ...beneficiary, sin: v })}
+          />
+          <Field
+            label="Allocation %"
+            value={beneficiary.share}
+            type="number"
+            onChange={(v) => setBeneficiary({ ...beneficiary, share: v })}
+          />
         </div>
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-secondary/10 px-3 py-2 text-xs text-foreground">
           <ShieldCheck className="h-4 w-4 text-secondary" />
-          Beneficiary details are encrypted at rest and only released under the trusted-release rules below.
+          Beneficiary details are encrypted at rest and only released under the trusted-release
+          rules below.
         </div>
       </SettingPane>
 
@@ -135,7 +203,8 @@ function EmergencyPage() {
         </div>
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-mint/15 px-3 py-2 text-xs text-foreground">
           <HeartPulse className="h-4 w-4 text-primary" />
-          You can revoke or change these rules at any time. Each release is logged in your access log.
+          You can revoke or change these rules at any time. Each release is logged in your access
+          log.
         </div>
       </SettingPane>
     </div>

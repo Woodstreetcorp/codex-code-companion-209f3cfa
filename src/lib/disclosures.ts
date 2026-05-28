@@ -37,11 +37,7 @@ export type RequiredBeforeStage =
   | "funding"
   | "none";
 
-export type AppliesTo =
-  | "primary_applicant"
-  | "co_applicant"
-  | "all_applicants"
-  | "application";
+export type AppliesTo = "primary_applicant" | "co_applicant" | "all_applicants" | "application";
 
 export type DisclosureTemplate = {
   id: string;
@@ -277,141 +273,20 @@ export const APPLICATION_TEMPLATES: DisclosureTemplate[] = [
   },
 ];
 
-export const ALL_TEMPLATES: DisclosureTemplate[] = [
-  ...PROFILE_TEMPLATES,
-  ...APPLICATION_TEMPLATES,
-];
+export const ALL_TEMPLATES: DisclosureTemplate[] = [...PROFILE_TEMPLATES, ...APPLICATION_TEMPLATES];
 
 export function templateById(id: string): DisclosureTemplate | undefined {
   return ALL_TEMPLATES.find((t) => t.id === id);
 }
 
-// ---------- Mock profile records ----------
-export const PROFILE_RECORDS: ProfileDisclosureRecord[] = [
-  { templateId: "TPL-PRIV-1", status: "Reviewed", reviewedAt: "Jan 18, 2026 · 9:14 AM", ip: "76.10.x.x · Toronto, ON", consentMethod: "electronic" },
-  { templateId: "TPL-TOU-1", status: "Acknowledged", reviewedAt: "Jan 18, 2026 · 9:15 AM", ip: "76.10.x.x · Toronto, ON", consentMethod: "electronic" },
-  { templateId: "TPL-ESIGN-1", status: "Signed", signedAt: "Jan 12, 2025 · 9:01 AM", ip: "76.10.x.x · Toronto, ON", consentMethod: "electronic" },
-  { templateId: "TPL-COMM-1", status: "Acknowledged", reviewedAt: "Mar 4, 2026 · 7:42 PM", ip: "76.10.x.x · Toronto, ON", consentMethod: "electronic" },
-  { templateId: "TPL-DATA-1", status: "Action Required" },
-  { templateId: "TPL-MKT-1", status: "Not Started" },
-];
+// ---------- Profile records (populated from live API — no static data) ----------
+export const PROFILE_RECORDS: ProfileDisclosureRecord[] = [];
 
-// ---------- Mock application bundles ----------
-const PRIMARY = { id: "APPL-1", name: "Alex Carter", role: "primary" as const };
-const CO = { id: "APPL-2", name: "Jordan Lee", role: "co_applicant" as const };
+// ---------- Application bundles (populated from live API — no static data) ----------
+export const APPLICATION_BUNDLES: ApplicationDisclosureBundle[] = [];
 
-export const APPLICATION_BUNDLES: ApplicationDisclosureBundle[] = [
-  {
-    applicationId: "APP-2026-00256",
-    property: "152 Queen St W, Toronto, ON",
-    transactionType: "Purchase",
-    applicants: [PRIMARY, CO],
-    disclosures: [
-      {
-        templateId: "TPL-BROK-1",
-        appliesTo: "all_applicants",
-        requiredBeforeStage: "lender_submission",
-        status: "Reviewed",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Reviewed", signedAt: "Apr 2, 2026 · 4:32 PM", signedIp: "76.10.x.x", consentMethod: "electronic" },
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Action Required" },
-        ],
-      },
-      {
-        templateId: "TPL-CONF-1",
-        appliesTo: "all_applicants",
-        requiredBeforeStage: "lender_submission",
-        status: "Action Required",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Action Required" },
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Not Started" },
-        ],
-      },
-      {
-        templateId: "TPL-CREDIT-1",
-        appliesTo: "all_applicants",
-        requiredBeforeStage: "credit_pull",
-        status: "Signed",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Signed", signedAt: "Mar 22, 2026 · 11:08 AM", signedIp: "76.10.x.x", consentMethod: "electronic" },
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Signed", signedAt: "Mar 23, 2026 · 8:14 AM", signedIp: "70.50.x.x", consentMethod: "electronic" },
-        ],
-      },
-      {
-        templateId: "TPL-COB-1",
-        appliesTo: "primary_applicant",
-        requiredBeforeStage: "final_submission",
-        status: "Reviewed",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Reviewed", signedAt: "Apr 28, 2026 · 11:02 AM", signedIp: "76.10.x.x", consentMethod: "electronic" },
-        ],
-      },
-      {
-        templateId: "TPL-LENDER-1",
-        appliesTo: "all_applicants",
-        requiredBeforeStage: "lender_submission",
-        status: "Action Required",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Action Required" },
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Not Started" },
-        ],
-      },
-      {
-        templateId: "TPL-SUIT-1",
-        appliesTo: "primary_applicant",
-        requiredBeforeStage: "final_submission",
-        status: "Action Required",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Action Required" },
-        ],
-      },
-      {
-        templateId: "TPL-PROD-1",
-        appliesTo: "primary_applicant",
-        requiredBeforeStage: "final_submission",
-        status: "Not Started",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Not Started" },
-        ],
-      },
-      {
-        templateId: "TPL-COAPP-1",
-        appliesTo: "co_applicant",
-        requiredBeforeStage: "final_submission",
-        status: "Action Required",
-        applicantConsents: [
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Action Required" },
-        ],
-      },
-      {
-        templateId: "TPL-CERT-1",
-        appliesTo: "all_applicants",
-        requiredBeforeStage: "final_submission",
-        status: "Not Started",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Not Started" },
-          { applicantId: CO.id, applicantName: CO.name, role: CO.role, status: "Not Started" },
-        ],
-      },
-      {
-        templateId: "TPL-FUND-1",
-        appliesTo: "primary_applicant",
-        requiredBeforeStage: "funding",
-        status: "Not Started",
-        applicantConsents: [
-          { applicantId: PRIMARY.id, applicantName: PRIMARY.name, role: PRIMARY.role, status: "Not Started" },
-        ],
-      },
-    ],
-  },
-];
-
-export function getApplicationBundle(id: string): ApplicationDisclosureBundle {
-  const found = APPLICATION_BUNDLES.find((b) => b.applicationId === id);
-  if (found) return found;
-  // Synthetic fallback so any application id has a bundle to render
-  const base = APPLICATION_BUNDLES[0];
-  return { ...base, applicationId: id, property: "Subject property" };
+export function getApplicationBundle(id: string): ApplicationDisclosureBundle | undefined {
+  return APPLICATION_BUNDLES.find((b) => b.applicationId === id);
 }
 
 // ---------- Readiness rollup ----------
@@ -461,19 +336,28 @@ export function statusTone(status: ConsentStatus): string {
 
 export function stageLabel(stage: RequiredBeforeStage): string {
   switch (stage) {
-    case "credit_pull": return "Credit pull";
-    case "lender_submission": return "Lender submission";
-    case "final_submission": return "Final submission";
-    case "funding": return "Funding";
-    case "none": return "—";
+    case "credit_pull":
+      return "Credit pull";
+    case "lender_submission":
+      return "Lender submission";
+    case "final_submission":
+      return "Final submission";
+    case "funding":
+      return "Funding";
+    case "none":
+      return "—";
   }
 }
 
 export function appliesToLabel(a: AppliesTo): string {
   switch (a) {
-    case "primary_applicant": return "Primary applicant";
-    case "co_applicant": return "Co-applicant";
-    case "all_applicants": return "All applicants";
-    case "application": return "Application";
+    case "primary_applicant":
+      return "Primary applicant";
+    case "co_applicant":
+      return "Co-applicant";
+    case "all_applicants":
+      return "All applicants";
+    case "application":
+      return "Application";
   }
 }
