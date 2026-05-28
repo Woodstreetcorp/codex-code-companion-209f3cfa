@@ -11,6 +11,7 @@ import {
   storeBorrowerSession,
   type BorrowerSessionResult,
 } from "@/lib/api/borrowerAuthApi";
+import { initializeCsrfCookie } from "@/lib/api/laravelSession";
 
 const searchSchema = z.object({
   redirect: z.string().optional(),
@@ -37,6 +38,17 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+function normalizeBorrowerLoginError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("csrf") || lower.includes("token mismatch") || lower.includes("419")) {
+    return "Something went wrong with your session. Please refresh the page and try again.";
+  }
+  if (lower.includes("throttl") || lower.includes("too many")) {
+    return "Too many sign-in attempts. Please wait a moment and try again.";
+  }
+  return message;
+}
+
 function LoginPage() {
   const { redirect, ref, email: emailFromSearch } = Route.useSearch();
   const navigate = useNavigate();
@@ -46,13 +58,41 @@ function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<BorrowerSessionResult | null>(null);
 
   useEffect(() => {
     setEmail((current: string) => current || emailFromSearch || "");
   }, [emailFromSearch]);
+  useEffect(() => {
+    let active = true;
+
+    async function checkExistingBorrowerSession() {
+      setCheckingSession(true);
+      try {
+        const confirmed = await getBorrowerSession();
+        if (!active) return;
+        storeBorrowerSession(confirmed);
+        setSession(confirmed);
+        await navigate({ to: postLoginRoute });
+      } catch {
+        // No active borrower session. Pre-warm the CSRF token now so it is
+        // ready before the user submits the login form. Calling this here
+        // (sequentially after the failed GET /me response) ensures the CSRF
+        // fetch uses the same session cookie established by this request.
+        await initializeCsrfCookie();
+      } finally {
+        if (active) setCheckingSession(false);
+      }
+    }
+
+    void checkExistingBorrowerSession();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate, postLoginRoute]);
 
   const validEmail = /^\S+@\S+\.\S+$/.test(email);
   const valid = validEmail && password.length > 0;
@@ -82,7 +122,7 @@ function LoginPage() {
     } catch (failure) {
       setError(
         failure instanceof Error
-          ? failure.message
+          ? normalizeBorrowerLoginError(failure.message)
           : "We could not sign you in. Please check your email and password.",
       );
     } finally {
@@ -104,6 +144,21 @@ function LoginPage() {
       setSubmitting(false);
     }
   };
+
+  if (checkingSession && !session) {
+    return (
+      <AuthShell
+        eyebrow="Session check"
+        title="Checking your borrower session"
+        description="If you are already signed in, we will take you back to your saved journey."
+      >
+        <div className="flex min-h-32 flex-col items-center justify-center text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="mt-3 text-sm text-muted-foreground">Confirming your session...</p>
+        </div>
+      </AuthShell>
+    );
+  }
 
   if (session?.user) {
     return (
