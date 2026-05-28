@@ -18,7 +18,11 @@ export const Route = createFileRoute("/portal/tools/saved")({
   head: () => ({
     meta: [
       { title: "Saved Scenarios — approvU Mortgage Tools" },
-      { name: "description", content: "Review, rename, share and push your saved mortgage tool scenarios into an application." },
+      {
+        name: "description",
+        content:
+          "Review, rename, share and push your saved mortgage tool scenarios into an application.",
+      },
     ],
   }),
   component: SavedScenariosPage,
@@ -26,20 +30,20 @@ export const Route = createFileRoute("/portal/tools/saved")({
 
 const TOOL_LINKS: Record<string, string> = {
   "Mortgage Payment": "/portal/tools/payment-calculator",
-  "Affordability": "/portal/tools/affordability",
+  Affordability: "/portal/tools/affordability",
   "Closing Costs": "/portal/tools/closing-costs",
   "Down Payment": "/portal/tools/down-payment",
   "Refinance Savings": "/portal/tools/refinance-savings",
   "Renewal Comparison": "/portal/tools/renewal-comparison",
   "Debt Consolidation": "/portal/tools/debt-consolidation",
-  "Prepayment": "/portal/tools/prepayment",
+  Prepayment: "/portal/tools/prepayment",
   "Rent vs Buy": "/portal/tools/rent-vs-buy",
   "Home Equity": "/portal/tools/home-equity",
   "Stress Test": "/portal/tools/stress-test",
   "Scenario Compare": "/portal/tools/scenario-compare",
   "Land Transfer Tax": "/portal/tools/land-transfer-tax",
   "Insurance Premium": "/portal/tools/insurance-premium",
-  "Portability": "/portal/tools/portability",
+  Portability: "/portal/tools/portability",
 };
 
 function SavedScenariosPage() {
@@ -51,20 +55,26 @@ function SavedScenariosPage() {
 
   const tools = useMemo(() => ["All", ...Array.from(new Set(list.map((s) => s.tool)))], [list]);
   const filtered = useMemo(
-    () => list.filter((s) =>
-      (tool === "All" || s.tool === tool) &&
-      (!q || s.name.toLowerCase().includes(q.toLowerCase()))
-    ),
+    () =>
+      list.filter(
+        (s) =>
+          (tool === "All" || s.tool === tool) &&
+          (!q || s.name.toLowerCase().includes(q.toLowerCase())),
+      ),
     [list, tool, q],
   );
 
-  const startEdit = (s: SavedScenario) => { setEditId(s.id); setEditName(s.name); };
+  const startEdit = (s: SavedScenario) => {
+    setEditId(s.id);
+    setEditName(s.name);
+  };
   const commitEdit = () => {
     if (editId && editName.trim()) {
       rename(editId, editName.trim());
       toast.success("Scenario renamed");
     }
-    setEditId(null); setEditName("");
+    setEditId(null);
+    setEditName("");
   };
 
   const share = (s: SavedScenario) => {
@@ -77,7 +87,7 @@ function SavedScenariosPage() {
     toast.success("Scenario data copied as JSON");
   };
   const pushToApp = (s: SavedScenario) => {
-    toast.success(`"${s.name}" sent to APP-2041 — your advisor will review it.`);
+    toast.success(`"${s.name}" sent to your advisor for review.`);
   };
 
   return (
@@ -93,7 +103,8 @@ function SavedScenariosPage() {
           <div>
             <h1 className="text-2xl font-semibold text-primary sm:text-3xl">Saved scenarios</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Every scenario you've saved across the calculators. Rename, share, or push one into your application.
+              Every scenario you've saved across the calculators. Rename, share, or push one into
+              your application.
             </p>
           </div>
           <span className="rounded-full bg-secondary/15 px-3 py-1 text-[11px] font-semibold text-secondary">
@@ -118,7 +129,9 @@ function SavedScenariosPage() {
             onChange={(e) => setTool(e.target.value)}
             className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs"
           >
-            {tools.map((t) => <option key={t}>{t}</option>)}
+            {tools.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
           </select>
         </div>
 
@@ -143,7 +156,9 @@ function SavedScenariosPage() {
           <ul className="divide-y divide-border">
             {filtered.map((s) => {
               const date = new Date(s.createdAt).toLocaleDateString("en-CA", {
-                month: "short", day: "numeric", year: "numeric",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
               });
               const editing = editId === s.id;
               const toolLink = TOOL_LINKS[s.tool];
@@ -156,7 +171,13 @@ function SavedScenariosPage() {
                           autoFocus
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") { setEditId(null); setEditName(""); } }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit();
+                            if (e.key === "Escape") {
+                              setEditId(null);
+                              setEditName("");
+                            }
+                          }}
                           className="w-full max-w-sm rounded-md border border-input bg-background px-2 py-1 text-sm"
                         />
                         <button
@@ -195,7 +216,10 @@ function SavedScenariosPage() {
                       label="Delete"
                       icon={Trash2}
                       tone="coral"
-                      onClick={() => { remove(s.id); toast.success("Scenario deleted"); }}
+                      onClick={() => {
+                        remove(s.id);
+                        toast.success("Scenario deleted");
+                      }}
                     />
                   </div>
                 </li>
@@ -208,7 +232,17 @@ function SavedScenariosPage() {
   );
 }
 
-function IconBtn({ icon: Icon, label, onClick, tone }: { icon: typeof Trash2; label: string; onClick: () => void; tone?: "coral" }) {
+function IconBtn({
+  icon: Icon,
+  label,
+  onClick,
+  tone,
+}: {
+  icon: typeof Trash2;
+  label: string;
+  onClick: () => void;
+  tone?: "coral";
+}) {
   return (
     <button
       onClick={onClick}
