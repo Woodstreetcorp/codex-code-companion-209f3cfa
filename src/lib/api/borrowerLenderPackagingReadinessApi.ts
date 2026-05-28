@@ -15,7 +15,7 @@ export type LenderPackagingReadinessResponse = {
   endpoint_available?: boolean;
   ready?: boolean | null;
   status?: string | null;
-  blockers?: string[] | null;
+  blockers?: unknown[] | null;
   selected_products_count?: number | null;
   document_summary?: LenderPackagingSummary | null;
   consent_summary?: LenderPackagingSummary | null;
