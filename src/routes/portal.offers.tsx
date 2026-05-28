@@ -51,6 +51,28 @@ import {
   type ProductMatchStatusCopy,
 } from "@/lib/productMatching/productMatchCopy";
 
+// ── Safe string helper ────────────────────────────────────────────────────────
+//
+// Prevents React error #31 ("Objects are not valid as a React child") when an
+// API field typed as string | null arrives at runtime as an object.  For
+// example, some Laravel responses wrap messages in { message: "..." } even for
+// fields the TypeScript types declare as plain strings.
+//
+// Usage: replace `{field}` with `{safeString(field)}` at every JSX render site
+// that sources its value directly from an API response.
+function safeString(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (typeof obj.message === "string") return obj.message;
+    if (typeof obj.label === "string") return obj.label;
+    if (typeof obj.text === "string") return obj.text;
+  }
+  return "";
+}
+
 export const Route = createFileRoute("/portal/offers")({
   head: () => ({
     meta: [
@@ -328,30 +350,37 @@ function OffersReviewPage() {
     setSelectionError(null);
     setSelectionNotice(null);
 
-    const selectionResult = await selectBorrowerProductOption(publicReference);
+    try {
+      const selectionResult = await selectBorrowerProductOption(publicReference);
 
-    if (!selectionResult.endpoint_available || selectionResult.ok === false) {
+      if (!selectionResult.endpoint_available || selectionResult.ok === false) {
+        setSelectionError("We could not select this path right now. Please try again.");
+        setSelectingOptionReference(null);
+        return;
+      }
+
+      storeBorrowerSelectedProducts(selectionResult);
+      setSelectedProductsResult(selectionResult);
+      setSelectionNotice(
+        "This path was selected for advisor review. This is not a lender approval.",
+      );
+
+      const [selectedRefresh, optionsRefresh] = await Promise.all([
+        listBorrowerSelectedProducts(),
+        getBorrowerProductOptions(),
+      ]);
+      storeBorrowerSelectedProducts(selectedRefresh);
+      storeBorrowerProductOptions(optionsRefresh);
+      setSelectedProductsResult(selectedRefresh);
+      setProductOptionsResult(optionsRefresh);
+      const packagingRefresh = await getBorrowerLenderPackagingReadiness();
+      storeBorrowerLenderPackagingReadiness(packagingRefresh);
+      setLenderPackagingReadiness(packagingRefresh);
+    } catch {
       setSelectionError("We could not select this path right now. Please try again.");
+    } finally {
       setSelectingOptionReference(null);
-      return;
     }
-
-    storeBorrowerSelectedProducts(selectionResult);
-    setSelectedProductsResult(selectionResult);
-    setSelectionNotice("This path was selected for advisor review. This is not a lender approval.");
-
-    const [selectedRefresh, optionsRefresh] = await Promise.all([
-      listBorrowerSelectedProducts(),
-      getBorrowerProductOptions(),
-    ]);
-    storeBorrowerSelectedProducts(selectedRefresh);
-    storeBorrowerProductOptions(optionsRefresh);
-    setSelectedProductsResult(selectedRefresh);
-    setProductOptionsResult(optionsRefresh);
-    const packagingRefresh = await getBorrowerLenderPackagingReadiness();
-    storeBorrowerLenderPackagingReadiness(packagingRefresh);
-    setLenderPackagingReadiness(packagingRefresh);
-    setSelectingOptionReference(null);
   }
 
   if (loading) {
@@ -461,8 +490,8 @@ function OffersReviewPage() {
           </span>
         </div>
 
-        {reviewStatus?.message && (
-          <p className="mt-4 text-sm text-muted-foreground">{reviewStatus.message}</p>
+        {safeString(reviewStatus?.message) && (
+          <p className="mt-4 text-sm text-muted-foreground">{safeString(reviewStatus?.message)}</p>
         )}
         {packagingInProgress && (
           <div className="mt-4 rounded-xl border border-secondary/20 bg-secondary/5 px-4 py-3">
@@ -551,10 +580,13 @@ function OffersReviewPage() {
               Outstanding items
             </p>
             <ul className="mt-2 space-y-1.5">
-              {readiness!.missing_items!.filter(Boolean).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
+              {readiness!.missing_items!.filter(Boolean).map((item, index) => (
+                <li
+                  key={typeof item === "string" ? item : index}
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                >
                   <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-coral" />
-                  {item}
+                  {safeString(item)}
                 </li>
               ))}
             </ul>
@@ -585,7 +617,9 @@ function OffersReviewPage() {
               <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
                 Your next step
               </p>
-              <p className="mt-1 text-base font-semibold text-foreground">{primaryAction.label}</p>
+              <p className="mt-1 text-base font-semibold text-foreground">
+                {safeString(primaryAction.label)}
+              </p>
             </div>
             <Link
               to={primaryRoute}
@@ -614,9 +648,12 @@ function OffersReviewPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Important
           </p>
-          {disclaimers.map((text) => (
-            <p key={text} className="mt-2 text-xs text-muted-foreground">
-              {text}
+          {disclaimers.map((text, index) => (
+            <p
+              key={typeof text === "string" ? text : index}
+              className="mt-2 text-xs text-muted-foreground"
+            >
+              {safeString(text)}
             </p>
           ))}
         </div>
@@ -876,11 +913,17 @@ function ProductOptionCard({
   const documentsNeeded = option.documents_needed?.filter(Boolean) ?? [];
   const details = [
     { label: "Category", value: formatProductOptionValue(option.product_category) },
-    { label: "Class", value: option.product_class_label },
-    { label: "Path", value: option.path_label },
+    {
+      label: "Class",
+      value: typeof option.product_class_label === "string" ? option.product_class_label : null,
+    },
+    {
+      label: "Path",
+      value: typeof option.path_label === "string" ? option.path_label : null,
+    },
     {
       label: "Created",
-      value: option.created_at ? formatProductMatchDate(option.created_at) : null,
+      value: option.created_at ? formatProductMatchDate(safeString(option.created_at)) : null,
     },
   ].filter((detail) => detail.value);
 
@@ -892,7 +935,7 @@ function ProductOptionCard({
             Advisor-reviewed mortgage path
           </p>
           <h3 className="mt-1 text-base font-semibold text-foreground">
-            {option.option_label || "Advisor-reviewed mortgage path"}
+            {safeString(option.option_label) || "Advisor-reviewed mortgage path"}
           </h3>
         </div>
         <span className="inline-flex rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
@@ -905,7 +948,7 @@ function ProductOptionCard({
           {details.map((detail) => (
             <div key={detail.label} className="rounded-lg border border-border bg-card px-3 py-2">
               <dt className="font-semibold text-muted-foreground">{detail.label}</dt>
-              <dd className="mt-0.5 text-foreground">{detail.value}</dd>
+              <dd className="mt-0.5 text-foreground">{safeString(detail.value)}</dd>
             </div>
           ))}
         </dl>
@@ -943,7 +986,7 @@ function ProductOptionCard({
       )}
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {option.disclaimer || getProductMatchDisclaimer()}
+        {safeString(option.disclaimer) || getProductMatchDisclaimer()}
       </p>
       <p className="mt-2 text-xs text-muted-foreground">
         This selection tells the approvU team which path you want reviewed for packaging. This is
@@ -1031,12 +1074,18 @@ function SelectedProductPathsSummary({ products }: { products: BorrowerSelectedP
 function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct }) {
   const details = [
     { label: "Category", value: formatProductOptionValue(product.product_category) },
-    { label: "Class", value: product.product_class_label },
-    { label: "Path", value: product.path_label },
+    {
+      label: "Class",
+      value: typeof product.product_class_label === "string" ? product.product_class_label : null,
+    },
+    {
+      label: "Path",
+      value: typeof product.path_label === "string" ? product.path_label : null,
+    },
     { label: "Status", value: formatProductOptionValue(product.selection_status) },
     {
       label: "Selected",
-      value: product.selected_at ? formatProductMatchDate(product.selected_at) : null,
+      value: product.selected_at ? formatProductMatchDate(safeString(product.selected_at)) : null,
     },
   ].filter((detail) => detail.value);
 
@@ -1048,7 +1097,7 @@ function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct
             Selected mortgage path
           </p>
           <h3 className="mt-1 text-base font-semibold text-foreground">
-            {product.option_label || "Selected mortgage path"}
+            {safeString(product.option_label) || "Selected mortgage path"}
           </h3>
         </div>
         <span className="inline-flex rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-semibold text-mint-foreground">
@@ -1061,14 +1110,14 @@ function SelectedProductPathCard({ product }: { product: BorrowerSelectedProduct
           {details.map((detail) => (
             <div key={detail.label} className="rounded-lg border border-border bg-card px-3 py-2">
               <dt className="font-semibold text-muted-foreground">{detail.label}</dt>
-              <dd className="mt-0.5 text-foreground">{detail.value}</dd>
+              <dd className="mt-0.5 text-foreground">{safeString(detail.value)}</dd>
             </div>
           ))}
         </dl>
       )}
 
       <p className="mt-4 text-xs text-muted-foreground">
-        {product.disclaimer || getProductMatchDisclaimer()}
+        {safeString(product.disclaimer) || getProductMatchDisclaimer()}
       </p>
     </article>
   );
@@ -1088,7 +1137,7 @@ function LenderPackagingReadinessCard({
   const blockers = endpointReady ? (readiness.blockers?.filter(Boolean) ?? []) : [];
   const nextStep =
     endpointReady && readiness.next_step
-      ? readiness.next_step
+      ? safeString(readiness.next_step)
       : "Your advisor will confirm next steps.";
   const selectedCount =
     endpointReady && typeof readiness.selected_products_count === "number"
@@ -1158,7 +1207,7 @@ function LenderPackagingReadinessCard({
 
       <p className="mt-4 text-sm text-muted-foreground">{nextStep}</p>
       <p className="mt-2 text-xs text-muted-foreground">
-        {readiness?.disclaimer || getProductMatchDisclaimer()}
+        {safeString(readiness?.disclaimer) || getProductMatchDisclaimer()}
       </p>
       <p className="mt-2 text-xs text-muted-foreground">
         No lender submission has been completed from this screen. Your advisor will confirm before
@@ -1323,9 +1372,10 @@ function formatPackagingSummary(summary?: LenderPackagingSummary | null): string
   return "Review in progress";
 }
 
-function formatProductOptionValue(value?: string | null): string | null {
-  if (!value) return null;
-  return value
+function formatProductOptionValue(value?: unknown): string | null {
+  const str = safeString(value);
+  if (!str) return null;
+  return str
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
@@ -1400,7 +1450,9 @@ function OfferSectionCard({ section }: { section: OfferSection }) {
   return (
     <div className="rounded-xl border border-border bg-background p-5">
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">{section.label ?? section.key}</h3>
+        <h3 className="text-sm font-semibold text-foreground">
+          {safeString(section.label ?? section.key)}
+        </h3>
         <span
           className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${config.badgeClass}`}
         >
@@ -1408,13 +1460,15 @@ function OfferSectionCard({ section }: { section: OfferSection }) {
           {config.label}
         </span>
       </div>
-      {section.message && <p className="mt-2 text-xs text-muted-foreground">{section.message}</p>}
-      {section.action_label && (
+      {safeString(section.message) && (
+        <p className="mt-2 text-xs text-muted-foreground">{safeString(section.message)}</p>
+      )}
+      {safeString(section.action_label) && (
         <Link
           to={sectionRoute}
           className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
         >
-          {section.action_label}
+          {safeString(section.action_label)}
           <ArrowRight className="h-3 w-3" />
         </Link>
       )}
