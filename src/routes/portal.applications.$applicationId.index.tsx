@@ -38,7 +38,9 @@ function SnapshotPage() {
   const summary = getApplicationSummary(applicationId);
   if (!summary) return <NotFoundApplication id={applicationId} />;
   const bundle = getApplicationBundle(applicationId);
-  const readiness = rollupReadiness(bundle);
+  const readiness = bundle
+    ? rollupReadiness(bundle)
+    : { ready: false, blockingCount: 0, items: [] };
 
   return (
     <ApplicationShell summary={summary} tab="snapshot">

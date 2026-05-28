@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Clock,
   FileText,
+  Gift,
   HelpCircle,
   Home,
   Inbox,
@@ -94,77 +95,15 @@ export type CompletedApp = {
 };
 
 // ─── Mock data ───────────────────────────────────────────────────────────
-export const ACTIVE: ActiveApp[] = [
-  {
-    id: "APP-2041",
-    type: "Purchase",
-    property: "123 Maple Ave, Toronto, ON",
-    status: "In Progress",
-    completion: 60,
-    daysToExpiry: 8,
-    nextStep: "Upload last 2 pay stubs",
-    lastUpdated: "2 hours ago",
-  },
-  {
-    id: "APP-2009",
-    type: "Refinance",
-    property: "44 Beachview Rd, Hamilton, ON",
-    status: "Snapshot Complete",
-    completion: 25,
-    daysToExpiry: 12,
-    nextStep: "Select a mortgage offer",
-    lastUpdated: "Yesterday",
-  },
-];
+export const ACTIVE: ActiveApp[] = [];
 
-export const SUBMITTED: SubmittedApp[] = [
-  {
-    id: "APP-2033",
-    type: "Purchase",
-    property: "118 King St W, Toronto, ON",
-    stage: "Submitted to Lender",
-    progress: 70,
-    broker: "Jordan Lee",
-    conditionsOutstanding: 3,
-    documentsPending: 2,
-    nextStep: "Wait for lender decision",
-    lastUpdate: "3 days ago",
-  },
-];
+export const SUBMITTED: SubmittedApp[] = [];
 
-export const EXPIRED: ExpiredApp[] = [
-  {
-    id: "APP-1988",
-    type: "Refinance",
-    property: "91 Queen St, London, ON",
-    expiredOn: "2026-05-01",
-    reactivateUntil: "2026-07-30",
-    daysLeftToReactivate: 79,
-    completion: 40,
-  },
-];
+export const EXPIRED: ExpiredApp[] = [];
 
-export const COMPLETED: CompletedApp[] = [
-  {
-    id: "APP-1801",
-    property: "78 River Rd, Ottawa, ON",
-    lender: "Major Bank",
-    fundedDate: "2026-04-29",
-    amount: "$510,000",
-    term: "5 years",
-    rateType: "Fixed 4.59%",
-    maturityDate: "2031-04-29",
-    bundleStatus: "Active",
-  },
-];
+export const COMPLETED: CompletedApp[] = [];
 
-export const DOCUMENTS = [
-  { name: "Government ID", app: "APP-2041", status: "Received", due: "—" },
-  { name: "Last 2 pay stubs", app: "APP-2041", status: "Requested", due: "May 18" },
-  { name: "Most recent NOA", app: "APP-2041", status: "Requested", due: "May 18" },
-  { name: "Mortgage statement", app: "APP-2009", status: "Received", due: "—" },
-  { name: "Property tax bill", app: "APP-2009", status: "Under Review", due: "—" },
-];
+export const DOCUMENTS: { name: string; app: string; status: string; due: string }[] = [];
 
 // ─── Document Vault (account-wide) ──────────────────────────────────────
 export type VaultCategory =
@@ -186,13 +125,7 @@ export type VaultStatus =
   | "Archived"
   | "Generated";
 
-export type VaultTab =
-  | "all"
-  | "application"
-  | "reusable"
-  | "signed"
-  | "approval"
-  | "archived";
+export type VaultTab = "all" | "application" | "reusable" | "signed" | "approval" | "archived";
 
 export type VaultDoc = {
   id: string;
@@ -209,159 +142,19 @@ export type VaultDoc = {
   archived: boolean;
 };
 
-export const VAULT_DOCUMENTS: VaultDoc[] = [
-  {
-    id: "DOC-5012",
-    name: "Government ID — Driver's Licence",
-    category: "Identity",
-    app: "APP-2041",
-    appStatus: "In Progress",
-    uploaded: "May 6, 2026",
-    status: "Verified",
-    sharedWithLender: true,
-    reusable: true,
-    signed: false,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5013",
-    name: "Pay stubs — April 2026",
-    category: "Income",
-    app: "APP-2041",
-    appStatus: "In Progress",
-    uploaded: "May 6, 2026",
-    status: "Under Review",
-    sharedWithLender: true,
-    reusable: true,
-    signed: false,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5014",
-    name: "Notice of Assessment 2024",
-    category: "Income",
-    app: null,
-    appStatus: null,
-    uploaded: "Mar 12, 2026",
-    status: "Verified",
-    sharedWithLender: false,
-    reusable: true,
-    signed: false,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5015",
-    name: "Credit Bureau Consent",
-    category: "Consent",
-    app: "APP-2041",
-    appStatus: "In Progress",
-    uploaded: "May 4, 2026",
-    status: "Verified",
-    sharedWithLender: true,
-    reusable: false,
-    signed: true,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5016",
-    name: "Privacy & Disclosure Consent",
-    category: "Consent",
-    app: "APP-2041",
-    appStatus: "In Progress",
-    uploaded: "May 4, 2026",
-    status: "Verified",
-    sharedWithLender: true,
-    reusable: false,
-    signed: true,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5017",
-    name: "Mortgage Commitment Letter",
-    category: "Commitment",
-    app: "APP-1801",
-    appStatus: "Funded",
-    uploaded: "Apr 22, 2026",
-    status: "Generated",
-    sharedWithLender: true,
-    reusable: false,
-    signed: true,
-    approval: true,
-    archived: false,
-  },
-  {
-    id: "DOC-5018",
-    name: "Property Appraisal Report",
-    category: "Property",
-    app: "APP-1801",
-    appStatus: "Funded",
-    uploaded: "Apr 18, 2026",
-    status: "Verified",
-    sharedWithLender: true,
-    reusable: false,
-    signed: false,
-    approval: true,
-    archived: false,
-  },
-  {
-    id: "DOC-5019",
-    name: "Closing Disclosure Statement",
-    category: "Closing",
-    app: "APP-1801",
-    appStatus: "Funded",
-    uploaded: "Apr 29, 2026",
-    status: "Generated",
-    sharedWithLender: true,
-    reusable: false,
-    signed: true,
-    approval: true,
-    archived: false,
-  },
-  {
-    id: "DOC-5020",
-    name: "Void Cheque — TD Chequing",
-    category: "Banking",
-    app: null,
-    appStatus: null,
-    uploaded: "Feb 9, 2026",
-    status: "Verified",
-    sharedWithLender: false,
-    reusable: true,
-    signed: false,
-    approval: false,
-    archived: false,
-  },
-  {
-    id: "DOC-5021",
-    name: "Pre-Approval Certificate (2025)",
-    category: "Approval",
-    app: "APP-1702",
-    appStatus: "Expired",
-    uploaded: "Nov 2, 2025",
-    status: "Archived",
-    sharedWithLender: false,
-    reusable: false,
-    signed: false,
-    approval: true,
-    archived: true,
-  },
-];
+export const VAULT_DOCUMENTS: VaultDoc[] = [];
 
-export const CONDITIONS = [
-  { name: "Confirm employment letter", app: "APP-2033", status: "Outstanding", due: "May 20" },
-  { name: "Provide void cheque", app: "APP-2033", status: "Outstanding", due: "May 20" },
-  { name: "Property appraisal", app: "APP-2033", status: "Under Review", due: "—" },
-];
+export const CONDITIONS: { name: string; app: string; status: string; due: string }[] = [];
 
-export const SNAPSHOTS = [
-  { id: "SNAP-302", date: "May 8, 2026", type: "Purchase", loan: "$480,000", path: "Major Bank Path", offers: 3, status: "Offer Selected" },
-  { id: "SNAP-298", date: "Apr 24, 2026", type: "Refinance", loan: "$320,000", path: "Monoline Lender Path", offers: 3, status: "Snapshot Complete" },
-];
+export const SNAPSHOTS: {
+  id: string;
+  date: string;
+  type: string;
+  loan: string;
+  path: string;
+  offers: number;
+  status: string;
+}[] = [];
 
 // ─── Counts helper ───────────────────────────────────────────────────────
 export function getCounts() {
@@ -388,7 +181,7 @@ export type PortalRoutePath =
   | "/portal/appointments"
   | "/portal/help"
   | "/portal/home"
-  | "/portal/wallet"
+  | "/portal/home-life-bundle"
   | "/portal/tools"
   | "/portal/disclosures"
   | "/portal/settings";
@@ -407,20 +200,14 @@ export const PORTAL_NAV: {
   { to: "/portal/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/portal/help", label: "Help Center", icon: HelpCircle },
   { to: "/portal/home", label: "Homeowner Hub", icon: House },
-  { to: "/portal/wallet", label: "Home Life Wallet", icon: Wallet },
+  { to: "/portal/home-life-bundle", label: "Home Life Bundle", icon: Gift },
   { to: "/portal/tools", label: "Mortgage Tools", icon: Calculator },
   { to: "/portal/disclosures", label: "Disclosures", icon: ScrollText },
   { to: "/portal/settings", label: "Settings", icon: Settings },
 ];
 
 // ─── Calculators metadata ────────────────────────────────────────────────
-export type ToolKey =
-  | "payment"
-  | "affordability"
-  | "refinance"
-  | "renewal"
-  | "equity"
-  | "closing";
+export type ToolKey = "payment" | "affordability" | "refinance" | "renewal" | "equity" | "closing";
 
 export const TOOLS: {
   key: ToolKey;
@@ -428,12 +215,42 @@ export const TOOLS: {
   icon: typeof Home;
   blurb: string;
 }[] = [
-  { key: "payment", name: "Mortgage Payment", icon: Calculator, blurb: "Estimate monthly payment for any rate, term, and amortization." },
-  { key: "affordability", name: "Affordability", icon: Home, blurb: "See the maximum home price you can afford." },
-  { key: "refinance", name: "Refinance Savings", icon: RefreshCw, blurb: "Compare your current mortgage to a refinance scenario." },
-  { key: "renewal", name: "Renewal Planner", icon: Clock, blurb: "Plan your renewal payment at a new rate." },
-  { key: "equity", name: "Home Equity", icon: Wallet, blurb: "Estimate how much equity you can access today." },
-  { key: "closing", name: "Closing Costs", icon: FileText, blurb: "Estimate land transfer tax, legal, and closing fees." },
+  {
+    key: "payment",
+    name: "Mortgage Payment",
+    icon: Calculator,
+    blurb: "Estimate monthly payment for any rate, term, and amortization.",
+  },
+  {
+    key: "affordability",
+    name: "Affordability",
+    icon: Home,
+    blurb: "See the maximum home price you can afford.",
+  },
+  {
+    key: "refinance",
+    name: "Refinance Savings",
+    icon: RefreshCw,
+    blurb: "Compare your current mortgage to a refinance scenario.",
+  },
+  {
+    key: "renewal",
+    name: "Renewal Planner",
+    icon: Clock,
+    blurb: "Plan your renewal payment at a new rate.",
+  },
+  {
+    key: "equity",
+    name: "Home Equity",
+    icon: Wallet,
+    blurb: "Estimate how much equity you can access today.",
+  },
+  {
+    key: "closing",
+    name: "Closing Costs",
+    icon: FileText,
+    blurb: "Estimate land transfer tax, legal, and closing fees.",
+  },
 ];
 
 // ─── Settings sub-nav ────────────────────────────────────────────────────
