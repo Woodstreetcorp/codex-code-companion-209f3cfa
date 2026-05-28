@@ -73,6 +73,17 @@ function safeString(value: unknown): string {
   return "";
 }
 
+function safeTextList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => safeString(item).trim()).filter(Boolean);
+}
+
+function nestedNumber(source: unknown, key: string): number | null {
+  if (!source || typeof source !== "object") return null;
+  const value = (source as Record<string, unknown>)[key];
+  return typeof value === "number" ? value : null;
+}
+
 export const Route = createFileRoute("/portal/offers")({
   head: () => ({
     meta: [
@@ -452,6 +463,28 @@ function OffersReviewPage() {
   );
   const showPackagingGuidance =
     selectedProducts.length > 0 || lenderPackagingReadiness?.endpoint_available === true;
+  const productMatchCounts =
+    productMatchResult && typeof productMatchResult.counts === "object"
+      ? productMatchResult.counts
+      : null;
+  const totalProductMatches = nestedNumber(productMatchCounts, "total_matches");
+  const noActiveApplication =
+    productOptionsResult?.status === "no_application" ||
+    productMatchResult?.next_step === "complete_application" ||
+    safeTextList(lenderPackagingReadiness?.blockers).some((blocker) =>
+      blocker.toLowerCase().includes("no active application"),
+    );
+  const noProductMatches =
+    !noActiveApplication &&
+    productMatchResult?.endpoint_available === true &&
+    productMatchResult.ok !== false &&
+    (productMatchResult.status === "options_being_prepared" || totalProductMatches === 0);
+  const noBorrowerVisibleOptions =
+    !noActiveApplication &&
+    !noProductMatches &&
+    productOptionsResult?.endpoint_available === true &&
+    productOptionsResult.ok !== false &&
+    productOptionsAvailable === false;
 
   return (
     <div className="space-y-6">
@@ -519,6 +552,12 @@ function OffersReviewPage() {
         hasSelectedProducts={selectedProducts.length > 0}
         packagingInProgress={packagingInProgress}
       />
+
+      {noActiveApplication && <NoActiveApplicationFallback />}
+
+      {noProductMatches && <NoProductMatchesFallback />}
+
+      {noBorrowerVisibleOptions && <NoBorrowerVisibleOptionsFallback />}
 
       {selectedProducts.length > 0 && <SelectedProductPathsSummary products={selectedProducts} />}
 
@@ -763,6 +802,72 @@ function ProductMatchStatusCard({
   );
 }
 
+function NoActiveApplicationFallback() {
+  return (
+    <section className="rounded-2xl border border-secondary/20 bg-secondary/5 p-6 shadow-sm">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+            Mortgage options
+          </p>
+          <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+            Your mortgage options are being prepared
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your Mortgage Snapshot is saved. The next step is to start or continue your mortgage
+            application so approvU can prepare your borrower-safe mortgage options.
+          </p>
+        </div>
+        <Link
+          to="/portal/application"
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Continue application
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function NoProductMatchesFallback() {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+        Product matching
+      </p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+        Mortgage options are not ready yet
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+        approvU has your file, but product matching has not produced borrower-safe paths to review
+        yet. Your advisor will confirm next steps before any possible lender packaging or review.
+      </p>
+      <p className="mt-3 text-xs text-muted-foreground">{getProductMatchDisclaimer()}</p>
+    </section>
+  );
+}
+
+function NoBorrowerVisibleOptionsFallback() {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-widest text-secondary">
+        Advisor review
+      </p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
+        Your options are under review
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+        Potential mortgage paths are being reviewed before anything is shown here. This page will
+        only display borrower-safe options after approvU marks them ready for borrower review.
+      </p>
+      <p className="mt-3 text-xs text-muted-foreground">
+        No lender names, product IDs, rates, match scores, or approval decisions are shown.
+      </p>
+    </section>
+  );
+}
+
 function PackagingNextStepsOverview({
   hasSelectedProducts,
   packagingInProgress,
@@ -910,7 +1015,7 @@ function ProductOptionCard({
   onSelect: (publicReference: string) => void;
 }) {
   const notes = productOptionTextList(option.notes);
-  const documentsNeeded = option.documents_needed?.filter(Boolean) ?? [];
+  const documentsNeeded = safeTextList(option.documents_needed);
   const details = [
     { label: "Category", value: formatProductOptionValue(option.product_category) },
     {
@@ -1134,7 +1239,7 @@ function LenderPackagingReadinessCard({
 }) {
   const endpointReady = readiness?.endpoint_available === true && readiness.ok !== false;
   const isReady = endpointReady && readiness.ready === true;
-  const blockers = endpointReady ? (readiness.blockers?.filter(Boolean) ?? []) : [];
+  const blockers = endpointReady ? safeTextList(readiness.blockers) : [];
   const nextStep =
     endpointReady && readiness.next_step
       ? safeString(readiness.next_step)
@@ -1194,7 +1299,7 @@ function LenderPackagingReadinessCard({
             {blockers.map((blocker) => (
               <li key={blocker} className="flex items-start gap-2 text-sm text-yellow-800">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>{blocker}</span>
+                <span>{safeString(blocker)}</span>
               </li>
             ))}
           </ul>
