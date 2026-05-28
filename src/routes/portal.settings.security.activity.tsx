@@ -8,7 +8,10 @@ export const Route = createFileRoute("/portal/settings/security/activity")({
   head: () => ({
     meta: [
       { title: "Access Log — approvU Settings" },
-      { name: "description", content: "Every login, document share, and security event on your account." },
+      {
+        name: "description",
+        content: "Every login, document share, and security event on your account.",
+      },
     ],
   }),
   component: ActivityPage,
@@ -29,15 +32,7 @@ type Event = {
   resolved?: boolean;
 };
 
-const EVENTS: Event[] = [
-  { id: "E-091", date: "May 11, 2026 · 9:14 AM", kind: "login", severity: "info", title: "Successful sign-in", detail: "Password + SMS OTP", device: "MacBook · Chrome 124", ip: "76.10.x.x", location: "Toronto, ON" },
-  { id: "E-090", date: "May 10, 2026 · 4:51 PM", kind: "share", severity: "info", title: "Document shared with lender", detail: "Pay stubs — April 2026 → Major Bank Underwriting", device: "MacBook · Chrome 124", ip: "76.10.x.x", location: "Toronto, ON" },
-  { id: "E-089", date: "May 09, 2026 · 11:32 PM", kind: "auth", severity: "alert", title: "Unusual sign-in attempt blocked", detail: "Wrong MFA code 3× from new device", device: "Unknown · Firefox", ip: "203.0.113.x", location: "Calgary, AB" },
-  { id: "E-088", date: "May 09, 2026 · 7:02 AM", kind: "doc", severity: "warn", title: "Large document download", detail: "Mortgage Commitment Letter (3.2 MB)", device: "iPhone 15 · Safari", ip: "76.10.x.x", location: "Toronto, ON" },
-  { id: "E-087", date: "May 04, 2026 · 9:41 AM", kind: "consent", severity: "info", title: "Credit pull consent granted", detail: "v2.0 — Equifax soft pull", device: "MacBook · Chrome", ip: "76.10.x.x", location: "Toronto, ON" },
-  { id: "E-086", date: "Apr 28, 2026 · 11:02 AM", kind: "login", severity: "info", title: "Successful sign-in", detail: "Password + WebAuthn (Touch ID)", device: "MacBook · Chrome", ip: "76.10.x.x", location: "Toronto, ON" },
-  { id: "E-085", date: "Apr 18, 2026 · 4:00 PM", kind: "auth", severity: "info", title: "MFA enabled", detail: "TOTP via Authenticator app", device: "MacBook · Chrome", ip: "76.10.x.x", location: "Toronto, ON" },
-];
+const EVENTS: Event[] = [];
 
 const KIND_META: Record<Kind, { icon: typeof LogIn; label: string }> = {
   login: { icon: LogIn, label: "Sign-in" },
@@ -58,7 +53,10 @@ function ActivityPage() {
 
   return (
     <div className="space-y-6">
-      <SettingPane title="Login & access audit log" desc="Every sign-in attempt, document share, and security event tied to your account.">
+      <SettingPane
+        title="Login & access audit log"
+        desc="Every sign-in attempt, document share, and security event tied to your account."
+      >
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
@@ -80,43 +78,62 @@ function ActivityPage() {
           </button>
         </div>
 
-        <ol className="relative space-y-3 border-l border-border pl-6">
-          {items.map((e) => {
-            const Icon = KIND_META[e.kind].icon;
-            const dot =
-              e.severity === "alert" ? "bg-destructive" : e.severity === "warn" ? "bg-amber-500" : "bg-mint";
-            return (
-              <li key={e.id} className="relative">
-                <span className={`absolute -left-[29px] top-1.5 h-3 w-3 rounded-full ring-4 ring-background ${dot}`} />
-                <div className="rounded-xl border border-border bg-background p-3.5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 min-w-0">
-                      <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground">{e.title}</p>
-                        <p className="text-xs text-muted-foreground">{e.detail}</p>
+        {items.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-background p-8 text-center">
+            <Shield className="mx-auto h-8 w-8 text-muted-foreground/50" />
+            <p className="mt-3 text-sm font-medium text-foreground">
+              No security events recorded yet
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sign-ins, document shares, and security alerts will appear here as your account
+              activity builds.
+            </p>
+          </div>
+        ) : (
+          <ol className="relative space-y-3 border-l border-border pl-6">
+            {items.map((e) => {
+              const Icon = KIND_META[e.kind].icon;
+              const dot =
+                e.severity === "alert"
+                  ? "bg-destructive"
+                  : e.severity === "warn"
+                    ? "bg-amber-500"
+                    : "bg-mint";
+              return (
+                <li key={e.id} className="relative">
+                  <span
+                    className={`absolute -left-[29px] top-1.5 h-3 w-3 rounded-full ring-4 ring-background ${dot}`}
+                  />
+                  <div className="rounded-xl border border-border bg-background p-3.5">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 min-w-0">
+                        <Icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{e.title}</p>
+                          <p className="text-xs text-muted-foreground">{e.detail}</p>
+                        </div>
                       </div>
+                      {e.severity === "alert" && (
+                        <button
+                          onClick={() => toast.success("Reported. We'll review and follow up.")}
+                          className="inline-flex items-center gap-1 rounded-md bg-destructive px-2.5 py-1 text-[11px] font-semibold text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          <AlertTriangle className="h-3 w-3" /> This wasn't me
+                        </button>
+                      )}
                     </div>
-                    {e.severity === "alert" && (
-                      <button
-                        onClick={() => toast.success("Reported. We'll review and follow up.")}
-                        className="inline-flex items-center gap-1 rounded-md bg-destructive px-2.5 py-1 text-[11px] font-semibold text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        <AlertTriangle className="h-3 w-3" /> This wasn't me
-                      </button>
-                    )}
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                      <span>{e.date}</span>
+                      {e.device && <span>{e.device}</span>}
+                      {e.ip && <span>IP {e.ip}</span>}
+                      {e.location && <span>{e.location}</span>}
+                    </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                    <span>{e.date}</span>
-                    {e.device && <span>{e.device}</span>}
-                    {e.ip && <span>IP {e.ip}</span>}
-                    {e.location && <span>{e.location}</span>}
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </SettingPane>
     </div>
   );

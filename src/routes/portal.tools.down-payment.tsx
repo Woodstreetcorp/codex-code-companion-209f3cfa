@@ -30,37 +30,61 @@ export const Route = createFileRoute("/portal/tools/down-payment")({
 const downPaymentRules = {
   minimumDownPaymentTiers: [
     { upTo: 500000, percent: 0.05 },
-    { upTo: 1500000, percentOnExcess: 0.10 },
-    { above: 1500000, percent: 0.20 },
+    { upTo: 1500000, percentOnExcess: 0.1 },
+    { above: 1500000, percent: 0.2 },
   ],
-  insuredMortgageThreshold: 0.20, // <20% down → insured
+  insuredMortgageThreshold: 0.2, // <20% down → insured
   insuredMortgageMaxPrice: 1500000,
 };
 
 function calcMinDownPayment(price: number): number {
   if (price <= 0) return 0;
-  if (price >= 1500000) return price * 0.20;
+  if (price >= 1500000) return price * 0.2;
   if (price <= 500000) return price * 0.05;
-  return 500000 * 0.05 + (price - 500000) * 0.10;
+  return 500000 * 0.05 + (price - 500000) * 0.1;
 }
 
 // ─── Reference data ─────────────────────────────────────────────────────
 const PROVINCES = [
-  "Ontario", "British Columbia", "Alberta", "Manitoba", "Saskatchewan", "Quebec",
-  "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island",
-  "Yukon", "Northwest Territories", "Nunavut",
+  "Ontario",
+  "British Columbia",
+  "Alberta",
+  "Manitoba",
+  "Saskatchewan",
+  "Quebec",
+  "Nova Scotia",
+  "New Brunswick",
+  "Newfoundland and Labrador",
+  "Prince Edward Island",
+  "Yukon",
+  "Northwest Territories",
+  "Nunavut",
 ] as const;
 
 const PROPERTY_USAGES = [
-  "Primary residence", "Rental / investment", "Second home", "Owner-occupied with rental unit",
+  "Primary residence",
+  "Rental / investment",
+  "Second home",
+  "Owner-occupied with rental unit",
 ] as const;
 const PROPERTY_TYPES = [
-  "Detached", "Semi-detached", "Townhouse", "Condo", "Duplex / multi-unit", "New construction", "Other",
+  "Detached",
+  "Semi-detached",
+  "Townhouse",
+  "Condo",
+  "Duplex / multi-unit",
+  "New construction",
+  "Other",
 ] as const;
 const FTHB = ["Yes", "No", "Not sure"] as const;
 const NEW_CONSTR = ["Yes", "No", "Not sure"] as const;
 const TIMELINES = [
-  "0–30 days", "1–3 months", "3–6 months", "6–12 months", "More than 12 months", "Not sure",
+  "0–30 days",
+  "1–3 months",
+  "3–6 months",
+  "6–12 months",
+  "More than 12 months",
+  "Not sure",
 ] as const;
 const AVAILABILITY = ["Yes", "No", "Partially"] as const;
 const HOLD_90D = ["Yes", "No", "Not sure"] as const;
@@ -150,9 +174,9 @@ const newSource = (over: Partial<Source> = {}): Source => ({
 const SOURCE_DOCS: Record<string, string[]> = {
   "Personal savings": ["90-day bank statements"],
   "Chequing / savings account": ["90-day bank statements"],
-  "TFSA": ["TFSA account statement"],
+  TFSA: ["TFSA account statement"],
   "RRSP Home Buyers' Plan": ["RRSP account statement", "Withdrawal confirmation later"],
-  "FHSA": ["FHSA account statement", "Withdrawal confirmation later"],
+  FHSA: ["FHSA account statement", "Withdrawal confirmation later"],
   "Investment account": ["Investment account statements"],
   "Gift from immediate family": ["Signed gift letter", "Proof of donor funds"],
   "Gift from non-immediate family": ["Signed gift letter", "Proof of donor funds"],
@@ -162,8 +186,12 @@ const SOURCE_DOCS: Record<string, string[]> = {
   "Rent-to-own accumulated deposit": ["Rent-to-own agreement", "Payment history"],
   "Borrowed funds": ["Loan agreement", "Monthly payment confirmation"],
   "Business funds": ["Business financials", "Accountant letter"],
-  "Funds from outside Canada": ["Bank records", "Transfer confirmation", "Source-of-funds evidence"],
-  "Other": ["Source-of-funds documentation"],
+  "Funds from outside Canada": [
+    "Bank records",
+    "Transfer confirmation",
+    "Source-of-funds evidence",
+  ],
+  Other: ["Source-of-funds documentation"],
 };
 
 function DownPaymentPlannerPage() {
@@ -171,19 +199,15 @@ function DownPaymentPlannerPage() {
   const [province, setProvince] = useState<(typeof PROVINCES)[number]>("Ontario");
   const [city, setCity] = useState("Toronto");
   const [purchasePrice, setPurchasePrice] = useState(850000);
-  const [propertyUsage, setPropertyUsage] = useState<(typeof PROPERTY_USAGES)[number]>("Primary residence");
+  const [propertyUsage, setPropertyUsage] =
+    useState<(typeof PROPERTY_USAGES)[number]>("Primary residence");
   const [propertyType, setPropertyType] = useState<(typeof PROPERTY_TYPES)[number]>("Detached");
   const [fthb, setFthb] = useState<(typeof FTHB)[number]>("Yes");
   const [newConstruction, setNewConstruction] = useState<(typeof NEW_CONSTR)[number]>("No");
   const [timeline, setTimeline] = useState<(typeof TIMELINES)[number]>("3–6 months");
 
   // Sources
-  const [sources, setSources] = useState<Source[]>([
-    newSource({ type: "Personal savings", amount: 35000, institution: "TD Chequing" }),
-    newSource({ type: "FHSA", amount: 16000, institution: "Wealthsimple FHSA", fhsaHolder: "Primary borrower" }),
-    newSource({ type: "RRSP Home Buyers' Plan", amount: 20000, institution: "RBC RRSP", usingHBP: "Yes" }),
-    newSource({ type: "Gift from immediate family", amount: 15000, donorRel: "Parent", donorCountry: "Canada" }),
-  ]);
+  const [sources, setSources] = useState<Source[]>([newSource()]);
 
   // Savings gap planner
   const [gapOpen, setGapOpen] = useState(false);
@@ -204,22 +228,22 @@ function DownPaymentPlannerPage() {
 
   const insuranceSignal = (() => {
     if (purchasePrice <= 0) return { label: "Add a few details", tone: "muted" as const };
-    if (purchasePrice > downPaymentRules.insuredMortgageMaxPrice && ltv > 0.80)
+    if (purchasePrice > downPaymentRules.insuredMortgageMaxPrice && ltv > 0.8)
       return { label: "Insurable only with 20%+ down at this price", tone: "coral" as const };
-    if (ltv >= 0.80) return { label: "May require default insurance", tone: "warning" as const };
+    if (ltv >= 0.8) return { label: "May require default insurance", tone: "warning" as const };
     if (ltv > 0) return { label: "20% or more down — likely uninsured", tone: "mint" as const };
     return { label: "Needs review", tone: "secondary" as const };
   })();
 
   const insurancePremiumEst = useMemo(() => {
-    if (ltv <= 0.80 || purchasePrice > downPaymentRules.insuredMortgageMaxPrice) return 0;
+    if (ltv <= 0.8 || purchasePrice > downPaymentRules.insuredMortgageMaxPrice) return 0;
     // Rough CMHC-style premium tiers
     let rate = 0.04;
     if (ltv <= 0.65) rate = 0.006;
     else if (ltv <= 0.75) rate = 0.017;
-    else if (ltv <= 0.80) rate = 0.024;
+    else if (ltv <= 0.8) rate = 0.024;
     else if (ltv <= 0.85) rate = 0.028;
-    else if (ltv <= 0.90) rate = 0.031;
+    else if (ltv <= 0.9) rate = 0.031;
     else if (ltv <= 0.95) rate = 0.04;
     return mortgageAmount * rate;
   }, [ltv, mortgageAmount, purchasePrice]);
@@ -231,7 +255,8 @@ function DownPaymentPlannerPage() {
   if (sources.length === 0) errors.push("Please add at least one down payment source.");
   sources.forEach((s, i) => {
     if (s.amount <= 0) errors.push(`Source ${i + 1}: please enter an amount.`);
-    if (!s.borrower) errors.push(`Source ${i + 1}: please select who owns or provides this source.`);
+    if (!s.borrower)
+      errors.push(`Source ${i + 1}: please select who owns or provides this source.`);
     if (s.type === "Borrowed funds" && s.monthlyRepayment <= 0)
       errors.push(`Source ${i + 1}: borrowed funds require a monthly repayment amount.`);
     if (s.type.startsWith("Gift") && !s.donorRel)
@@ -247,7 +272,9 @@ function DownPaymentPlannerPage() {
   if (sources.some((s) => s.type === "Borrowed funds"))
     warnings.push("Borrowed funds may reduce mortgage affordability.");
   if (sources.some((s) => s.type === "Funds from outside Canada"))
-    warnings.push("Funds from outside Canada may require additional source-of-funds documentation.");
+    warnings.push(
+      "Funds from outside Canada may require additional source-of-funds documentation.",
+    );
   if (sources.some((s) => s.type.startsWith("Gift")))
     warnings.push("Gift funds may need a signed gift letter.");
   warnings.push("Closing costs are separate from your down payment — budget for them too.");
@@ -274,16 +301,19 @@ function DownPaymentPlannerPage() {
   const monthlySavingsNeeded = gapMonths && gapMonths > 0 ? stillNeeded / gapMonths : null;
 
   const onReset = () => {
-    setProvince("Ontario"); setCity("Toronto");
-    setPurchasePrice(850000); setPropertyUsage("Primary residence"); setPropertyType("Detached");
-    setFthb("Yes"); setNewConstruction("No"); setTimeline("3–6 months");
-    setSources([
-      newSource({ type: "Personal savings", amount: 35000, institution: "TD Chequing" }),
-      newSource({ type: "FHSA", amount: 16000, institution: "Wealthsimple FHSA" }),
-      newSource({ type: "RRSP Home Buyers' Plan", amount: 20000, institution: "RBC RRSP" }),
-      newSource({ type: "Gift from immediate family", amount: 15000, donorRel: "Parent" }),
-    ]);
-    setTargetDate(""); setMonthlySavings(1500); setExpectedGift(0); setInvestmentGrowth(0);
+    setProvince("Ontario");
+    setCity("Toronto");
+    setPurchasePrice(850000);
+    setPropertyUsage("Primary residence");
+    setPropertyType("Detached");
+    setFthb("Yes");
+    setNewConstruction("No");
+    setTimeline("3–6 months");
+    setSources([newSource()]);
+    setTargetDate("");
+    setMonthlySavings(1500);
+    setExpectedGift(0);
+    setInvestmentGrowth(0);
   };
 
   const onSave = () =>
@@ -291,12 +321,25 @@ function DownPaymentPlannerPage() {
       tool: "Down Payment Planner",
       name: `${fmtMoney(purchasePrice)} · ${fmtPct(dpPct * 100)} down`,
       inputs: {
-        province, city, purchasePrice, propertyUsage, propertyType, fthb, newConstruction, timeline,
+        province,
+        city,
+        purchasePrice,
+        propertyUsage,
+        propertyType,
+        fthb,
+        newConstruction,
+        timeline,
         sources,
       },
       outputs: {
-        totalDownPayment, dpPct, mortgageAmount, ltv, minRequired, gap,
-        insuranceSignal: insuranceSignal.label, insurancePremiumEst,
+        totalDownPayment,
+        dpPct,
+        mortgageAmount,
+        ltv,
+        minRequired,
+        gap,
+        insuranceSignal: insuranceSignal.label,
+        insurancePremiumEst,
       },
     });
 
@@ -311,15 +354,59 @@ function DownPaymentPlannerPage() {
       <div className="grid gap-4 lg:grid-cols-[1fr_1.05fr]">
         {/* Inputs */}
         <div className="space-y-4">
-          <Card title="Your purchase scenario" subtitle="Tell us about the home you're planning to buy.">
-            <SelectField label="Province" value={province} onChange={setProvince} options={PROVINCES} />
-            <TextField label="City / municipality" value={city} onChange={setCity} placeholder="e.g. Toronto" />
-            <NumField label="Target purchase price" prefix="$" step={1000} value={purchasePrice} onChange={setPurchasePrice} />
-            <SelectField label="Property usage" value={propertyUsage} onChange={setPropertyUsage} options={PROPERTY_USAGES} />
-            <SelectField label="Property type" value={propertyType} onChange={setPropertyType} options={PROPERTY_TYPES} />
-            <SelectField label="First-time home buyer?" value={fthb} onChange={setFthb} options={FTHB} />
-            <SelectField label="New construction?" value={newConstruction} onChange={setNewConstruction} options={NEW_CONSTR} />
-            <SelectField label="Expected purchase timeline" value={timeline} onChange={setTimeline} options={TIMELINES} />
+          <Card
+            title="Your purchase scenario"
+            subtitle="Tell us about the home you're planning to buy."
+          >
+            <SelectField
+              label="Province"
+              value={province}
+              onChange={setProvince}
+              options={PROVINCES}
+            />
+            <TextField
+              label="City / municipality"
+              value={city}
+              onChange={setCity}
+              placeholder="e.g. Toronto"
+            />
+            <NumField
+              label="Target purchase price"
+              prefix="$"
+              step={1000}
+              value={purchasePrice}
+              onChange={setPurchasePrice}
+            />
+            <SelectField
+              label="Property usage"
+              value={propertyUsage}
+              onChange={setPropertyUsage}
+              options={PROPERTY_USAGES}
+            />
+            <SelectField
+              label="Property type"
+              value={propertyType}
+              onChange={setPropertyType}
+              options={PROPERTY_TYPES}
+            />
+            <SelectField
+              label="First-time home buyer?"
+              value={fthb}
+              onChange={setFthb}
+              options={FTHB}
+            />
+            <SelectField
+              label="New construction?"
+              value={newConstruction}
+              onChange={setNewConstruction}
+              options={NEW_CONSTR}
+            />
+            <SelectField
+              label="Expected purchase timeline"
+              value={timeline}
+              onChange={setTimeline}
+              options={TIMELINES}
+            />
 
             <div className="grid grid-cols-3 gap-3 pt-1">
               <MiniStat label="Min. down payment" value={fmtMoney(minRequired)} />
@@ -337,7 +424,9 @@ function DownPaymentPlannerPage() {
                 <SourceCard
                   key={s.id}
                   source={s}
-                  onChange={(next) => setSources((prev) => prev.map((x, j) => (i === j ? next : x)))}
+                  onChange={(next) =>
+                    setSources((prev) => prev.map((x, j) => (i === j ? next : x)))
+                  }
                   onRemove={() => setSources((prev) => prev.filter((_, j) => j !== i))}
                 />
               ))}
@@ -361,10 +450,33 @@ function DownPaymentPlannerPage() {
             title="Savings gap planner"
             subtitle="If you have a shortfall or future timeline, plan your monthly savings."
           >
-            <TextField label="Target purchase date" value={targetDate} onChange={setTargetDate} placeholder="YYYY-MM-DD" />
-            <NumField label="Monthly savings amount" prefix="$" step={50} value={monthlySavings} onChange={setMonthlySavings} />
-            <NumField label="Expected additional gift / grant" prefix="$" step={500} value={expectedGift} onChange={setExpectedGift} />
-            <NumField label="Expected investment growth (optional)" prefix="$" step={100} value={investmentGrowth} onChange={setInvestmentGrowth} />
+            <TextField
+              label="Target purchase date"
+              value={targetDate}
+              onChange={setTargetDate}
+              placeholder="YYYY-MM-DD"
+            />
+            <NumField
+              label="Monthly savings amount"
+              prefix="$"
+              step={50}
+              value={monthlySavings}
+              onChange={setMonthlySavings}
+            />
+            <NumField
+              label="Expected additional gift / grant"
+              prefix="$"
+              step={500}
+              value={expectedGift}
+              onChange={setExpectedGift}
+            />
+            <NumField
+              label="Expected investment growth (optional)"
+              prefix="$"
+              step={100}
+              value={investmentGrowth}
+              onChange={setInvestmentGrowth}
+            />
           </Accordion>
         </div>
 
@@ -374,7 +486,10 @@ function DownPaymentPlannerPage() {
             <Card title="Your down payment estimate">
               <ErrorList errors={errors} />
               {warnings.map((w, i) => (
-                <p key={i} className="rounded-lg border border-secondary/30 bg-secondary/5 p-2 text-[11px] text-foreground">
+                <p
+                  key={i}
+                  className="rounded-lg border border-secondary/30 bg-secondary/5 p-2 text-[11px] text-foreground"
+                >
                   {w}
                 </p>
               ))}
@@ -392,7 +507,11 @@ function DownPaymentPlannerPage() {
               />
 
               <ResultRow label="Purchase price" value={fmtMoney(purchasePrice)} />
-              <ResultRow label="Total down payment" value={fmtMoney(totalDownPayment)} tone="primary" />
+              <ResultRow
+                label="Total down payment"
+                value={fmtMoney(totalDownPayment)}
+                tone="primary"
+              />
               <ResultRow label="Down payment %" value={fmtPct(dpPct * 100)} />
               <ResultRow label="Estimated minimum required" value={fmtMoney(minRequired)} />
               <ResultRow
@@ -401,58 +520,93 @@ function DownPaymentPlannerPage() {
                 tone={meetsMin ? "mint" : "coral"}
               />
               <ResultRow label="Estimated mortgage amount" value={fmtMoney(mortgageAmount)} />
-              <ResultRow label="Estimated LTV" value={fmtPct(ltv * 100)} tone={ltv > 0.80 ? "primary" : "mint"} />
+              <ResultRow
+                label="Estimated LTV"
+                value={fmtPct(ltv * 100)}
+                tone={ltv > 0.8 ? "primary" : "mint"}
+              />
               {insurancePremiumEst > 0 && (
-                <ResultRow label="Estimated default insurance premium" value={fmtMoney(insurancePremiumEst)} tone="primary" />
+                <ResultRow
+                  label="Estimated default insurance premium"
+                  value={fmtMoney(insurancePremiumEst)}
+                  tone="primary"
+                />
               )}
 
               <p className="rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-                If your down payment is below 20%, mortgage default insurance may apply. Final insurance cost
-                depends on product and lender rules.
+                If your down payment is below 20%, mortgage default insurance may apply. Final
+                insurance cost depends on product and lender rules.
               </p>
             </Card>
 
             <Card title="Minimum down payment check">
               <p className="text-[11px] text-muted-foreground">
-                For homes above $500,000, the minimum down payment is calculated in tiers:
-                5% on the first $500,000, 10% on the portion from $500K to $1.5M, and typically 20%+ at $1.5M and above.
+                For homes above $500,000, the minimum down payment is calculated in tiers: 5% on the
+                first $500,000, 10% on the portion from $500K to $1.5M, and typically 20%+ at $1.5M
+                and above.
               </p>
               <ResultRow label="Estimated minimum required" value={fmtMoney(minRequired)} />
               <ResultRow label="Your entered down payment" value={fmtMoney(totalDownPayment)} />
-              <ResultRow label="Difference" value={fmtMoney(Math.abs(gap))} tone={meetsMin ? "mint" : "coral"} />
-              <ResultRow label="Status" value={meetsMin ? "Meets minimum" : "Below minimum"} tone={meetsMin ? "mint" : "coral"} />
+              <ResultRow
+                label="Difference"
+                value={fmtMoney(Math.abs(gap))}
+                tone={meetsMin ? "mint" : "coral"}
+              />
+              <ResultRow
+                label="Status"
+                value={meetsMin ? "Meets minimum" : "Below minimum"}
+                tone={meetsMin ? "mint" : "coral"}
+              />
             </Card>
 
             <Card title="Documents you may need">
               {documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Add a source to see likely documents.</p>
+                <p className="text-xs text-muted-foreground">
+                  Add a source to see likely documents.
+                </p>
               ) : (
                 <ul className="space-y-1.5 text-xs">
                   {documents.map((d, i) => (
-                    <li key={i} className="flex items-start justify-between gap-3 border-b border-border/60 pb-1.5">
+                    <li
+                      key={i}
+                      className="flex items-start justify-between gap-3 border-b border-border/60 pb-1.5"
+                    >
                       <span className="text-foreground">{d.doc}</span>
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{d.source}</span>
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        {d.source}
+                      </span>
                     </li>
                   ))}
                 </ul>
               )}
               <p className="rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-                Status: <strong>May be required.</strong> Final document list depends on lender review.
+                Status: <strong>May be required.</strong> Final document list depends on lender
+                review.
               </p>
             </Card>
 
             <Card title="Savings gap planner">
               {meetsMin && gapMonths === null ? (
                 <p className="text-xs text-foreground">
-                  You appear to have enough down payment based on this estimate. Remember to budget for closing costs too.
+                  You appear to have enough down payment based on this estimate. Remember to budget
+                  for closing costs too.
                 </p>
               ) : (
                 <>
-                  <ResultRow label="Amount still needed" value={fmtMoney(stillNeeded)} tone={stillNeeded > 0 ? "coral" : "mint"} />
-                  <ResultRow label="Months until target date" value={gapMonths !== null ? `${gapMonths} mo` : "—"} />
+                  <ResultRow
+                    label="Amount still needed"
+                    value={fmtMoney(stillNeeded)}
+                    tone={stillNeeded > 0 ? "coral" : "mint"}
+                  />
+                  <ResultRow
+                    label="Months until target date"
+                    value={gapMonths !== null ? `${gapMonths} mo` : "—"}
+                  />
                   <ResultRow
                     label="Monthly savings needed"
-                    value={monthlySavingsNeeded !== null ? `${fmtMoney(monthlySavingsNeeded)}/mo` : "—"}
+                    value={
+                      monthlySavingsNeeded !== null ? `${fmtMoney(monthlySavingsNeeded)}/mo` : "—"
+                    }
                     tone="primary"
                   />
                   {monthlySavingsNeeded !== null && (
@@ -519,8 +673,16 @@ function Disclaimer() {
 }
 
 function Card({
-  title, subtitle, right, children,
-}: { title: string; subtitle?: string; right?: React.ReactNode; children: React.ReactNode }) {
+  title,
+  subtitle,
+  right,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -536,8 +698,18 @@ function Card({
 }
 
 function Accordion({
-  open, onToggle, title, subtitle, children,
-}: { open: boolean; onToggle: () => void; title: string; subtitle?: string; children: React.ReactNode }) {
+  open,
+  onToggle,
+  title,
+  subtitle,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card shadow-sm">
       <button
@@ -549,16 +721,28 @@ function Accordion({
           <p className="text-sm font-semibold text-foreground">{title}</p>
           {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`}
+        />
       </button>
-      {open && <div className="grid gap-3 border-t border-border p-5 sm:grid-cols-2">{children}</div>}
+      {open && (
+        <div className="grid gap-3 border-t border-border p-5 sm:grid-cols-2">{children}</div>
+      )}
     </section>
   );
 }
 
 function TextField({
-  label, value, onChange, placeholder,
-}: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-medium text-foreground">{label}</span>
@@ -576,7 +760,9 @@ function TextField({
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
@@ -586,12 +772,18 @@ function ErrorList({ errors }: { errors: string[] }) {
   if (errors.length === 0) return null;
   return (
     <ul className="rounded-lg border border-coral/40 bg-coral/5 p-3 text-[11px] text-coral">
-      {errors.map((e, i) => <li key={i}>• {e}</li>)}
+      {errors.map((e, i) => (
+        <li key={i}>• {e}</li>
+      ))}
     </ul>
   );
 }
 
-function SignalPill({ signal }: { signal: { label: string; tone: "mint" | "secondary" | "warning" | "coral" | "muted" } }) {
+function SignalPill({
+  signal,
+}: {
+  signal: { label: string; tone: "mint" | "secondary" | "warning" | "coral" | "muted" };
+}) {
   const map = {
     mint: "bg-mint/20 text-foreground border-mint/40",
     secondary: "bg-secondary/15 text-secondary border-secondary/30",
@@ -600,22 +792,32 @@ function SignalPill({ signal }: { signal: { label: string; tone: "mint" | "secon
     muted: "bg-muted text-muted-foreground border-border",
   };
   return (
-    <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${map[signal.tone]}`}>
+    <div
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold ${map[signal.tone]}`}
+    >
       <Info className="h-3 w-3" /> {signal.label}
     </div>
   );
 }
 
 function SourceCard({
-  source, onChange, onRemove,
-}: { source: Source; onChange: (s: Source) => void; onRemove: () => void }) {
+  source,
+  onChange,
+  onRemove,
+}: {
+  source: Source;
+  onChange: (s: Source) => void;
+  onRemove: () => void;
+}) {
   const isGift = source.type.startsWith("Gift");
   const set = <K extends keyof Source>(k: K, v: Source[K]) => onChange({ ...source, [k]: v });
 
   return (
     <div className="rounded-xl border border-border p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-secondary">{source.type}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-secondary">
+          {source.type}
+        </p>
         <button
           type="button"
           onClick={onRemove}
@@ -631,54 +833,136 @@ function SourceCard({
           onChange={(v) => set("type", v as SourceType)}
           options={SOURCE_TYPES}
         />
-        <NumField label="Amount" prefix="$" step={500} value={source.amount} onChange={(n) => set("amount", n)} />
-        <TextField label="Borrower" value={source.borrower} onChange={(v) => set("borrower", v)} placeholder="e.g. Primary borrower" />
-        <TextField label="Institution / source name (optional)" value={source.institution} onChange={(v) => set("institution", v)} placeholder="e.g. RBC, Wealthsimple" />
-        <SelectField label="Funds already available?" value={source.available} onChange={(v) => set("available", v)} options={AVAILABILITY} />
-        <SelectField label="Funds held for 90 days?" value={source.held90} onChange={(v) => set("held90", v)} options={HOLD_90D} />
+        <NumField
+          label="Amount"
+          prefix="$"
+          step={500}
+          value={source.amount}
+          onChange={(n) => set("amount", n)}
+        />
+        <TextField
+          label="Borrower"
+          value={source.borrower}
+          onChange={(v) => set("borrower", v)}
+          placeholder="e.g. Primary borrower"
+        />
+        <TextField
+          label="Institution / source name (optional)"
+          value={source.institution}
+          onChange={(v) => set("institution", v)}
+          placeholder="e.g. RBC, Wealthsimple"
+        />
+        <SelectField
+          label="Funds already available?"
+          value={source.available}
+          onChange={(v) => set("available", v)}
+          options={AVAILABILITY}
+        />
+        <SelectField
+          label="Funds held for 90 days?"
+          value={source.held90}
+          onChange={(v) => set("held90", v)}
+          options={HOLD_90D}
+        />
 
         {isGift && (
           <>
-            <TextField label="Donor relationship" value={source.donorRel} onChange={(v) => set("donorRel", v)} placeholder="e.g. Parent" />
-            <SelectField label="Is it repayable?" value={source.repayable} onChange={(v) => set("repayable", v)} options={YES_NO} />
-            <TextField label="Donor country" value={source.donorCountry} onChange={(v) => set("donorCountry", v)} />
+            <TextField
+              label="Donor relationship"
+              value={source.donorRel}
+              onChange={(v) => set("donorRel", v)}
+              placeholder="e.g. Parent"
+            />
+            <SelectField
+              label="Is it repayable?"
+              value={source.repayable}
+              onChange={(v) => set("repayable", v)}
+              options={YES_NO}
+            />
+            <TextField
+              label="Donor country"
+              value={source.donorCountry}
+              onChange={(v) => set("donorCountry", v)}
+            />
             <p className="sm:col-span-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-              A signed gift letter is typically required. Repayable gifts may be treated as borrowed funds.
+              A signed gift letter is typically required. Repayable gifts may be treated as borrowed
+              funds.
             </p>
           </>
         )}
 
         {source.type === "RRSP Home Buyers' Plan" && (
           <>
-            <SelectField label="Using Home Buyers' Plan?" value={source.usingHBP} onChange={(v) => set("usingHBP", v)} options={FTHB} />
+            <SelectField
+              label="Using Home Buyers' Plan?"
+              value={source.usingHBP}
+              onChange={(v) => set("usingHBP", v)}
+              options={FTHB}
+            />
             <p className="sm:col-span-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-              The RRSP HBP requires first-time buyer status. Up to $60,000 per person may be withdrawn tax-free.
+              The RRSP HBP requires first-time buyer status. Up to $60,000 per person may be
+              withdrawn tax-free.
             </p>
           </>
         )}
 
         {source.type === "FHSA" && (
           <>
-            <TextField label="Account holder" value={source.fhsaHolder} onChange={(v) => set("fhsaHolder", v)} />
+            <TextField
+              label="Account holder"
+              value={source.fhsaHolder}
+              onChange={(v) => set("fhsaHolder", v)}
+            />
             <p className="sm:col-span-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-              FHSA withdrawals for a qualifying home purchase are tax-free. First-time buyer status required.
+              FHSA withdrawals for a qualifying home purchase are tax-free. First-time buyer status
+              required.
             </p>
           </>
         )}
 
         {source.type === "Sale of existing property" && (
           <>
-            <TextField label="Property address" value={source.saleAddress} onChange={(v) => set("saleAddress", v)} />
-            <SelectField label="Firm sale?" value={source.firmSale} onChange={(v) => set("firmSale", v)} options={YES_NO} />
-            <TextField label="Expected closing date" value={source.saleClosing} onChange={(v) => set("saleClosing", v)} placeholder="YYYY-MM-DD" />
+            <TextField
+              label="Property address"
+              value={source.saleAddress}
+              onChange={(v) => set("saleAddress", v)}
+            />
+            <SelectField
+              label="Firm sale?"
+              value={source.firmSale}
+              onChange={(v) => set("firmSale", v)}
+              options={YES_NO}
+            />
+            <TextField
+              label="Expected closing date"
+              value={source.saleClosing}
+              onChange={(v) => set("saleClosing", v)}
+              placeholder="YYYY-MM-DD"
+            />
           </>
         )}
 
         {source.type === "Borrowed funds" && (
           <>
-            <TextField label="Lender / source" value={source.borrowedFrom} onChange={(v) => set("borrowedFrom", v)} />
-            <NumField label="Monthly repayment" prefix="$" step={10} value={source.monthlyRepayment} onChange={(n) => set("monthlyRepayment", n)} />
-            <NumField label="Interest rate (optional)" suffix="%" step={0.05} value={source.borrowedRate} onChange={(n) => set("borrowedRate", n)} />
+            <TextField
+              label="Lender / source"
+              value={source.borrowedFrom}
+              onChange={(v) => set("borrowedFrom", v)}
+            />
+            <NumField
+              label="Monthly repayment"
+              prefix="$"
+              step={10}
+              value={source.monthlyRepayment}
+              onChange={(n) => set("monthlyRepayment", n)}
+            />
+            <NumField
+              label="Interest rate (optional)"
+              suffix="%"
+              step={0.05}
+              value={source.borrowedRate}
+              onChange={(n) => set("borrowedRate", n)}
+            />
             <p className="sm:col-span-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
               Borrowed down payment may affect mortgage qualification.
             </p>
@@ -688,8 +972,18 @@ function SourceCard({
         {source.type === "Funds from outside Canada" && (
           <>
             <TextField label="Country" value={source.country} onChange={(v) => set("country", v)} />
-            <TextField label="Currency" value={source.currency} onChange={(v) => set("currency", v)} placeholder="e.g. USD" />
-            <SelectField label="Funds already in Canada?" value={source.inCanada} onChange={(v) => set("inCanada", v)} options={YES_NO} />
+            <TextField
+              label="Currency"
+              value={source.currency}
+              onChange={(v) => set("currency", v)}
+              placeholder="e.g. USD"
+            />
+            <SelectField
+              label="Funds already in Canada?"
+              value={source.inCanada}
+              onChange={(v) => set("inCanada", v)}
+              options={YES_NO}
+            />
             <p className="sm:col-span-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[11px] text-amber-900">
               Additional source-of-funds documentation may be required.
             </p>
@@ -698,12 +992,26 @@ function SourceCard({
 
         {source.type === "Builder or seller incentive" && (
           <>
-            <TextField label="Incentive type" value={source.incentiveType} onChange={(v) => set("incentiveType", v)} />
-            <SelectField label="Disclosed in purchase agreement?" value={source.incentiveDisclosed} onChange={(v) => set("incentiveDisclosed", v)} options={YES_NO} />
+            <TextField
+              label="Incentive type"
+              value={source.incentiveType}
+              onChange={(v) => set("incentiveType", v)}
+            />
+            <SelectField
+              label="Disclosed in purchase agreement?"
+              value={source.incentiveDisclosed}
+              onChange={(v) => set("incentiveDisclosed", v)}
+              options={YES_NO}
+            />
           </>
         )}
 
-        <TextField label="Notes (optional)" value={source.notes} onChange={(v) => set("notes", v)} placeholder="Anything else to remember" />
+        <TextField
+          label="Notes (optional)"
+          value={source.notes}
+          onChange={(v) => set("notes", v)}
+          placeholder="Anything else to remember"
+        />
       </div>
     </div>
   );
@@ -718,9 +1026,9 @@ function HowCalculated() {
       </div>
       <div className="mt-3 space-y-2 text-xs leading-relaxed text-muted-foreground">
         <p>
-          This planner adds up your down payment sources and compares them against an estimated minimum down
-          payment. It then estimates your mortgage amount, loan-to-value ratio, and whether mortgage default
-          insurance may apply.
+          This planner adds up your down payment sources and compares them against an estimated
+          minimum down payment. It then estimates your mortgage amount, loan-to-value ratio, and
+          whether mortgage default insurance may apply.
         </p>
         <ul className="ml-4 list-disc space-y-1">
           <li>Total down payment = sum of all selected sources</li>
