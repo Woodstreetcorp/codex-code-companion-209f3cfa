@@ -48,6 +48,19 @@ import {
   type SubmissionReadinessResponse,
 } from "@/lib/api/borrowerApplicationSubmissionApi";
 import {
+  formatLifecycleStatus,
+  getBorrowerLifecycleState,
+  isLifecycleAuthenticatedError,
+  safeLifecycleMessage,
+  storeBorrowerLifecycleState,
+  type BorrowerLifecycleState,
+} from "@/lib/api/borrowerLifecycleStateApi";
+import {
+  listBorrowerSelectedProducts,
+  storeBorrowerSelectedProducts,
+  type BorrowerSelectedProductsResponse,
+} from "@/lib/api/borrowerSelectedProductsApi";
+import {
   getBorrowerProductMatchStatus,
   storeBorrowerProductMatchStatus,
   type ProductMatchStatusResponse,
@@ -112,7 +125,7 @@ type WorkspaceAction = {
   disabled?: boolean;
 };
 
-const FULL_APPLICATION_ROUTE = "/internal/full-application";
+const APPLICATION_WORKSPACE_ROUTE = "/portal/application";
 
 const ROUTE_HINTS: Record<string, string> = {
   application: "/portal/application",
@@ -123,12 +136,12 @@ const ROUTE_HINTS: Record<string, string> = {
   document_vault: "/portal/documents",
   offers: "/portal/offers",
   review_status: "/portal/offers",
-  borrower_profile: FULL_APPLICATION_ROUTE,
-  income: FULL_APPLICATION_ROUTE,
-  liabilities: FULL_APPLICATION_ROUTE,
-  property: "/applications/current/property-financing/target-property",
-  assets_down_payment: "/applications/current/property-financing/down-payment",
-  down_payment: "/applications/current/property-financing/down-payment",
+  borrower_profile: APPLICATION_WORKSPACE_ROUTE,
+  income: APPLICATION_WORKSPACE_ROUTE,
+  liabilities: APPLICATION_WORKSPACE_ROUTE,
+  property: APPLICATION_WORKSPACE_ROUTE,
+  assets_down_payment: APPLICATION_WORKSPACE_ROUTE,
+  down_payment: APPLICATION_WORKSPACE_ROUTE,
 };
 
 const SUBMITTED_STATUS_CONFIG: Record<SubmittedApplicationStatus, SubmittedStatusConfig> = {
@@ -233,9 +246,9 @@ function primaryRouteFor(action?: string | null, routeHint?: string | null): str
       return "/portal/documents";
     case "review_application":
     case "continue_application":
-      return FULL_APPLICATION_ROUTE;
+      return APPLICATION_WORKSPACE_ROUTE;
     default:
-      return FULL_APPLICATION_ROUTE;
+      return APPLICATION_WORKSPACE_ROUTE;
   }
 }
 
@@ -247,7 +260,6 @@ function normalizeRouteHint(routeHint?: string | null): string | null {
   if (
     trimmed.startsWith("/portal") ||
     trimmed.startsWith("/applications/") ||
-    trimmed.startsWith("/internal/") ||
     trimmed.startsWith("/purchase") ||
     trimmed.startsWith("/refinance")
   ) {
@@ -322,7 +334,7 @@ function workspaceActionForStatus(
     case "in_progress":
       return {
         label: "Continue Application",
-        route: FULL_APPLICATION_ROUTE,
+        route: APPLICATION_WORKSPACE_ROUTE,
         description: "Keep working through your application sections and required details.",
       };
     case "documents_requested":
@@ -431,7 +443,7 @@ function productMatchStatusConfig(
     return getProductMatchStatusCopy(status, {
       primaryCta: {
         label: PRODUCT_MATCH_CTA_LABELS.continueApplication,
-        route: FULL_APPLICATION_ROUTE,
+        route: APPLICATION_WORKSPACE_ROUTE,
       },
     });
   }
@@ -449,14 +461,26 @@ function productMatchStatusConfig(
 }
 
 const SECTION_ROUTE: Record<ApplicationSectionKey, string> = {
-  borrower_profile: FULL_APPLICATION_ROUTE,
-  property: "/applications/current/property-financing/target-property",
-  income: FULL_APPLICATION_ROUTE,
-  assets_down_payment: "/applications/current/property-financing/down-payment",
-  liabilities: FULL_APPLICATION_ROUTE,
+  borrower_profile: APPLICATION_WORKSPACE_ROUTE,
+  "personal-details": APPLICATION_WORKSPACE_ROUTE,
+  borrowers: APPLICATION_WORKSPACE_ROUTE,
+  employment: APPLICATION_WORKSPACE_ROUTE,
+  property: APPLICATION_WORKSPACE_ROUTE,
+  income: APPLICATION_WORKSPACE_ROUTE,
+  assets: APPLICATION_WORKSPACE_ROUTE,
+  assets_down_payment: APPLICATION_WORKSPACE_ROUTE,
+  liabilities: APPLICATION_WORKSPACE_ROUTE,
+  credit: APPLICATION_WORKSPACE_ROUTE,
+  "other-properties": APPLICATION_WORKSPACE_ROUTE,
+  "mortgage-request": APPLICATION_WORKSPACE_ROUTE,
+  financing: APPLICATION_WORKSPACE_ROUTE,
+  documents: "/portal/documents",
+  consents: "/portal/application/consents",
+  review: APPLICATION_WORKSPACE_ROUTE,
 };
 
 function ApplicationWorkspacePage() {
+  const [lifecycle, setLifecycle] = useState<BorrowerLifecycleState | null>(null);
   const [summary, setSummary] = useState<BorrowerApplicationSummary | null>(null);
   const [backendSections, setBackendSections] = useState<BackendSection[] | null>(null);
   const [sectionsSummary, setSectionsSummary] = useState<SectionsSummary | null>(null);
@@ -470,6 +494,8 @@ function ApplicationWorkspacePage() {
   const [productMatchResult, setProductMatchResult] = useState<ProductMatchStatusResponse | null>(
     null,
   );
+  const [selectedProductsResult, setSelectedProductsResult] =
+    useState<BorrowerSelectedProductsResponse | null>(null);
   const [productMatchLoading, setProductMatchLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -511,16 +537,30 @@ function ApplicationWorkspacePage() {
       setError(null);
       try {
         // Load in parallel; only the core summary is fatal.
-        const [summaryResult, sectionsResult, consentsResult, readinessResult, requestsResult] =
-          await Promise.allSettled([
-            getBorrowerApplicationSummary(),
-            listBorrowerApplicationSections(),
-            listBorrowerApplicationConsents(),
-            getBorrowerApplicationSubmissionReadiness(),
-            listBorrowerApplicationReviewRequests(),
-          ]);
+        const [
+          lifecycleResult,
+          summaryResult,
+          sectionsResult,
+          consentsResult,
+          readinessResult,
+          requestsResult,
+        ] = await Promise.allSettled([
+          getBorrowerLifecycleState(),
+          getBorrowerApplicationSummary(),
+          listBorrowerApplicationSections(),
+          listBorrowerApplicationConsents(),
+          getBorrowerApplicationSubmissionReadiness(),
+          listBorrowerApplicationReviewRequests(),
+        ]);
 
         if (!active) return;
+
+        if (lifecycleResult.status === "fulfilled") {
+          storeBorrowerLifecycleState(lifecycleResult.value);
+          setLifecycle(lifecycleResult.value);
+        } else if (isLifecycleAuthenticatedError(lifecycleResult.reason)) {
+          throw lifecycleResult.reason;
+        }
 
         if (summaryResult.status === "fulfilled") {
           storeBorrowerApplicationSummary(summaryResult.value);
@@ -577,10 +617,15 @@ function ApplicationWorkspacePage() {
 
     async function loadProductMatchStatus() {
       setProductMatchLoading(true);
-      const result = await getBorrowerProductMatchStatus();
+      const [result, selectedProducts] = await Promise.all([
+        getBorrowerProductMatchStatus(),
+        listBorrowerSelectedProducts(),
+      ]);
       if (!active) return;
       storeBorrowerProductMatchStatus(result);
+      storeBorrowerSelectedProducts(selectedProducts);
       setProductMatchResult(result);
+      setSelectedProductsResult(selectedProducts);
       setProductMatchLoading(false);
     }
 
@@ -677,6 +722,88 @@ function ApplicationWorkspacePage() {
       ? productMatchResult.status
       : derivedProductMatchStatus;
 
+  const selectedProductCount =
+    selectedProductsResult?.selected_count ??
+    selectedProductsResult?.selected_products?.length ??
+    0;
+  const selectedProductsEndpointReady =
+    selectedProductsResult != null &&
+    selectedProductsResult.endpoint_available !== false &&
+    selectedProductsResult.ok !== false;
+  const productOptionsVisible =
+    productMatchStatus === "options_ready_placeholder" ||
+    productMatchStatus === "lender_review_placeholder" ||
+    (productMatchResult?.borrower_visible_count ?? 0) > 0;
+  const tailoredReviewPath =
+    productMatchStatus === "not_ready" ||
+    productMatchStatus === "missing_information" ||
+    productMatchStatus === "advisor_review" ||
+    productMatchStatus === "options_being_prepared" ||
+    lifecycle?.offer_state?.status === "tailored_review";
+  const mustSelectOfferFirst =
+    (lifecycle?.active_application?.offer_selection_required === true ||
+      lifecycle?.offer_state?.requires_offer_selection === true ||
+      (selectedProductsEndpointReady &&
+        productOptionsVisible &&
+        selectedProductCount === 0 &&
+        !tailoredReviewPath)) &&
+    lifecycle?.offer_state?.status !== "tailored_review";
+
+  if (!lifecycle?.active_application) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+          <Sparkles className="h-6 w-6" />
+        </div>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+          No active mortgage application yet
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Start or continue your Mortgage Snapshot so approvU can prepare your application
+          workspace.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Link
+            to="/"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Start Mortgage Snapshot
+            <ArrowRight className="ml-1.5 h-4 w-4" />
+          </Link>
+          <Link
+            to="/portal/offers"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-border bg-background px-4 text-sm font-semibold text-foreground hover:bg-muted"
+          >
+            View Mortgage Offers
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (mustSelectOfferFirst) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+          <Sparkles className="h-6 w-6" />
+        </div>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+          Select your mortgage path first
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+          Your Mortgage Offer page is ready. Select the path you want approvU to review before
+          continuing into the application workspace.
+        </p>
+        <Link
+          to="/portal/offers"
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          View Mortgage Offers
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       {/* ── Page header ─────────────────────────────────────────────────── */}
@@ -685,11 +812,21 @@ function ApplicationWorkspacePage() {
           Application workspace
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-          Your Application
+          {lifecycle.active_application.public_reference ?? "Your Application"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Track your mortgage application progress and next steps.
+          {safeLifecycleMessage(
+            lifecycle.active_application.next_step ?? lifecycle.next_best_action?.message,
+            "Track your mortgage application progress and next steps.",
+          )}
         </p>
+        <span className="mt-3 inline-flex rounded-full bg-secondary/10 px-3 py-1 text-xs font-semibold text-secondary">
+          {formatLifecycleStatus(
+            lifecycle.active_application.stage ??
+              lifecycle.active_application.status ??
+              lifecycle.active_application.state,
+          )}
+        </span>
       </div>
 
       {/* ── Messages banner ──────────────────────────────────────────────── */}
@@ -872,7 +1009,8 @@ function ApplicationWorkspacePage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ALL_SECTION_KEYS.map((key) => {
             const backendSection = backendSections?.find((s) => s.section_key === key);
-            const status: ApplicationSectionStatus = backendSection?.status ?? "not_started";
+            const status: ApplicationSectionStatus =
+              (backendSection?.status as ApplicationSectionStatus | undefined) ?? "not_started";
             return (
               <BackendSectionCard
                 key={key}
@@ -1602,6 +1740,11 @@ const BACKEND_STATUS_CONFIG: Record<
   ApplicationSectionStatus,
   { label: string; badgeClass: string; dotClass: string }
 > = {
+  completed: {
+    label: "Completed",
+    badgeClass: "bg-mint/15 text-mint-foreground border border-mint/30",
+    dotClass: "bg-mint",
+  },
   complete: {
     label: "Complete",
     badgeClass: "bg-mint/15 text-mint-foreground border border-mint/30",

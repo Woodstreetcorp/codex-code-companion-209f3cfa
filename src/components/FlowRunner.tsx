@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, CheckCircle2, ShieldCheck, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { flows, type FlowKey, type MortgageEntry, type Question } from "@/lib/flows";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/calculations";
 import { classifyLane, getMinimumDownPaymentPolicy, mapUsage } from "@/lib/policy";
 import { storePendingQualification } from "@/lib/api/borrowerQualificationApi";
+import { AppLogo } from "@/components/brand/approvu-logo";
 
 type AnswerValue = string | string[] | MortgageEntry[];
 type Answers = Record<string, AnswerValue>;
@@ -211,9 +212,8 @@ export function FlowRunner({ flowKey }: { flowKey: FlowKey }) {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link to="/" className="flex items-center gap-2 text-sm font-semibold text-primary">
-            <ShieldCheck className="h-5 w-5" />
-            approvU
+          <Link to="/" aria-label="approvU home" className="inline-flex items-center">
+            <AppLogo imageClassName="h-8 w-auto" />
           </Link>
           <span className="text-xs text-muted-foreground">
             Step {done ? total : Math.min(index + 1, total)} of {total}
@@ -431,13 +431,13 @@ function labelFor(q: Question, val: AnswerValue | undefined): string {
       Array.isArray(val) ? val.filter((v) => typeof v === "object") : []
     ) as MortgageEntry[];
     if (!arr.length) return "—";
-    return arr.map((m) => `#${m.position} ${m.lender || "—"} · $${m.balance || "—"}`).join(" • ");
+    return arr.map((m) => `#${m.position} ${m.lender || "—"} · ${m.balance || "—"}`).join(" • ");
   }
   if (q.type === "locations") {
     const arr = (Array.isArray(val) ? val.filter((v) => typeof v === "string") : []) as string[];
     return arr.length ? arr.join(", ") : "—";
   }
-  if (q.type === "currency") return val ? `$${val as string}` : "—";
+  if (q.type === "currency") return val ? `${val as string}` : "—";
   return (typeof val === "string" ? val : "") || "—";
 }
 
@@ -601,117 +601,6 @@ function CashOutMaxCard({ answers }: { answers: Answers }) {
           ? "Your existing balances already exceed the 80% LTV cap, so additional cash out may not be available through standard refinance programs."
           : "Most refinance programs cap total borrowing at 80% of the property value. Final amount depends on lender, credit, and income review."}
       </p>
-    </div>
-  );
-}
-
-function Review({
-  flowKey,
-  answers,
-  visible,
-  onBack,
-}: {
-  flowKey: FlowKey;
-  answers: Answers;
-  visible: Question[];
-  onBack: () => void;
-}) {
-  const flow = flows[flowKey];
-  const insights = computeInsights(flowKey, answers);
-  const guidance = computeGuidance(flowKey, answers);
-
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow text-yellow-foreground">
-            <CheckCircle2 className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-secondary">
-              Snapshot ready
-            </p>
-            <h1 className="text-2xl font-semibold text-foreground">{flow.resultTitle}</h1>
-          </div>
-        </div>
-
-        <p className="mt-4 text-sm text-muted-foreground">
-          Based on what you shared, you <strong className="text-foreground">may qualify</strong> for
-          possible mortgage options. A licensed broker will review your details and walk you through
-          next steps.
-        </p>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {insights.map((it) => (
-            <SnapshotStat key={it.label} label={it.label} value={it.value} tone={it.tone} />
-          ))}
-        </div>
-
-        {guidance && (
-          <div className="mt-6 rounded-xl border border-border bg-background p-5">
-            <h3 className="text-sm font-semibold text-foreground">{guidance.title}</h3>
-            {guidance.summary && (
-              <p className="mt-1 text-sm text-muted-foreground">{guidance.summary}</p>
-            )}
-            {guidance.notes.length > 0 && (
-              <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                {guidance.notes.map((n: string, i: number) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" />
-                    <span>{n}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {guidance.nextSteps && guidance.nextSteps.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-secondary">
-                  Possible next steps
-                </p>
-                <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
-                  {guidance.nextSteps.map((s: string, i: number) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="mt-8">
-          <h2 className="text-sm font-semibold text-foreground">Your responses</h2>
-          <dl className="mt-3 divide-y divide-border rounded-xl border border-border bg-background">
-            {visible.map((q) => (
-              <div key={q.id} className="flex items-start justify-between gap-4 px-4 py-3">
-                <dt className="text-sm text-muted-foreground">{q.title}</dt>
-                <dd className="text-right text-sm font-medium text-foreground">
-                  {labelFor(q, answers[q.id])}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-
-        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Edit answers
-          </Button>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Link
-              to="/portal"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-6 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              View my portal
-            </Link>
-            <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-              Talk to a broker
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1088,14 +977,6 @@ function Mini({ label, value, accent }: { label: string; value: string; accent?:
   );
 }
 
-function _legacyDefaultInsights(): Insight[] {
-  return [
-    { label: "Estimated readiness", value: "Strong", tone: "primary" },
-    { label: "Possible programs", value: "3–5", tone: "secondary" },
-    { label: "Next step", value: "Broker call", tone: "accent" },
-  ];
-}
-
 type Guidance = {
   title: string;
   summary?: string;
@@ -1161,11 +1042,4 @@ function computeGuidance(flowKey: FlowKey, answers: Answers): Guidance | null {
   }
 
   return null;
-}
-
-function estimatePrincipal(targetPayment: number, ratePct: number, years: number): number {
-  const r = ratePct / 100 / 12;
-  const n = years * 12;
-  if (r === 0) return targetPayment * n;
-  return (targetPayment * (Math.pow(1 + r, n) - 1)) / (r * Math.pow(1 + r, n));
 }
