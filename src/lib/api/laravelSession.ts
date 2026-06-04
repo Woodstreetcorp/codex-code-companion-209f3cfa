@@ -44,6 +44,8 @@
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 
+import { resolvePreviewMock } from "./previewMocks";
+
 /**
  * Returns the API base URL without a trailing slash.
  * Empty string signals same-origin deployment (relative fetch paths).
@@ -212,11 +214,14 @@ export async function fetchWithLaravelSession(
   url: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  // No backend in this preview — return a synthetic 401 so callers treat the
-  // request as "not authenticated" instead of hitting the SSR server (500).
+  // No backend in this preview — return realistic demo data so every portal
+  // page renders without a login/account wall instead of hitting the SSR
+  // server (500) or failing auth (401).
   if (isUnconfiguredPreview()) {
-    return new Response(JSON.stringify({ message: "No backend configured in preview." }), {
-      status: 401,
+    const method = ((init.method ?? "GET") as string).toUpperCase();
+    const body = resolvePreviewMock(method, url);
+    return new Response(JSON.stringify(body), {
+      status: 200,
       headers: { "Content-Type": "application/json" },
     });
   }
