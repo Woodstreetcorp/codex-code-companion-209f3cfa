@@ -44,6 +44,8 @@
 
 // ── Base URL ──────────────────────────────────────────────────────────────────
 
+import { resolvePreviewMock } from "./previewMocks";
+
 /**
  * Returns the API base URL without a trailing slash.
  * Empty string signals same-origin deployment (relative fetch paths).
