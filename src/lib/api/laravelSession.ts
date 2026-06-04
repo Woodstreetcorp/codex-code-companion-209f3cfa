@@ -139,6 +139,9 @@ export async function initializeCsrfCookie(): Promise<void> {
   // Already have a readable cookie (same-origin path).
   if (getXsrfTokenFromCookie() !== "") return;
 
+  // No backend in this preview — skip the network call to avoid a 500.
+  if (isUnconfiguredPreview()) return;
+
   try {
     const res = await fetch(buildApiUrl("/v2/csrf-cookie"), {
       method: "GET",
@@ -209,6 +212,15 @@ export async function fetchWithLaravelSession(
   url: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  // No backend in this preview — return a synthetic 401 so callers treat the
+  // request as "not authenticated" instead of hitting the SSR server (500).
+  if (isUnconfiguredPreview()) {
+    return new Response(JSON.stringify({ message: "No backend configured in preview." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const method = ((init.method ?? "GET") as string).toUpperCase();
   const isMutating =
     method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
