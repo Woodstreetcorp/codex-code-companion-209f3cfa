@@ -25,11 +25,38 @@ designers and external tooling.
 
 ## 2. Brand colours (the approvU palette)
 
+### 2.1 Official ApprovU Brand Palette (canonical)
+
+These ten swatches are the source of truth for brand colour. Use these exact hex
+values in design tools, marketing, and any non-token context. In the app they are
+expressed through the semantic tokens in §2.2.
+
+| # | Hex | Name | Primary use |
+|---|---|---|---|
+| 1 | `#FE6A6A` | Coral | Warning / error / destructive emphasis, required asterisks |
+| 2 | `#50C4D3` | Light Teal | Soft accent, secondary highlights |
+| 3 | `#FED766` | Yellow | Caution, decision-required, locked notices |
+| 4 | `#EF798A` | Pink | Decorative / chart accent |
+| 5 | `#2EC5BC` | Mint | Success / completed / approved / unlocked |
+| 6 | `#00A3B6` | Cyan (Secondary) | Info, progress, step badges, "under review" |
+| 7 | `#FBFD9A` | Light Yellow | Soft highlight backgrounds |
+| 8 | `#1E1E1E` | Ink / Near-Black | Deep text, high-contrast surfaces |
+| 9 | `#18768B` | Teal | Mid brand teal, secondary surfaces / accents |
+| 10 | `#1B5663` | Deep Teal (Primary) | Primary brand colour: headers, primary CTAs, active nav, hero backgrounds |
+
+> **Note on the primary token.** The in-code `--primary` token currently renders
+> as a teal-navy (`oklch(0.42 0.066 220)` ≈ `#005467`), which is the same brand
+> family as the canonical **Deep Teal `#1B5663`**. To match the brand palette
+> exactly, set `--primary` to `#1B5663` in `src/styles.css`. All other swatches
+> already map 1:1 to existing tokens.
+
+### 2.2 Semantic brand tokens (used in code)
+
 These are the distinctive brand accents used across heroes, badges, and status states.
 
 | Token | Tailwind classes | Light `oklch` | Approx hex | Role |
 |---|---|---|---|---|
-| `--primary` | `bg-primary` `text-primary` | `oklch(0.42 0.066 220)` | **#005467** | Teal-navy. Primary brand colour: headers, primary CTAs, active nav, hero backgrounds, focus emphasis |
+| `--primary` | `bg-primary` `text-primary` | `oklch(0.42 0.066 220)` | **#005467** (brand: **#1B5663**) | Deep teal. Primary brand colour: headers, primary CTAs, active nav, hero backgrounds, focus emphasis |
 | `--secondary` | `bg-secondary` `text-secondary` | `oklch(0.66 0.10 210)` | **#00A3B6** | Cyan. Info, progress bars, step badges, "under review" states |
 | `--mint` | `bg-mint` `text-mint` | `oklch(0.74 0.12 190)` | **#2EC5BC** | Success / unlocked / completed / approved states |
 | `--coral` / `--accent` | `bg-coral` `bg-accent` | `oklch(0.72 0.18 22)` | **#FE6A6A** | Warning, errors, required asterisks, destructive emphasis, "Remove" |
@@ -153,15 +180,17 @@ Cards use `rounded-xl`; buttons use `rounded-md`.
 
 ---
 
-## Quick reference — brand hex chips
+## Quick reference — official ApprovU Brand Palette
 
 | Colour | Hex |
 |---|---|
-| Primary (teal-navy) | `#005467` |
-| Secondary (cyan) | `#00A3B6` |
+| Coral | `#FE6A6A` |
 | Light teal | `#50C4D3` |
-| Mint | `#2EC5BC` |
-| Coral / accent | `#FE6A6A` |
-| Pink | `#EF798A` |
 | Yellow | `#FED766` |
+| Pink | `#EF798A` |
+| Mint | `#2EC5BC` |
+| Cyan (secondary) | `#00A3B6` |
 | Light yellow | `#FBFD9A` |
+| Ink / near-black | `#1E1E1E` |
+| Teal | `#18768B` |
+| Deep teal (primary) | `#1B5663` |
