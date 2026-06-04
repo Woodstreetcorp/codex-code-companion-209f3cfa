@@ -180,15 +180,17 @@ Cards use `rounded-xl`; buttons use `rounded-md`.
 
 ---
 
-## Quick reference — brand hex chips
+## Quick reference — official ApprovU Brand Palette
 
 | Colour | Hex |
 |---|---|
-| Primary (teal-navy) | `#005467` |
-| Secondary (cyan) | `#00A3B6` |
+| Coral | `#FE6A6A` |
 | Light teal | `#50C4D3` |
-| Mint | `#2EC5BC` |
-| Coral / accent | `#FE6A6A` |
-| Pink | `#EF798A` |
 | Yellow | `#FED766` |
+| Pink | `#EF798A` |
+| Mint | `#2EC5BC` |
+| Cyan (secondary) | `#00A3B6` |
 | Light yellow | `#FBFD9A` |
+| Ink / near-black | `#1E1E1E` |
+| Teal | `#18768B` |
+| Deep teal (primary) | `#1B5663` |
