@@ -60,6 +60,24 @@ export function buildApiUrl(path: string): string {
   return `${getApiBaseUrl()}${path}`;
 }
 
+/**
+ * Detects an "unconfigured preview" environment: a Lovable preview host with no
+ * VITE_APPROVU_API_BASE_URL set. In that case there is no Laravel backend, so
+ * relative /v2/* requests would hit the app's own SSR server and return 500
+ * ("Only HTML requests are supported here"). We short-circuit those calls to a
+ * synthetic 401 so the app's existing auth handling (redirect to /login) runs
+ * without surfacing hard 500 errors.
+ *
+ * Production same-origin deployments (e.g. Cloudways) are NOT on a lovable host,
+ * so they are unaffected and continue to use relative /v2/* paths against Laravel.
+ */
+export function isUnconfiguredPreview(): boolean {
+  if (getApiBaseUrl() !== "") return false;
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host.endsWith(".lovableproject.com") || host.endsWith(".lovable.app");
+}
+
 // ── CSRF cookie helpers ───────────────────────────────────────────────────────
 
 /**
@@ -120,6 +138,9 @@ export async function initializeCsrfCookie(): Promise<void> {
   if (_csrfTokenFromBody !== null) return;
   // Already have a readable cookie (same-origin path).
   if (getXsrfTokenFromCookie() !== "") return;
+
+  // No backend in this preview — skip the network call to avoid a 500.
+  if (isUnconfiguredPreview()) return;
 
   try {
     const res = await fetch(buildApiUrl("/v2/csrf-cookie"), {
@@ -191,6 +212,15 @@ export async function fetchWithLaravelSession(
   url: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  // No backend in this preview — return a synthetic 401 so callers treat the
+  // request as "not authenticated" instead of hitting the SSR server (500).
+  if (isUnconfiguredPreview()) {
+    return new Response(JSON.stringify({ message: "No backend configured in preview." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const method = ((init.method ?? "GET") as string).toUpperCase();
   const isMutating =
     method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
